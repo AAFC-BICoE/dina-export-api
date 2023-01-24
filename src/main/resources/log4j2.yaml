@@ -1,0 +1,22 @@
+
+Configuration:
+  name: dina
+
+  Appenders:
+    Console:
+      name: LogToConsole
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "%d [%t] %-5p %c - %m%n"
+
+  Loggers:
+      Logger:
+        - name: ca.gc.aafc
+          additivity: false
+          level: debug
+          AppenderRef:
+            - ref: LogToConsole
+      Root:
+          level: warning
+          AppenderRef:
+            - ref: LogToConsole
