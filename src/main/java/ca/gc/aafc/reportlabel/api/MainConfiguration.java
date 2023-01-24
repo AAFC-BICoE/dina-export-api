@@ -22,7 +22,7 @@ import java.util.Locale;
 @Configuration
 @ComponentScan(basePackageClasses = GroupAuthorizationService.class)
 // we can't use DinaBaseApiAutoConfiguration since it's too coupled with database related classes
-@DependsOn({"querySpecUrlMapper"})
+@DependsOn("querySpecUrlMapper")
 public class MainConfiguration implements WebMvcConfigurer {
 
   @Inject
