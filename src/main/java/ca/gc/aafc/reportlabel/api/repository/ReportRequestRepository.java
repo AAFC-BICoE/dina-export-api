@@ -23,7 +23,6 @@ import java.util.UUID;
 public class ReportRequestRepository implements ResourceRepository<ReportRequestDto, Serializable> {
 
   private GroupAuthorizationService authorizationService;
-  private Optional<DinaAuthenticatedUser> dinaAuthenticatedUser;
 
   public ReportRequestRepository(
     @NonNull GroupAuthorizationService authorizationService,
@@ -32,7 +31,6 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
     @NonNull ObjectMapper objMapper
   ) {
     this.authorizationService = authorizationService;
-    this.dinaAuthenticatedUser = dinaAuthenticatedUser;
   }
 
   @Override
