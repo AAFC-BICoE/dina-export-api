@@ -22,7 +22,7 @@ import java.util.UUID;
 @Repository
 public class ReportRequestRepository implements ResourceRepository<ReportRequestDto, Serializable> {
 
-  private GroupAuthorizationService authorizationService;
+  private final GroupAuthorizationService authorizationService;
 
   public ReportRequestRepository(
     @NonNull GroupAuthorizationService authorizationService,
