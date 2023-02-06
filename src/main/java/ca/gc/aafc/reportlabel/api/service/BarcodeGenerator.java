@@ -17,14 +17,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BarcodeGenerator {
-  
-  public enum CodeFormat {QR_CODE, CODE_128, DATA_MATRIX}
+
+  public enum CodeFormat { QR_CODE, CODE_128, DATA_MATRIX }
 
   private static final String CODE_OUTPUT_FORMAT = "png";
 
-  private static final QRCodeWriter qrCodeWriter = new QRCodeWriter();
-  private static final Code128Writer barCodeWriter = new Code128Writer();
-  private static final DataMatrixWriter dataMatrixWriter = new DataMatrixWriter();
+  private static final QRCodeWriter QR_CODE_WRITER = new QRCodeWriter();
+  private static final Code128Writer BARCODE_WRITER = new Code128Writer();
+  private static final DataMatrixWriter DATA_MATRIX_WRITER = new DataMatrixWriter();
 
   /**
    *
@@ -71,9 +71,9 @@ public class BarcodeGenerator {
     }
 
     BitMatrix bitMatrix = switch(codeOptions.format()) {
-      case QR_CODE -> qrCodeWriter.encode(content, BarcodeFormat.QR_CODE, codeOptions.width(), codeOptions.height(), hints);
-      case CODE_128 -> barCodeWriter.encode(content, BarcodeFormat.CODE_128, codeOptions.width(), codeOptions.height(), hints);
-      case DATA_MATRIX -> dataMatrixWriter.encode(content, BarcodeFormat.DATA_MATRIX, codeOptions.width(), codeOptions.height(), hints);
+      case QR_CODE -> QR_CODE_WRITER.encode(content, BarcodeFormat.QR_CODE, codeOptions.width(), codeOptions.height(), hints);
+      case CODE_128 -> BARCODE_WRITER.encode(content, BarcodeFormat.CODE_128, codeOptions.width(), codeOptions.height(), hints);
+      case DATA_MATRIX -> DATA_MATRIX_WRITER.encode(content, BarcodeFormat.DATA_MATRIX, codeOptions.width(), codeOptions.height(), hints);
     };
 
     MatrixToImageWriter.writeToStream(bitMatrix, CODE_OUTPUT_FORMAT, outputStream);
