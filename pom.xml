@@ -27,6 +27,7 @@
     <checkstyle.version>8.45.1</checkstyle.version>
     <dina-base-api.version>0.100</dina-base-api.version>
     <spring-boot-maven-plugin.fork>false</spring-boot-maven-plugin.fork>
+    <zxing.version>3.5.1</zxing.version>
     <postgresql.version>42.4.1</postgresql.version>
   </properties>
 
@@ -66,6 +67,18 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-freemarker</artifactId>
+    </dependency>
+
+    <!-- Barcode related libraries -->
+    <dependency>
+      <groupId>com.google.zxing</groupId>
+      <artifactId>core</artifactId>
+      <version>${zxing.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.zxing</groupId>
+      <artifactId>javase</artifactId>
+      <version>${zxing.version}</version>
     </dependency>
 
     <!-- util -->
