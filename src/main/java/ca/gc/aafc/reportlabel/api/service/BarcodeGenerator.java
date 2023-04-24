@@ -16,15 +16,24 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class BarcodeGenerator {
 
   public enum CodeFormat { QR_CODE, CODE_128, DATA_MATRIX }
 
-  private static final String CODE_OUTPUT_FORMAT = "png";
+  public static final String CODE_OUTPUT_FORMAT = "png";
 
   private static final QRCodeWriter QR_CODE_WRITER = new QRCodeWriter();
   private static final Code128Writer BARCODE_WRITER = new Code128Writer();
   private static final DataMatrixWriter DATA_MATRIX_WRITER = new DataMatrixWriter();
+
+  public static CodeGenerationOption buildDefaultQrConfig() {
+    return new BarcodeGenerator.CodeGenerationOption(600, 600,
+      null, null, null, "square",
+      BarcodeGenerator.CodeFormat.DATA_MATRIX);
+  }
 
   /**
    *

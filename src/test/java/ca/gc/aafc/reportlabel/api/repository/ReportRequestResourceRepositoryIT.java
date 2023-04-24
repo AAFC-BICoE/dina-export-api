@@ -8,6 +8,8 @@ import ca.gc.aafc.reportlabel.api.testsupport.fixtures.ReportRequestTestFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 
 @SpringBootTest(properties = "keycloak.enabled: true", classes = {BaseIntegrationTest.TestConfig.class, ReportLabelModuleApiLauncher.class })
@@ -19,7 +21,14 @@ public class ReportRequestResourceRepositoryIT extends BaseIntegrationTest {
   @WithMockKeycloakUser(username = "user", groupRole = ReportRequestTestFixture.GROUP + ":USER")
   @Test
   public void create_onReportRequest_requestAccepted() {
-    ReportRequestDto dto = ReportRequestTestFixture.newReportRequest().build();
+    ReportRequestDto dto = ReportRequestTestFixture.newReportRequest()
+      .template("testHtml.flth")
+      .payload(Map.of("testname", "create_onReportRequest_requestAccepted",
+        "elements", List.of(
+          Map.of("barcode", Map.of("id", "xyz", "content", "123")),
+          Map.of("barcode", Map.of("id", "qwe", "content", "345"))
+        )))
+      .build();
     transactionRepository.create(dto);
   }
 
