@@ -54,7 +54,8 @@ public class ReportRequestService {
     Path tmpDirectory = Files.createTempDirectory("reportTemp");
     DocumentContext dc = JsonPath.using(jacksonConfig).parse(reportRequest.getPayload());
 
-    TypeRef<List<BarcodeSpecs>> typeRef = new TypeRef<>() {};
+    TypeRef<List<BarcodeSpecs>> typeRef = new TypeRef<>() {
+    };
     List<BarcodeSpecs> barcodeSpecs;
     try {
       barcodeSpecs = dc.read("$.elements[*].barcode", typeRef);
@@ -66,7 +67,7 @@ public class ReportRequestService {
     if(reportRequest.getOutputFormat() == ReportOutputFormat.PDF) {
       BarcodeGenerator.CodeGenerationOption cgo = BarcodeGenerator.buildDefaultQrConfig();
       // Step 1 : Generate all Barcodes (if required)
-      for(BarcodeSpecs currBarcodeSpecs : barcodeSpecs){
+      for(BarcodeSpecs currBarcodeSpecs : barcodeSpecs) {
         File tempBarcodeFile = tmpDirectory.resolve(currBarcodeSpecs.id + "." + BarcodeGenerator.CODE_OUTPUT_FORMAT).toFile();
         try (FileOutputStream fos = new FileOutputStream(tempBarcodeFile)) {
           try {
