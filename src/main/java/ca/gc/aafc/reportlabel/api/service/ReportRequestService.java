@@ -80,7 +80,7 @@ public class ReportRequestService {
 
       // Step 2 : Generate report as html
       File tempHtmlFile = tmpDirectory.resolve("report.html").toFile();
-      try (FileWriter fw = new FileWriter(tempHtmlFile)) {
+      try (FileWriter fw = new FileWriter(tempHtmlFile, StandardCharsets.UTF_8)) {
         reportGenerator.generateReport(reportRequest.getTemplate(), reportRequest.getPayload(), fw);
       }
 

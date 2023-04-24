@@ -12,8 +12,8 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 public class OpenhtmltopdfGenerator implements PDFGenerator {
 
   public static BaseRendererBuilder.PageSizeUnits pageUnit = BaseRendererBuilder.PageSizeUnits.MM;
-  public float pageWidth = 210;
-  public float pageHeight = 297;
+  private static final float DEFAULT_PAGE_WIDTH = 210;
+  private static final float DEFAULT_PAGE_HEIGHT = 297;
 
   @Override
   public void generatePDF(String html, String baseDocumentUri, OutputStream os) throws IOException {
@@ -21,7 +21,7 @@ public class OpenhtmltopdfGenerator implements PDFGenerator {
     PdfRendererBuilder builder = new PdfRendererBuilder();
     builder.withHtmlContent(html, baseDocumentUri);
 
-    builder.useDefaultPageSize(pageWidth, pageHeight, pageUnit);
+    builder.useDefaultPageSize(DEFAULT_PAGE_WIDTH, DEFAULT_PAGE_HEIGHT, pageUnit);
     builder.toStream(os);
     builder.run();
   }
