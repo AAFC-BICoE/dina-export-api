@@ -1,0 +1,14 @@
+<html>
+<head>
+  <title>Test PDF</title>
+</head>
+<body>
+
+<#list elements>
+  <#items as element>
+    <img src="${element.barcode.id}.png"/>
+  </#items>
+</#list>
+
+</body>
+</html>

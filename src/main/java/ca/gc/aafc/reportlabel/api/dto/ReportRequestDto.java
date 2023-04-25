@@ -11,6 +11,8 @@ import lombok.Setter;
 import java.util.Map;
 import java.util.UUID;
 
+import ca.gc.aafc.reportlabel.api.config.ReportOutputFormat;
+
 @Getter
 @Setter
 @Builder
@@ -25,7 +27,10 @@ public class ReportRequestDto {
   private UUID uuid;
   private String group;
 
+  private ReportOutputFormat outputFormat = ReportOutputFormat.PDF;
+
   private String template;
+
   private Map<String, Object> payload;
 
 }

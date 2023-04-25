@@ -4,11 +4,14 @@ import ca.gc.aafc.dina.entity.DinaEntity;
 import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
 import ca.gc.aafc.dina.security.GroupAuthorizationService;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
+import ca.gc.aafc.reportlabel.api.service.ReportRequestService;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.crnk.core.exception.MethodNotAllowedException;
 import io.crnk.core.queryspec.QuerySpec;
 import io.crnk.core.repository.ResourceRepository;
 import io.crnk.core.resource.list.ResourceList;
+import java.io.IOException;
 import lombok.NonNull;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Repository;
@@ -23,20 +26,29 @@ import java.util.UUID;
 public class ReportRequestRepository implements ResourceRepository<ReportRequestDto, Serializable> {
 
   private final GroupAuthorizationService authorizationService;
+  private final ReportRequestService reportRequestService;
 
   public ReportRequestRepository(
     @NonNull GroupAuthorizationService authorizationService,
     Optional<DinaAuthenticatedUser> dinaAuthenticatedUser,
+    ReportRequestService reportRequestService,
     @NonNull BuildProperties props,
     @NonNull ObjectMapper objMapper
   ) {
     this.authorizationService = authorizationService;
+    this.reportRequestService = reportRequestService;
   }
 
   @Override
   public <S extends ReportRequestDto> S create(S s) {
     authorizationService.authorizeCreate(new GroupOnlyEntity(s.getGroup()));
-    return null;
+    try {
+      s.setUuid(UUID.randomUUID());
+      reportRequestService.generateReport(s);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return s;
   }
 
   @Override
@@ -63,7 +75,6 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
   public <S extends ReportRequestDto> S save(S s) {
     throw new MethodNotAllowedException("PUT/PATCH");
   }
-
 
   @Override
   public void delete(Serializable serializable) {

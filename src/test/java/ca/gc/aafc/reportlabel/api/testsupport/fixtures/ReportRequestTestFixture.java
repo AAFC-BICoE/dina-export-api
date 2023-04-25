@@ -1,5 +1,6 @@
 package ca.gc.aafc.reportlabel.api.testsupport.fixtures;
 
+import ca.gc.aafc.reportlabel.api.config.ReportOutputFormat;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
 
 public final class ReportRequestTestFixture {
@@ -11,6 +12,7 @@ public final class ReportRequestTestFixture {
 
   public static ReportRequestDto.ReportRequestDtoBuilder newReportRequest() {
     return ReportRequestDto.builder()
-        .group(GROUP);
+      .outputFormat(ReportOutputFormat.PDF)
+      .group(GROUP);
   }
 }
