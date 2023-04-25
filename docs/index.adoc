@@ -1,0 +1,21 @@
+
+
+== Generate Barcode
+
+In order to instruct the api to generate barcodes, a `barcode` element must be present in the `elements` JSON element of the `payload`.
+The `id` will be used to uniquely name the generated png file. The `content` represents what will be encoded in the barcode.
+[source, json]
+----
+{
+  "elements": [
+    {
+      "barcode": {
+        "id": "my-id",
+        "content": "ABC-209393"
+      }
+    }
+  ]
+}
+----
+
+The barcode can then be used in a template as an `<img src="${element.barcode.id}.png"/>`.
