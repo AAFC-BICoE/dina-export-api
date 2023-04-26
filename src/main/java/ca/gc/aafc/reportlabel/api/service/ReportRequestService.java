@@ -11,6 +11,7 @@ import com.jayway.jsonpath.TypeRef;
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 
+import ca.gc.aafc.reportlabel.api.config.ReportLabelConfig;
 import ca.gc.aafc.reportlabel.api.config.ReportOutputFormat;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
 
@@ -29,19 +30,22 @@ import java.util.List;
 @Service
 public class ReportRequestService {
 
+  private final ReportLabelConfig reportLabelConfig;
   private final ReportGenerator reportGenerator;
   private final PDFGenerator pdfGenerator;
   private final BarcodeGenerator barcodeGenerator;
 
   private final Configuration jacksonConfig;
 
-  public ReportRequestService(FreemarkerReportGenerator reportGenerator,
+  public ReportRequestService(
+    ReportLabelConfig reportLabelConfig,
+    FreemarkerReportGenerator reportGenerator,
                               OpenhtmltopdfGenerator pdfGenerator,
                               BarcodeGenerator barcodeGenerator) {
+    this.reportLabelConfig = reportLabelConfig;
     this.reportGenerator = reportGenerator;
     this.pdfGenerator = pdfGenerator;
     this.barcodeGenerator = barcodeGenerator;
-
 
     jacksonConfig = Configuration.builder()
       .mappingProvider( new JacksonMappingProvider() )
@@ -51,6 +55,7 @@ public class ReportRequestService {
 
   public CodeGenerationOption generateReport(ReportRequestDto reportRequest) throws IOException {
 
+    System.out.println("working dir: " + reportLabelConfig.getWorkingDir());
     Path tmpDirectory = Files.createTempDirectory("reportTemp");
     DocumentContext dc = JsonPath.using(jacksonConfig).parse(reportRequest.getPayload());
 
