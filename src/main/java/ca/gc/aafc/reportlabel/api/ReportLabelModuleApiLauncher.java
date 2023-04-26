@@ -4,6 +4,9 @@ import org.javers.spring.boot.sql.JaversSqlAutoConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+
+import ca.gc.aafc.reportlabel.api.config.ReportLabelConfig;
 
 /**
  * Launches the application.
@@ -13,6 +16,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 
 // exclude all database related auto-configuration
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class, JaversSqlAutoConfiguration.class})
+@EnableConfigurationProperties(value = ReportLabelConfig.class)
 public class ReportLabelModuleApiLauncher {
   public static void main(String[] args) {
     SpringApplication.run(ReportLabelModuleApiLauncher.class, args);
