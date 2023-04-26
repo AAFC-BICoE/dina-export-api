@@ -30,7 +30,7 @@ import java.util.List;
 @Service
 public class ReportRequestService {
 
-  private final ReportLabelConfig reportLabelConfig;
+  private final Path workingFolder;
   private final ReportGenerator reportGenerator;
   private final PDFGenerator pdfGenerator;
   private final BarcodeGenerator barcodeGenerator;
@@ -42,10 +42,11 @@ public class ReportRequestService {
     FreemarkerReportGenerator reportGenerator,
                               OpenhtmltopdfGenerator pdfGenerator,
                               BarcodeGenerator barcodeGenerator) {
-    this.reportLabelConfig = reportLabelConfig;
     this.reportGenerator = reportGenerator;
     this.pdfGenerator = pdfGenerator;
     this.barcodeGenerator = barcodeGenerator;
+
+    workingFolder = Path.of(reportLabelConfig.getWorkingFolder());
 
     jacksonConfig = Configuration.builder()
       .mappingProvider( new JacksonMappingProvider() )
@@ -55,8 +56,7 @@ public class ReportRequestService {
 
   public CodeGenerationOption generateReport(ReportRequestDto reportRequest) throws IOException {
 
-    System.out.println("working dir: " + reportLabelConfig.getWorkingDir());
-    Path tmpDirectory = Files.createTempDirectory("reportTemp");
+    Path tmpDirectory = Files.createDirectories(workingFolder.resolve(reportRequest.getUuid().toString()));
     DocumentContext dc = JsonPath.using(jacksonConfig).parse(reportRequest.getPayload());
 
     TypeRef<List<BarcodeSpecs>> typeRef = new TypeRef<>() {
@@ -90,7 +90,7 @@ public class ReportRequestService {
       }
 
       // Step 3 : transform html to pdf
-      File tempPdfFile = File.createTempFile("report", ".pdf", tmpDirectory.toFile());
+      File tempPdfFile = tmpDirectory.resolve(ReportLabelConfig.PDF_REPORT_FILENAME).toFile();
       try (FileOutputStream bos = new FileOutputStream(tempPdfFile)) {
         String htmlContent = Files.readString(tempHtmlFile.toPath(), StandardCharsets.UTF_8);
         pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);

@@ -40,4 +40,4 @@ javers:
 server.shutdown: graceful
 
 report-label:
-  workingFolder: tmp
+  workingFolder: /tmp/dina-report-label
