@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Main service to orchestrate report generation.
@@ -54,9 +55,10 @@ public class ReportRequestService {
       .build();
   }
 
-  public CodeGenerationOption generateReport(ReportRequestDto reportRequest) throws IOException {
+  public ReportGenerationResult generateReport(ReportRequestDto reportRequest) throws IOException {
 
-    Path tmpDirectory = Files.createDirectories(workingFolder.resolve(reportRequest.getUuid().toString()));
+    UUID uuid = UUID.randomUUID();
+    Path tmpDirectory = Files.createDirectories(workingFolder.resolve(uuid.toString()));
     DocumentContext dc = JsonPath.using(jacksonConfig).parse(reportRequest.getPayload());
 
     TypeRef<List<BarcodeSpecs>> typeRef = new TypeRef<>() {
@@ -95,16 +97,16 @@ public class ReportRequestService {
         String htmlContent = Files.readString(tempHtmlFile.toPath(), StandardCharsets.UTF_8);
         pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);
       }
-      return new CodeGenerationOption(tempPdfFile.toPath());
+      return new ReportGenerationResult(uuid);
     }
     return null;
   }
 
   /**
    * Result of the Report request.
-   * @param result
+   * @param resultIdentifier
    */
-  public record CodeGenerationOption(Path result) {
+  public record ReportGenerationResult(UUID resultIdentifier) {
 
   }
 
