@@ -31,8 +31,7 @@ public class FileController {
   }
 
   @GetMapping("/file/{fileId}")
-  public ResponseEntity<InputStreamResource> downloadReport(@PathVariable UUID fileId)
-    throws IOException {
+  public ResponseEntity<InputStreamResource> downloadReport(@PathVariable UUID fileId) throws IOException {
 
     Path reportFile =
       workingFolder.resolve(fileId.toString()).resolve(ReportLabelConfig.PDF_REPORT_FILENAME);
