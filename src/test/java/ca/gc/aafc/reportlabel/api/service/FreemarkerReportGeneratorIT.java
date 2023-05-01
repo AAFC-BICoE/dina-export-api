@@ -16,7 +16,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(classes = {BaseIntegrationTest.TestConfig.class, ReportLabelModuleApiLauncher.class })
-public class FreemarkerReportGeneratorTest {
+public class FreemarkerReportGeneratorIT extends BaseIntegrationTest {
 
   @Inject
   private FreemarkerReportGenerator freemarkerReportGenerator;

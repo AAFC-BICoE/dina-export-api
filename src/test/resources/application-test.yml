@@ -1,0 +1,15 @@
+# Test config:
+spring:
+  datasource:
+    username: web_user
+    password: test
+  liquibase:
+    liquibase-schema: report_label
+    user: migration_user
+    password: test
+embedded.postgresql:
+  enabled: true
+  image: postgres:12.4
+  init-script-file: init-report-module.sql
+  database: report_test
+  schema: report_label

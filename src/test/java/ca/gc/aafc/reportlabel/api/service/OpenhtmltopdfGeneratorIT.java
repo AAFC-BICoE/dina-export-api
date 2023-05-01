@@ -12,7 +12,7 @@ import ca.gc.aafc.reportlabel.api.BaseIntegrationTest;
 import ca.gc.aafc.reportlabel.api.ReportLabelModuleApiLauncher;
 
 @SpringBootTest(classes = {BaseIntegrationTest.TestConfig.class, ReportLabelModuleApiLauncher.class })
-public class OpenhtmltopdfGeneratorTest {
+public class OpenhtmltopdfGeneratorIT extends BaseIntegrationTest {
 
   @Inject
   private OpenhtmltopdfGenerator pdfGenerator;
