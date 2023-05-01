@@ -11,6 +11,7 @@ import com.jayway.jsonpath.TypeRef;
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 
+import ca.gc.aafc.reportlabel.api.config.ReportLabelConfig;
 import ca.gc.aafc.reportlabel.api.config.ReportOutputFormat;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
 
@@ -22,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Main service to orchestrate report generation.
@@ -29,19 +31,23 @@ import java.util.List;
 @Service
 public class ReportRequestService {
 
+  private final Path workingFolder;
   private final ReportGenerator reportGenerator;
   private final PDFGenerator pdfGenerator;
   private final BarcodeGenerator barcodeGenerator;
 
   private final Configuration jacksonConfig;
 
-  public ReportRequestService(FreemarkerReportGenerator reportGenerator,
+  public ReportRequestService(
+    ReportLabelConfig reportLabelConfig,
+    FreemarkerReportGenerator reportGenerator,
                               OpenhtmltopdfGenerator pdfGenerator,
                               BarcodeGenerator barcodeGenerator) {
     this.reportGenerator = reportGenerator;
     this.pdfGenerator = pdfGenerator;
     this.barcodeGenerator = barcodeGenerator;
 
+    workingFolder = Path.of(reportLabelConfig.getWorkingFolder());
 
     jacksonConfig = Configuration.builder()
       .mappingProvider( new JacksonMappingProvider() )
@@ -49,9 +55,10 @@ public class ReportRequestService {
       .build();
   }
 
-  public CodeGenerationOption generateReport(ReportRequestDto reportRequest) throws IOException {
+  public ReportGenerationResult generateReport(ReportRequestDto reportRequest) throws IOException {
 
-    Path tmpDirectory = Files.createTempDirectory("reportTemp");
+    UUID uuid = UUID.randomUUID();
+    Path tmpDirectory = Files.createDirectories(workingFolder.resolve(uuid.toString()));
     DocumentContext dc = JsonPath.using(jacksonConfig).parse(reportRequest.getPayload());
 
     TypeRef<List<BarcodeSpecs>> typeRef = new TypeRef<>() {
@@ -85,21 +92,21 @@ public class ReportRequestService {
       }
 
       // Step 3 : transform html to pdf
-      File tempPdfFile = File.createTempFile("report", ".pdf", tmpDirectory.toFile());
+      File tempPdfFile = tmpDirectory.resolve(ReportLabelConfig.PDF_REPORT_FILENAME).toFile();
       try (FileOutputStream bos = new FileOutputStream(tempPdfFile)) {
         String htmlContent = Files.readString(tempHtmlFile.toPath(), StandardCharsets.UTF_8);
         pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);
       }
-      return new CodeGenerationOption(tempPdfFile.toPath());
+      return new ReportGenerationResult(uuid);
     }
     return null;
   }
 
   /**
    * Result of the Report request.
-   * @param result
+   * @param resultIdentifier
    */
-  public record CodeGenerationOption(Path result) {
+  public record ReportGenerationResult(UUID resultIdentifier) {
 
   }
 

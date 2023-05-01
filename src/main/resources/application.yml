@@ -48,3 +48,6 @@ javers:
   
 # Wait for requests to finish before shutting down:
 server.shutdown: graceful
+
+report-label:
+  workingFolder: /tmp/dina-report-label

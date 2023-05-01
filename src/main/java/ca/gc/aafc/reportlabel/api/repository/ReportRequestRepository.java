@@ -43,8 +43,9 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
   public <S extends ReportRequestDto> S create(S s) {
     authorizationService.authorizeCreate(new GroupOnlyEntity(s.getGroup()));
     try {
-      s.setUuid(UUID.randomUUID());
-      reportRequestService.generateReport(s);
+      ReportRequestService.ReportGenerationResult result = reportRequestService.generateReport(s);
+      // return the identifier assigned by the service
+      s.setUuid(result.resultIdentifier());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
