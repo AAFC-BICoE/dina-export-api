@@ -1,4 +1,14 @@
 spring:
+  datasource:
+  #   url: jdbc:postgresql://localhost:5532/transaction
+  #   username: postgres
+  #   password: postgres
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    contexts: schema-change
+    liquibase-schema: report_label
+  jpa:
+    open-in-view: false
   # Allow grace timeout period for 20 seconds
   lifecycle.timeout-per-shutdown-phase: 20s
 crnk:
