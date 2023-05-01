@@ -45,9 +45,12 @@ keycloak:
 javers:
   # Don't let Javers create its tables
   sqlSchemaManagementEnabled: false
+  packagesToScan: ca.gc.aafc.reportlabel.api
   
 # Wait for requests to finish before shutting down:
 server.shutdown: graceful
+
+dina.auditing.enabled: true
 
 report-label:
   workingFolder: /tmp/dina-report-label

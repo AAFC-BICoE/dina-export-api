@@ -1,5 +1,6 @@
 package ca.gc.aafc.reportlabel.api.service;
 
+import java.util.UUID;
 import lombok.NonNull;
 
 import org.springframework.stereotype.Service;
@@ -17,4 +18,8 @@ public class ReportService extends DefaultDinaService<Report> {
     super(baseDAO, validator);
   }
 
+  @Override
+  protected void preCreate(Report entity) {
+    entity.setUuid(UUID.randomUUID());
+  }
 }

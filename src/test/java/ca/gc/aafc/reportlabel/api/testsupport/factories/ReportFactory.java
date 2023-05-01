@@ -2,6 +2,8 @@ package ca.gc.aafc.reportlabel.api.testsupport.factories;
 
 import java.util.UUID;
 
+import org.springframework.http.MediaType;
+
 import ca.gc.aafc.dina.testsupport.factories.TestableEntityFactory;
 import ca.gc.aafc.reportlabel.api.entity.Report;
 
@@ -16,9 +18,11 @@ public class ReportFactory implements TestableEntityFactory<Report> {
    */
   public static Report.ReportBuilder newReport() {
     return Report.builder()
+      .uuid(UUID.randomUUID())
       .group("aafc")
       .name(TestableEntityFactory.generateRandomNameLettersOnly(7))
-      .uuid(UUID.randomUUID())
+      .outputMediaType(MediaType.APPLICATION_PDF_VALUE)
+      .templateFilename("test.ftl")
       .createdBy("test user");
   }
 

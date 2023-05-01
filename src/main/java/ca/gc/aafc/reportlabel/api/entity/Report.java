@@ -63,4 +63,16 @@ public class Report implements DinaEntity {
   @Column(name = "multilingual_description")
   private MultilingualDescription multilingualDescription;
 
+  @NotBlank
+  @Size(max = 100)
+  private String templateFilename;
+
+  @NotBlank
+  @Size(max = 100)
+  private String outputMediaType;
+
+  @NotNull
+  @Builder.Default
+  private Boolean includesBarcode = false;
+
 }

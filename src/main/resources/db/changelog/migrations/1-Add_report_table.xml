@@ -29,6 +29,18 @@
             </column>
 
             <column name="multilingual_description" type="jsonb"/>
+
+            <column name="template_filename" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="output_media_type" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="includes_barcode" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
         </createTable>
     </changeSet>
 
