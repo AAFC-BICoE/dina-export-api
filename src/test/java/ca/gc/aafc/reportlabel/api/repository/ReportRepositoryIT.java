@@ -19,7 +19,7 @@ public class ReportRepositoryIT extends BaseIntegrationTest {
 
   @WithMockKeycloakUser(username = "user", groupRole = ReportTestFixture.GROUP + ":USER")
   @Test
-  void a() {
+  void create_WithAuthUser() {
     ReportDto reportDto = ReportTestFixture.newReport().build();
     reportRepository.create(reportDto);
   }

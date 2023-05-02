@@ -1,0 +1,26 @@
+version: '3.7'
+services:
+  report-label-db:
+    image: "postgres:12"
+    environment:
+      - POSTGRES_DB=report_test
+      - POSTGRES_USER=web_user
+      - POSTGRES_PASSWORD=test
+    volumes:
+      - ../src/test/resources/init-report-module.sql:/docker-entrypoint-initdb.d/1-init-schema.sql
+
+  report-label-api:
+    image: report-label-api:dev
+    ports:
+      - "8085:8080"
+    networks:
+      default:
+    environment:
+      - spring.datasource.url=jdbc:postgresql://report-label-db/report_test?currentSchema=report_label
+      - spring.datasource.username=web_user
+      - spring.datasource.password=test
+      - spring.liquibase.user=migration_user
+      - spring.liquibase.password=test
+      - dev-user.enabled=true
+    depends_on:
+      - report-label-db
