@@ -70,6 +70,16 @@
       <artifactId>spring-boot-starter-freemarker</artifactId>
     </dependency>
 
+    <!-- Database related-->
+    <dependency>
+      <groupId>org.liquibase</groupId>
+      <artifactId>liquibase-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+    </dependency>
+
     <!-- Barcode related libraries -->
     <dependency>
       <groupId>com.google.zxing</groupId>
