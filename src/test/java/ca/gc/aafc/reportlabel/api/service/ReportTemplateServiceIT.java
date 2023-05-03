@@ -7,18 +7,18 @@ import javax.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 
 import ca.gc.aafc.reportlabel.api.BaseIntegrationTest;
-import ca.gc.aafc.reportlabel.api.entity.Report;
-import ca.gc.aafc.reportlabel.api.testsupport.factories.ReportFactory;
+import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
+import ca.gc.aafc.reportlabel.api.testsupport.factories.ReportTemplateFactory;
 
 @Transactional
-public class ReportServiceIT extends BaseIntegrationTest {
+public class ReportTemplateServiceIT extends BaseIntegrationTest {
 
   @Inject
   private ReportService reportService;
 
   @Test
   public void reportService_onCreate_reportEntryCreated() {
-    Report report = ReportFactory.newReport().build();
-    reportService.create(report);
+    ReportTemplate reportTemplate = ReportTemplateFactory.newReport().build();
+    reportService.create(reportTemplate);
   }
 }

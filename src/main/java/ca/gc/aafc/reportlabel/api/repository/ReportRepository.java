@@ -13,11 +13,11 @@ import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
 import ca.gc.aafc.dina.security.DinaAuthorizationService;
 import ca.gc.aafc.dina.service.AuditService;
 import ca.gc.aafc.reportlabel.api.dto.ReportDto;
-import ca.gc.aafc.reportlabel.api.entity.Report;
+import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
 import ca.gc.aafc.reportlabel.api.service.ReportService;
 
 @Repository
-public class ReportRepository extends DinaRepository<ReportDto, Report> {
+public class ReportRepository extends DinaRepository<ReportDto, ReportTemplate> {
 
   private final DinaAuthenticatedUser dinaAuthenticatedUser;
 
@@ -35,7 +35,7 @@ public class ReportRepository extends DinaRepository<ReportDto, Report> {
       Optional.of(auditService),
       new DinaMapper<>(ReportDto.class),
       ReportDto.class,
-      Report.class,
+      ReportTemplate.class,
       null,
       null,
       buildProperties, objectMapper);

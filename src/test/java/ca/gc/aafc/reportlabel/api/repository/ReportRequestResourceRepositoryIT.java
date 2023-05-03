@@ -4,6 +4,9 @@ import ca.gc.aafc.dina.testsupport.security.WithMockKeycloakUser;
 import ca.gc.aafc.reportlabel.api.BaseIntegrationTest;
 import ca.gc.aafc.reportlabel.api.ReportLabelModuleApiLauncher;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
+import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
+import ca.gc.aafc.reportlabel.api.service.ReportService;
+import ca.gc.aafc.reportlabel.api.testsupport.factories.ReportTemplateFactory;
 import ca.gc.aafc.reportlabel.api.testsupport.fixtures.ReportRequestTestFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,11 +21,17 @@ public class ReportRequestResourceRepositoryIT extends BaseIntegrationTest {
   @Inject
   private ReportRequestRepository transactionRepository;
 
+  @Inject
+  private ReportService reportService;
+
   @WithMockKeycloakUser(username = "user", groupRole = ReportRequestTestFixture.GROUP + ":USER")
   @Test
   public void create_onReportRequest_requestAccepted() {
+    ReportTemplate templateEntity = ReportTemplateFactory.newReport().build();
+    reportService.create(templateEntity);
+
     ReportRequestDto dto = ReportRequestTestFixture.newReportRequest()
-      .template("testHtml.flth")
+      .reportTemplateUUID(templateEntity.getUuid())
       .payload(Map.of("testname", "create_onReportRequest_requestAccepted",
         "elements", List.of(
           Map.of("barcode", Map.of("id", "xyz", "content", "123")),

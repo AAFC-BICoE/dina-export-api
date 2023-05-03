@@ -31,7 +31,7 @@ import ca.gc.aafc.dina.i18n.MultilingualDescription;
 @Getter
 @Builder
 @RequiredArgsConstructor
-public class Report implements DinaEntity {
+public class ReportTemplate implements DinaEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

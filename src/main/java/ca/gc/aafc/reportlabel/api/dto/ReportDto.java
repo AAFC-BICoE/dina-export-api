@@ -2,7 +2,7 @@ package ca.gc.aafc.reportlabel.api.dto;
 
 import ca.gc.aafc.dina.dto.RelatedEntity;
 import ca.gc.aafc.dina.i18n.MultilingualDescription;
-import ca.gc.aafc.reportlabel.api.entity.Report;
+import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
 
 import io.crnk.core.resource.annotations.JsonApiId;
 import io.crnk.core.resource.annotations.JsonApiResource;
@@ -18,7 +18,7 @@ import org.javers.core.metamodel.annotation.Id;
 import org.javers.core.metamodel.annotation.PropertyName;
 import org.javers.core.metamodel.annotation.TypeName;
 
-@RelatedEntity(Report.class)
+@RelatedEntity(ReportTemplate.class)
 @Getter
 @Setter
 @Builder

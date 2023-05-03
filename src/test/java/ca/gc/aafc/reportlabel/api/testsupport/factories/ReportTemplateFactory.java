@@ -7,7 +7,7 @@ import org.springframework.http.MediaType;
 import ca.gc.aafc.dina.testsupport.factories.TestableEntityFactory;
 import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
 
-public class ReportFactory implements TestableEntityFactory<ReportTemplate> {
+public class ReportTemplateFactory implements TestableEntityFactory<ReportTemplate> {
 
   /**
    * Static method that can be called to return a configured builder that can be
