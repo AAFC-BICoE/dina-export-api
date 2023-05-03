@@ -3,11 +3,11 @@ package ca.gc.aafc.reportlabel.api.repository;
 import ca.gc.aafc.dina.testsupport.security.WithMockKeycloakUser;
 import ca.gc.aafc.reportlabel.api.BaseIntegrationTest;
 import ca.gc.aafc.reportlabel.api.ReportLabelModuleApiLauncher;
+import ca.gc.aafc.reportlabel.api.dto.ReportDto;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
-import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
-import ca.gc.aafc.reportlabel.api.service.ReportService;
-import ca.gc.aafc.reportlabel.api.testsupport.factories.ReportTemplateFactory;
 import ca.gc.aafc.reportlabel.api.testsupport.fixtures.ReportRequestTestFixture;
+import ca.gc.aafc.reportlabel.api.testsupport.fixtures.ReportTestFixture;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -22,16 +22,19 @@ public class ReportRequestResourceRepositoryIT extends BaseIntegrationTest {
   private ReportRequestRepository transactionRepository;
 
   @Inject
-  private ReportService reportService;
+  private ReportRepository reportRepository;
 
   @WithMockKeycloakUser(username = "user", groupRole = ReportRequestTestFixture.GROUP + ":USER")
   @Test
   public void create_onReportRequest_requestAccepted() {
-    ReportTemplate templateEntity = ReportTemplateFactory.newReport().build();
-    reportService.create(templateEntity);
+    ReportDto templateDto = ReportTestFixture.newReport()
+      .templateFilename("testHtml.flth")
+      .includesBarcode(true)
+      .build();
+    templateDto = reportRepository.create(templateDto);
 
     ReportRequestDto dto = ReportRequestTestFixture.newReportRequest()
-      .reportTemplateUUID(templateEntity.getUuid())
+      .reportTemplateUUID(templateDto.getUuid())
       .payload(Map.of("testname", "create_onReportRequest_requestAccepted",
         "elements", List.of(
           Map.of("barcode", Map.of("id", "xyz", "content", "123")),

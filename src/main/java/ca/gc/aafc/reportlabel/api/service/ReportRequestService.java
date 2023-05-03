@@ -14,6 +14,7 @@ import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import ca.gc.aafc.reportlabel.api.config.ReportLabelConfig;
 import ca.gc.aafc.reportlabel.api.config.ReportOutputFormat;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
+import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -55,27 +57,18 @@ public class ReportRequestService {
       .build();
   }
 
-  public ReportGenerationResult generateReport(ReportRequestDto reportRequest) throws IOException {
+  public ReportGenerationResult generateReport(ReportTemplate template, ReportRequestDto reportRequest) throws IOException {
 
     UUID uuid = UUID.randomUUID();
     Path tmpDirectory = Files.createDirectories(workingFolder.resolve(uuid.toString()));
-    DocumentContext dc = JsonPath.using(jacksonConfig).parse(reportRequest.getPayload());
 
-    TypeRef<List<BarcodeSpecs>> typeRef = new TypeRef<>() {
-    };
-    List<BarcodeSpecs> barcodeSpecs;
-    try {
-      barcodeSpecs = dc.read("$.elements[*].barcode", typeRef);
-    } catch (PathNotFoundException pnf) {
-      barcodeSpecs = List.of();
-    }
-
-    // only PDF is supported for now
-    if(reportRequest.getOutputFormat() == ReportOutputFormat.PDF) {
+    // Generate barcodes (if required by the template)
+    if(template.getIncludesBarcode()) {
       BarcodeGenerator.CodeGenerationOption cgo = BarcodeGenerator.buildDefaultQrConfig();
-      // Step 1 : Generate all Barcodes (if required)
-      for(BarcodeSpecs currBarcodeSpecs : barcodeSpecs) {
-        File tempBarcodeFile = tmpDirectory.resolve(currBarcodeSpecs.id + "." + BarcodeGenerator.CODE_OUTPUT_FORMAT).toFile();
+      for(BarcodeSpecs currBarcodeSpecs : extractBarcodeSpecs(reportRequest.getPayload())) {
+        File tempBarcodeFile =
+          tmpDirectory.resolve(currBarcodeSpecs.id + "." + BarcodeGenerator.CODE_OUTPUT_FORMAT)
+            .toFile();
         try (FileOutputStream fos = new FileOutputStream(tempBarcodeFile)) {
           try {
             barcodeGenerator.createCode(currBarcodeSpecs.content, fos, cgo);
@@ -84,11 +77,15 @@ public class ReportRequestService {
           }
         }
       }
+    }
+
+    // only PDF is supported for now
+    if(reportRequest.getOutputFormat() == ReportOutputFormat.PDF) {
 
       // Step 2 : Generate report as html
       File tempHtmlFile = tmpDirectory.resolve("report.html").toFile();
       try (FileWriter fw = new FileWriter(tempHtmlFile, StandardCharsets.UTF_8)) {
-        reportGenerator.generateReport(reportRequest.getTemplate(), reportRequest.getPayload(), fw);
+        reportGenerator.generateReport(template.getTemplateFilename(), reportRequest.getPayload(), fw);
       }
 
       // Step 3 : transform html to pdf
@@ -100,6 +97,17 @@ public class ReportRequestService {
       return new ReportGenerationResult(uuid);
     }
     return null;
+  }
+
+  private List<BarcodeSpecs> extractBarcodeSpecs(Map<String, Object> payload) {
+    DocumentContext dc = JsonPath.using(jacksonConfig).parse(payload);
+    TypeRef<List<BarcodeSpecs>> typeRef = new TypeRef<>() {
+    };
+    try {
+      return dc.read("$.elements[*].barcode", typeRef);
+    } catch (PathNotFoundException pnf) {
+      return List.of();
+    }
   }
 
   /**

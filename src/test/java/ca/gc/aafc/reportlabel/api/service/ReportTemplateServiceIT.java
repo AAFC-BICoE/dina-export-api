@@ -14,7 +14,7 @@ import ca.gc.aafc.reportlabel.api.testsupport.factories.ReportTemplateFactory;
 public class ReportTemplateServiceIT extends BaseIntegrationTest {
 
   @Inject
-  private ReportService reportService;
+  private ReportTemplateService reportService;
 
   @Test
   public void reportService_onCreate_reportEntryCreated() {

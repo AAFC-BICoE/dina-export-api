@@ -11,10 +11,10 @@ import ca.gc.aafc.dina.service.DefaultDinaService;
 import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
 
 @Service
-public class ReportService extends DefaultDinaService<ReportTemplate> {
+public class ReportTemplateService extends DefaultDinaService<ReportTemplate> {
 
-  public ReportService(@NonNull BaseDAO baseDAO,
-                       @NonNull SmartValidator validator) {
+  public ReportTemplateService(@NonNull BaseDAO baseDAO,
+                               @NonNull SmartValidator validator) {
     super(baseDAO, validator);
   }
 
