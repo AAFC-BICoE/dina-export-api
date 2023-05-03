@@ -1,12 +1,21 @@
 package ca.gc.aafc.reportlabel.api.file;
 
+import io.crnk.core.exception.ResourceNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.extern.log4j.Log4j2;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
+import org.apache.tika.mime.MimeType;
+import org.apache.tika.mime.MimeTypeException;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,10 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ca.gc.aafc.reportlabel.api.config.ReportLabelConfig;
 
+import static ca.gc.aafc.reportlabel.api.service.ReportRequestService.REPORT_FILENAME;
+
 @RestController
 @RequestMapping("/api/v1")
 @Log4j2
 public class FileController {
+
+  private static final TikaConfig TIKA_CONFIG = TikaConfig.getDefaultConfig();
 
   private final Path workingFolder;
 
@@ -33,12 +46,58 @@ public class FileController {
   @GetMapping("/file/{fileId}")
   public ResponseEntity<InputStreamResource> downloadReport(@PathVariable UUID fileId) throws IOException {
 
-    Path reportFile =
-      workingFolder.resolve(fileId.toString()).resolve(ReportLabelConfig.PDF_REPORT_FILENAME);
+    Path reportFolder =
+      workingFolder.resolve(fileId.toString());
 
-    InputStream fis = Files.newInputStream(reportFile);
-    return new ResponseEntity<>(new InputStreamResource(fis),
-      buildHttpHeaders(fileId.toString() + ".pdf", MediaType.APPLICATION_PDF, reportFile.toFile().length()), HttpStatus.OK);
+    Optional<Path> possibleReportPath;
+    try (Stream<Path> walk = Files.walk(reportFolder, 1)) {
+      possibleReportPath = walk
+        .filter(p-> p.getFileName().toString().startsWith(REPORT_FILENAME))
+        .findFirst();
+    }
+
+    if(possibleReportPath.isPresent()) {
+      Path reportPath = possibleReportPath.get();
+      InputStream fis = Files.newInputStream(reportPath);
+
+      MediaType md = MediaType.parseMediaType(getMediaTypeForFilename(reportPath.getFileName().toString()).toString());
+      return new ResponseEntity<>(new InputStreamResource(fis),
+        buildHttpHeaders(fileId + "." + StringUtils.substringAfterLast(reportPath.getFileName().toString(), "."), md,
+          reportPath.toFile().length()), HttpStatus.OK);
+    }
+    throw new ResourceNotFoundException("Report with ID " + fileId + " Not Found.");
+  }
+
+  /**
+   * Utility method to get the most common file extension for a media type.
+   * @param mediaType
+   * @return
+   */
+  public static String getExtensionForMediaType(String mediaType) {
+    MimeType mimeType;
+    try {
+      mimeType = TIKA_CONFIG.getMimeRepository().forName(mediaType);
+    } catch (MimeTypeException e) {
+      return null;
+    }
+    return mimeType.getExtension();
+  }
+
+  /**
+   * Try to get the MediaType (Tika MediaType) from the filename with extension.
+   * If not possible Octet Stream is returned.
+   * @param filename
+   * @return
+   */
+  public org.apache.tika.mime.MediaType getMediaTypeForFilename(String filename) {
+    Metadata metadata = new Metadata();
+    metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, filename);
+    try {
+      return TIKA_CONFIG.getDetector().detect(null, metadata);
+    } catch (IOException e) {
+      // ignore
+    }
+    return org.apache.tika.mime.MediaType.OCTET_STREAM;
   }
 
   /**

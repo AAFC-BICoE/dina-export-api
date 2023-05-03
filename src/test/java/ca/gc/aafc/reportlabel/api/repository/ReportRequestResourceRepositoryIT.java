@@ -42,6 +42,9 @@ public class ReportRequestResourceRepositoryIT extends BaseIntegrationTest {
         )))
       .build();
     transactionRepository.create(dto);
+
+    //cleanup
+    reportRepository.delete(templateDto.getUuid());
   }
 
 }

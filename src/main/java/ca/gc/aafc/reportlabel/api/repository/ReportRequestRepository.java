@@ -10,6 +10,7 @@ import ca.gc.aafc.reportlabel.api.service.ReportTemplateService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.crnk.core.exception.MethodNotAllowedException;
+import io.crnk.core.exception.ResourceNotFoundException;
 import io.crnk.core.queryspec.QuerySpec;
 import io.crnk.core.repository.ResourceRepository;
 import io.crnk.core.resource.list.ResourceList;
@@ -53,6 +54,10 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
 
     UUID reportTemplateUUID = s.getReportTemplateUUID();
     ReportTemplate reportTemplateEntity = reportService.findOne(reportTemplateUUID, ReportTemplate.class);
+
+    if(reportTemplateEntity == null) {
+      throw new ResourceNotFoundException("ReportTemplate with ID " + reportTemplateUUID + " Not Found.");
+    }
 
     try {
       ReportRequestService.ReportGenerationResult result = reportRequestService.generateReport(reportTemplateEntity, s);

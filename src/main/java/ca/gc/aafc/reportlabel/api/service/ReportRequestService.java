@@ -1,5 +1,7 @@
 package ca.gc.aafc.reportlabel.api.service;
 
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import com.google.zxing.WriterException;
@@ -12,9 +14,9 @@ import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 
 import ca.gc.aafc.reportlabel.api.config.ReportLabelConfig;
-import ca.gc.aafc.reportlabel.api.config.ReportOutputFormat;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
 import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
+import ca.gc.aafc.reportlabel.api.file.FileController;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,6 +34,9 @@ import java.util.UUID;
  */
 @Service
 public class ReportRequestService {
+
+  public static final String REPORT_FILENAME = "report";
+  public static final String TEMP_HTML = "report_1.html";
 
   private final Path workingFolder;
   private final ReportGenerator reportGenerator;
@@ -79,26 +84,38 @@ public class ReportRequestService {
       }
     }
 
-    // only PDF is supported for now
-    if(reportRequest.getOutputFormat() == ReportOutputFormat.PDF) {
-
-      // Step 2 : Generate report as html
-      File tempHtmlFile = tmpDirectory.resolve("report.html").toFile();
+    if(MediaType.APPLICATION_PDF_VALUE.equals(template.getOutputMediaType())) {
+      // Step 1 : Generate report as html
+      File tempHtmlFile = tmpDirectory.resolve(TEMP_HTML).toFile();
       try (FileWriter fw = new FileWriter(tempHtmlFile, StandardCharsets.UTF_8)) {
         reportGenerator.generateReport(template.getTemplateFilename(), reportRequest.getPayload(), fw);
       }
 
-      // Step 3 : transform html to pdf
+      // Step 2 : transform html to pdf
       File tempPdfFile = tmpDirectory.resolve(ReportLabelConfig.PDF_REPORT_FILENAME).toFile();
       try (FileOutputStream bos = new FileOutputStream(tempPdfFile)) {
         String htmlContent = Files.readString(tempHtmlFile.toPath(), StandardCharsets.UTF_8);
         pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);
       }
-      return new ReportGenerationResult(uuid);
+    } else { // reports that are the direct output of the report generator
+      String extension = FileController.getExtensionForMediaType(template.getOutputMediaType());
+      if(StringUtils.isNotBlank(extension)) {
+        File tempFile = tmpDirectory.resolve(REPORT_FILENAME + "." + extension).toFile();
+        try (FileWriter fw = new FileWriter(tempFile, StandardCharsets.UTF_8)) {
+          reportGenerator.generateReport(template.getTemplateFilename(), reportRequest.getPayload(), fw);
+        }
+      } else {
+        throw new IOException("No extension found for " + template.getOutputMediaType());
+      }
     }
-    return null;
+    return new ReportGenerationResult(uuid);
   }
 
+  /**
+   * Extracts barcode specification from the payload.
+   * @param payload
+   * @return
+   */
   private List<BarcodeSpecs> extractBarcodeSpecs(Map<String, Object> payload) {
     DocumentContext dc = JsonPath.using(jacksonConfig).parse(payload);
     TypeRef<List<BarcodeSpecs>> typeRef = new TypeRef<>() {
