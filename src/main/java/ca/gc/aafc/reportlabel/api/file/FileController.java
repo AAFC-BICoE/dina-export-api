@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -58,11 +59,12 @@ public class FileController {
 
     if(possibleReportPath.isPresent()) {
       Path reportPath = possibleReportPath.get();
-      InputStream fis = Files.newInputStream(reportPath);
+      String filename = Objects.toString(reportPath.getFileName(), "");
 
-      MediaType md = MediaType.parseMediaType(getMediaTypeForFilename(reportPath.getFileName().toString()).toString());
+      InputStream fis = Files.newInputStream(reportPath);
+      MediaType md = MediaType.parseMediaType(getMediaTypeForFilename(filename).toString());
       return new ResponseEntity<>(new InputStreamResource(fis),
-        buildHttpHeaders(fileId + "." + StringUtils.substringAfterLast(reportPath.getFileName().toString(), "."), md,
+        buildHttpHeaders(fileId + "." + StringUtils.substringAfterLast(filename, "."), md,
           reportPath.toFile().length()), HttpStatus.OK);
     }
     throw new ResourceNotFoundException("Report with ID " + fileId + " Not Found.");
