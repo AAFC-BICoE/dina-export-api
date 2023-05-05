@@ -12,7 +12,7 @@ import ca.gc.aafc.reportlabel.api.dto.ReportDto;
 import ca.gc.aafc.reportlabel.api.testsupport.fixtures.ReportTestFixture;
 
 @SpringBootTest(properties = "keycloak.enabled: true", classes = {BaseIntegrationTest.TestConfig.class, ReportLabelModuleApiLauncher.class })
-public class ReportRepositoryIT extends BaseIntegrationTest {
+public class ReportTemplateRepositoryIT extends BaseIntegrationTest {
 
   @Inject
   private ReportRepository reportRepository;

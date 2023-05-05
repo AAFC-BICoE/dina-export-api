@@ -4,14 +4,18 @@ import ca.gc.aafc.dina.entity.DinaEntity;
 import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
 import ca.gc.aafc.dina.security.GroupAuthorizationService;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
+import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
 import ca.gc.aafc.reportlabel.api.service.ReportRequestService;
+import ca.gc.aafc.reportlabel.api.service.ReportTemplateService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.crnk.core.exception.MethodNotAllowedException;
+import io.crnk.core.exception.ResourceNotFoundException;
 import io.crnk.core.queryspec.QuerySpec;
 import io.crnk.core.repository.ResourceRepository;
 import io.crnk.core.resource.list.ResourceList;
 import java.io.IOException;
+import javax.transaction.Transactional;
 import lombok.NonNull;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Repository;
@@ -23,27 +27,40 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
+@Transactional
 public class ReportRequestRepository implements ResourceRepository<ReportRequestDto, Serializable> {
 
   private final GroupAuthorizationService authorizationService;
+
   private final ReportRequestService reportRequestService;
+  private final ReportTemplateService reportService;
 
   public ReportRequestRepository(
     @NonNull GroupAuthorizationService authorizationService,
     Optional<DinaAuthenticatedUser> dinaAuthenticatedUser,
     ReportRequestService reportRequestService,
+    ReportTemplateService reportService,
     @NonNull BuildProperties props,
     @NonNull ObjectMapper objMapper
   ) {
     this.authorizationService = authorizationService;
     this.reportRequestService = reportRequestService;
+    this.reportService = reportService;
   }
 
   @Override
   public <S extends ReportRequestDto> S create(S s) {
     authorizationService.authorizeCreate(new GroupOnlyEntity(s.getGroup()));
+
+    UUID reportTemplateUUID = s.getReportTemplateUUID();
+    ReportTemplate reportTemplateEntity = reportService.findOne(reportTemplateUUID, ReportTemplate.class);
+
+    if(reportTemplateEntity == null) {
+      throw new ResourceNotFoundException("ReportTemplate with ID " + reportTemplateUUID + " Not Found.");
+    }
+
     try {
-      ReportRequestService.ReportGenerationResult result = reportRequestService.generateReport(s);
+      ReportRequestService.ReportGenerationResult result = reportRequestService.generateReport(reportTemplateEntity, s);
       // return the identifier assigned by the service
       s.setUuid(result.resultIdentifier());
     } catch (IOException e) {

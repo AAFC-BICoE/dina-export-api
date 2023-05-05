@@ -29,7 +29,7 @@ public class ReportRequestDto {
 
   private ReportOutputFormat outputFormat = ReportOutputFormat.PDF;
 
-  private String template;
+  private UUID reportTemplateUUID;
 
   private Map<String, Object> payload;
 
