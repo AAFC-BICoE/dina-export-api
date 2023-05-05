@@ -29,14 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static ca.gc.aafc.reportlabel.api.config.ReportLabelConfig.REPORT_FILENAME;
+import static ca.gc.aafc.reportlabel.api.config.ReportLabelConfig.TEMP_HTML;
+
 /**
  * Main service to orchestrate report generation.
  */
 @Service
 public class ReportRequestService {
-
-  public static final String REPORT_FILENAME = "report";
-  public static final String TEMP_HTML = "report_1.html";
 
   private final Path workingFolder;
   private final ReportGenerator reportGenerator;

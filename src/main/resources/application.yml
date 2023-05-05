@@ -11,6 +11,11 @@ spring:
     open-in-view: false
   # Allow grace timeout period for 20 seconds
   lifecycle.timeout-per-shutdown-phase: 20s
+
+  freemarker:
+    # comma separated list of path. To use a filesystem path use file:/tmp/template/
+    template-loader-path: classpath:/templates/
+    enabled: false # disable Spring Freemarker MVC view resolution
 crnk:
   pathPrefix: /api/v1
   domainName: ""
