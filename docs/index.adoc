@@ -1,4 +1,7 @@
 
+== Set Freemarker Template folder
+
+In `application.yml`, change the value of `spring.freemarker.template-loader-path`.
 
 == Generate Barcode
 

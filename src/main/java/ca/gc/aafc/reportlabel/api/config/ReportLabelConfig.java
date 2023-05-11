@@ -16,6 +16,8 @@ import org.springframework.validation.annotation.Validated;
 public class ReportLabelConfig {
 
   public static final String PDF_REPORT_FILENAME = "report.pdf";
+  public static final String REPORT_FILENAME = "report";
+  public static final String TEMP_HTML = "report_1.html";
 
   @NotBlank
   private String workingFolder;

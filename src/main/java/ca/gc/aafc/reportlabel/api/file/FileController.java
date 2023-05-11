@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ca.gc.aafc.reportlabel.api.config.ReportLabelConfig;
 
-import static ca.gc.aafc.reportlabel.api.service.ReportRequestService.REPORT_FILENAME;
+import static ca.gc.aafc.reportlabel.api.config.ReportLabelConfig.REPORT_FILENAME;
 
 @RestController
 @RequestMapping("/api/v1")
