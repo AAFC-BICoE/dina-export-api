@@ -1,13 +1,16 @@
 package ca.gc.aafc.reportlabel.api.repository;
 
 import ca.gc.aafc.dina.entity.DinaEntity;
+import ca.gc.aafc.dina.json.JsonDocumentInspector;
 import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
 import ca.gc.aafc.dina.security.GroupAuthorizationService;
+import ca.gc.aafc.dina.security.TextHtmlSanitizer;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
 import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
 import ca.gc.aafc.reportlabel.api.service.ReportRequestService;
 import ca.gc.aafc.reportlabel.api.service.ReportTemplateService;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.crnk.core.exception.MethodNotAllowedException;
 import io.crnk.core.exception.ResourceNotFoundException;
@@ -15,6 +18,8 @@ import io.crnk.core.queryspec.QuerySpec;
 import io.crnk.core.repository.ResourceRepository;
 import io.crnk.core.resource.list.ResourceList;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
 import javax.transaction.Transactional;
 import lombok.NonNull;
 import org.springframework.boot.info.BuildProperties;
@@ -30,10 +35,14 @@ import java.util.UUID;
 @Transactional
 public class ReportRequestRepository implements ResourceRepository<ReportRequestDto, Serializable> {
 
+  protected static final TypeReference<Map<String, Object>> IT_OM_TYPE_REF = new TypeReference<>() {
+  };
+
   private final GroupAuthorizationService authorizationService;
 
   private final ReportRequestService reportRequestService;
   private final ReportTemplateService reportService;
+  private final ObjectMapper objMapper;
 
   public ReportRequestRepository(
     @NonNull GroupAuthorizationService authorizationService,
@@ -46,10 +55,14 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
     this.authorizationService = authorizationService;
     this.reportRequestService = reportRequestService;
     this.reportService = reportService;
+    this.objMapper = objMapper;
   }
 
   @Override
   public <S extends ReportRequestDto> S create(S s) {
+
+    checkSubmittedData(s);
+
     authorizationService.authorizeCreate(new GroupOnlyEntity(s.getGroup()));
 
     UUID reportTemplateUUID = s.getReportTemplateUUID();
@@ -92,6 +105,14 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
   @Override
   public <S extends ReportRequestDto> S save(S s) {
     throw new MethodNotAllowedException("PUT/PATCH");
+  }
+
+  protected <S extends ReportRequestDto> void checkSubmittedData(S resource) {
+    Objects.requireNonNull(objMapper);
+    Map<String, Object> convertedObj = objMapper.convertValue(resource, IT_OM_TYPE_REF);
+    if (!JsonDocumentInspector.testPredicateOnValues(convertedObj, TextHtmlSanitizer::isSafeText)) {
+      throw new IllegalArgumentException("Unaccepted value detected in attributes");
+    }
   }
 
   @Override
