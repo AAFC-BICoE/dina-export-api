@@ -30,7 +30,7 @@
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>
     <tika.version>2.6.0</tika.version>
-    <postgresql.version>42.4.1</postgresql.version>
+    <postgresql.version>42.4.3</postgresql.version>
   </properties>
 
   <!--  temporary until we can migrate to a newer version of Crnk-->
