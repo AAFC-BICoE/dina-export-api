@@ -3,7 +3,7 @@ package ca.gc.aafc.reportlabel.api.repository;
 import ca.gc.aafc.dina.entity.DinaEntity;
 import ca.gc.aafc.dina.json.JsonDocumentInspector;
 import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
-import ca.gc.aafc.dina.security.GroupAuthorizationService;
+import ca.gc.aafc.dina.security.auth.GroupAuthorizationService;
 import ca.gc.aafc.dina.security.TextHtmlSanitizer;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
 import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
