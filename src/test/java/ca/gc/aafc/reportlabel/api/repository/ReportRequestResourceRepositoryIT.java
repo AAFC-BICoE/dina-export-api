@@ -3,7 +3,7 @@ package ca.gc.aafc.reportlabel.api.repository;
 import ca.gc.aafc.dina.testsupport.security.WithMockKeycloakUser;
 import ca.gc.aafc.reportlabel.api.BaseIntegrationTest;
 import ca.gc.aafc.reportlabel.api.ReportLabelModuleApiLauncher;
-import ca.gc.aafc.reportlabel.api.dto.ReportDto;
+import ca.gc.aafc.reportlabel.api.dto.ReportTemplateDto;
 import ca.gc.aafc.reportlabel.api.dto.ReportRequestDto;
 import ca.gc.aafc.reportlabel.api.testsupport.fixtures.ReportRequestTestFixture;
 import ca.gc.aafc.reportlabel.api.testsupport.fixtures.ReportTestFixture;
@@ -22,12 +22,12 @@ public class ReportRequestResourceRepositoryIT extends BaseIntegrationTest {
   private ReportRequestRepository transactionRepository;
 
   @Inject
-  private ReportRepository reportRepository;
+  private ReportTemplateRepository reportRepository;
 
   @WithMockKeycloakUser(username = "user", groupRole = ReportRequestTestFixture.GROUP + ":USER")
   @Test
   public void create_onReportRequest_requestAccepted() {
-    ReportDto templateDto = ReportTestFixture.newReport()
+    ReportTemplateDto templateDto = ReportTestFixture.newReportTemplate()
       .templateFilename("testHtml.flth")
       .includesBarcode(true)
       .build();

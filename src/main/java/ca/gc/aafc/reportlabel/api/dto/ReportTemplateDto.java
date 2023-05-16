@@ -24,11 +24,11 @@ import org.javers.core.metamodel.annotation.TypeName;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TypeName(ReportDto.TYPENAME)
-@JsonApiResource(type = ReportDto.TYPENAME)
-public class ReportDto {
+@TypeName(ReportTemplateDto.TYPENAME)
+@JsonApiResource(type = ReportTemplateDto.TYPENAME)
+public class ReportTemplateDto {
 
-  public static final String TYPENAME = "report";
+  public static final String TYPENAME = "report-template";
 
   @Id
   @PropertyName("id")
