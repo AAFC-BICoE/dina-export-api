@@ -12,16 +12,16 @@ import ca.gc.aafc.dina.repository.DinaRepository;
 import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
 import ca.gc.aafc.dina.security.auth.DinaAuthorizationService;
 import ca.gc.aafc.dina.service.AuditService;
-import ca.gc.aafc.reportlabel.api.dto.ReportDto;
+import ca.gc.aafc.reportlabel.api.dto.ReportTemplateDto;
 import ca.gc.aafc.reportlabel.api.entity.ReportTemplate;
 import ca.gc.aafc.reportlabel.api.service.ReportTemplateService;
 
 @Repository
-public class ReportRepository extends DinaRepository<ReportDto, ReportTemplate> {
+public class ReportTemplateRepository extends DinaRepository<ReportTemplateDto, ReportTemplate> {
 
   private final DinaAuthenticatedUser dinaAuthenticatedUser;
 
-  public ReportRepository(
+  public ReportTemplateRepository(
     ReportTemplateService dinaService,
     DinaAuthorizationService groupAuthorizationService,
     AuditService auditService,
@@ -33,8 +33,8 @@ public class ReportRepository extends DinaRepository<ReportDto, ReportTemplate> 
       dinaService,
       groupAuthorizationService,
       Optional.of(auditService),
-      new DinaMapper<>(ReportDto.class),
-      ReportDto.class,
+      new DinaMapper<>(ReportTemplateDto.class),
+      ReportTemplateDto.class,
       ReportTemplate.class,
       null,
       null,
@@ -43,7 +43,7 @@ public class ReportRepository extends DinaRepository<ReportDto, ReportTemplate> 
   }
 
   @Override
-  public <S extends ReportDto> S create(S resource) {
+  public <S extends ReportTemplateDto> S create(S resource) {
     if (dinaAuthenticatedUser != null) {
       resource.setCreatedBy(dinaAuthenticatedUser.getUsername());
     }

@@ -3,7 +3,7 @@ package ca.gc.aafc.reportlabel.api.testsupport.fixtures;
 import org.springframework.http.MediaType;
 
 import ca.gc.aafc.dina.testsupport.factories.TestableEntityFactory;
-import ca.gc.aafc.reportlabel.api.dto.ReportDto;
+import ca.gc.aafc.reportlabel.api.dto.ReportTemplateDto;
 
 public class ReportTestFixture {
 
@@ -12,8 +12,8 @@ public class ReportTestFixture {
   private ReportTestFixture() {
   }
 
-  public static ReportDto.ReportDtoBuilder newReport() {
-    return ReportDto.builder()
+  public static ReportTemplateDto.ReportTemplateDtoBuilder newReportTemplate() {
+    return ReportTemplateDto.builder()
       .group(GROUP)
       .outputMediaType(MediaType.APPLICATION_PDF_VALUE)
       .templateFilename("test.ftl")
