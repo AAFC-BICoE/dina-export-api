@@ -2,12 +2,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>ca.gc.aafc</groupId>
-  <artifactId>report-label-api</artifactId>
+  <artifactId>dina-export-api</artifactId>
   <version>0.2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>report-label API</name>
-  <url>https://github.com/AAFC-BICoE/report-label-api</url>
+  <url>https://github.com/AAFC-BICoE/dina-export-api</url>
 
   <parent>
     <groupId>org.springframework.boot</groupId>
