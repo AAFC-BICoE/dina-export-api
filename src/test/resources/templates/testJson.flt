@@ -1,16 +1,15 @@
-<#compress>
+<#ftl output_format="JSON">
+{
+"payload":[
 <#list data>
   <#items as line>
-    <#list line as l>${l}<#sep>,</#list>
+  {
+    "lineId":${line?index+1},
+    <#assign generatedName = "${line.sampleName}_${line.extractName}_${line.date}">
+    "generatedName":${generatedName?c}
+  }
+  <#sep>,</#sep>
   </#items>
 </#list>
-</#compress>
-
-{
-    "OrderNo": "${order.orderNumber}",
-    "OrderDate": "${order.processed?datetime}",
-    "Release": ${order.release?c},
-    "OrderLines": [
-        <@OrderLine.OrderLine order.lines/>
-    ]
+]
 }
