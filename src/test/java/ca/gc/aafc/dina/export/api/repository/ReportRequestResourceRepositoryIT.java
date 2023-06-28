@@ -6,7 +6,7 @@ import ca.gc.aafc.dina.export.api.DinaExportModuleApiLauncher;
 import ca.gc.aafc.dina.export.api.dto.ReportTemplateDto;
 import ca.gc.aafc.dina.export.api.dto.ReportRequestDto;
 import ca.gc.aafc.dina.export.api.testsupport.fixtures.ReportRequestTestFixture;
-import ca.gc.aafc.dina.export.api.testsupport.fixtures.ReportTestFixture;
+import ca.gc.aafc.dina.export.api.testsupport.fixtures.ReportTemplateTestFixture;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,7 +27,7 @@ public class ReportRequestResourceRepositoryIT extends BaseIntegrationTest {
   @WithMockKeycloakUser(username = "user", groupRole = ReportRequestTestFixture.GROUP + ":USER")
   @Test
   public void create_onReportRequest_requestAccepted() {
-    ReportTemplateDto templateDto = ReportTestFixture.newReportTemplate()
+    ReportTemplateDto templateDto = ReportTemplateTestFixture.newReportTemplate()
       .templateFilename("testHtml.flth")
       .includesBarcode(true)
       .build();

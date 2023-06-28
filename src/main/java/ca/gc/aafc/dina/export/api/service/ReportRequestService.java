@@ -80,29 +80,29 @@ public class ReportRequestService {
         }
       }
     }
-
-    if(MediaType.APPLICATION_PDF_VALUE.equals(template.getOutputMediaType())) {
-      // Step 1 : Generate report as html
-      File tempHtmlFile = tmpDirectory.resolve(ReportLabelConfig.TEMP_HTML).toFile();
-      try (FileWriter fw = new FileWriter(tempHtmlFile, StandardCharsets.UTF_8)) {
-        reportGenerator.generateReport(template.getTemplateFilename(), reportRequest.getPayload(), fw);
-      }
-
-      // Step 2 : transform html to pdf
-      File tempPdfFile = tmpDirectory.resolve(ReportLabelConfig.PDF_REPORT_FILENAME).toFile();
-      try (FileOutputStream bos = new FileOutputStream(tempPdfFile)) {
-        String htmlContent = Files.readString(tempHtmlFile.toPath(), StandardCharsets.UTF_8);
-        pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);
-      }
-    } else { // reports that are the direct output of the report generator
-      String extension = FileController.getExtensionForMediaType(template.getOutputMediaType());
+    
+    // Step 1 - run generation based on template
+    File templateOutputFile = null;
+    if(StringUtils.isNotBlank(template.getTemplateOutputMediaType())) {
+     // MediaType.TEXT_HTML_VALUE.equals(t
+      //templateOutputFile = tmpDirectory.resolve(ReportLabelConfig.TEMP_HTML).toFile();
+      String extension = FileController.getExtensionForMediaType(template.getTemplateOutputMediaType());
       if(StringUtils.isNotBlank(extension)) {
-        File tempFile = tmpDirectory.resolve(ReportLabelConfig.REPORT_FILENAME + "." + extension).toFile();
-        try (FileWriter fw = new FileWriter(tempFile, StandardCharsets.UTF_8)) {
+        templateOutputFile = tmpDirectory.resolve(ReportLabelConfig.REPORT_FILENAME + "." + extension).toFile();
+        try (FileWriter fw = new FileWriter(templateOutputFile, StandardCharsets.UTF_8)) {
           reportGenerator.generateReport(template.getTemplateFilename(), reportRequest.getPayload(), fw);
         }
       } else {
-        throw new IOException("No extension found for " + template.getOutputMediaType());
+        throw new IOException("No extension found for " + template.getTemplateOutputMediaType());
+      }
+    }
+
+    if(MediaType.APPLICATION_PDF_VALUE.equals(template.getOutputMediaType())) {
+      // Step 2 : transform html to pdf
+      File tempPdfFile = tmpDirectory.resolve(ReportLabelConfig.PDF_REPORT_FILENAME).toFile();
+      try (FileOutputStream bos = new FileOutputStream(tempPdfFile)) {
+        String htmlContent = Files.readString(templateOutputFile.toPath(), StandardCharsets.UTF_8);
+        pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);
       }
     }
     return new ReportGenerationResult(uuid);

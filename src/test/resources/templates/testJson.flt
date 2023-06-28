@@ -1,0 +1,16 @@
+<#compress>
+<#list data>
+  <#items as line>
+    <#list line as l>${l}<#sep>,</#list>
+  </#items>
+</#list>
+</#compress>
+
+{
+    "OrderNo": "${order.orderNumber}",
+    "OrderDate": "${order.processed?datetime}",
+    "Release": ${order.release?c},
+    "OrderLines": [
+        <@OrderLine.OrderLine order.lines/>
+    ]
+}

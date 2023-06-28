@@ -22,6 +22,7 @@ public class ReportTemplateFactory implements TestableEntityFactory<ReportTempla
       .group("aafc")
       .name(TestableEntityFactory.generateRandomNameLettersOnly(7))
       .outputMediaType(MediaType.APPLICATION_PDF_VALUE)
+      .templateOutputMediaType(MediaType.TEXT_HTML_VALUE)
       .templateFilename("test.ftl")
       .createdBy("test user");
   }

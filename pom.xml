@@ -105,6 +105,12 @@
       <version>${openhtml.version}</version>
     </dependency>
 
+    <!-- CSV-->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-csv</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
