@@ -28,11 +28,13 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.extern.log4j.Log4j2;
 
 /**
  * Main service to orchestrate report generation.
  */
 @Service
+@Log4j2
 public class ReportRequestService {
 
   private final Path workingFolder;
@@ -84,8 +86,6 @@ public class ReportRequestService {
     // Step 1 - run generation based on template
     File templateOutputFile = null;
     if(StringUtils.isNotBlank(template.getTemplateOutputMediaType())) {
-     // MediaType.TEXT_HTML_VALUE.equals(t
-      //templateOutputFile = tmpDirectory.resolve(ReportLabelConfig.TEMP_HTML).toFile();
       String extension = FileController.getExtensionForMediaType(template.getTemplateOutputMediaType());
       if(StringUtils.isNotBlank(extension)) {
         templateOutputFile = tmpDirectory.resolve(ReportLabelConfig.REPORT_FILENAME + "." + extension).toFile();
@@ -97,12 +97,21 @@ public class ReportRequestService {
       }
     }
 
+    // If we need a PDF, transform the HTML to PDF
     if(MediaType.APPLICATION_PDF_VALUE.equals(template.getOutputMediaType())) {
-      // Step 2 : transform html to pdf
+      
+      if(templateOutputFile == null || !templateOutputFile.exists() ||
+        !MediaType.TEXT_HTML_VALUE.equals(template.getTemplateOutputMediaType())) {
+        throw new IOException("No intermediate html file found");
+      }
+
       File tempPdfFile = tmpDirectory.resolve(ReportLabelConfig.PDF_REPORT_FILENAME).toFile();
       try (FileOutputStream bos = new FileOutputStream(tempPdfFile)) {
         String htmlContent = Files.readString(templateOutputFile.toPath(), StandardCharsets.UTF_8);
         pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);
+      }
+      if(!templateOutputFile.delete()){
+        log.warn("can't delete intermediate file " + templateOutputFile.getAbsolutePath());
       }
     }
     return new ReportGenerationResult(uuid);
