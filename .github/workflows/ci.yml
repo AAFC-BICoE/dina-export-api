@@ -37,7 +37,7 @@ jobs:
           name: build-artifacts
           path: |
             version.txt
-            target/report-label-api-*.jar
+            target/dina-export-api-*.jar
             Dockerfile
 
   push:
@@ -72,5 +72,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: aafcbicoe/report-label-api:${{ env.VERSION_TAG }}
+          tags: aafcbicoe/dina-export-api:${{ env.VERSION_TAG }}
           provenance: false
