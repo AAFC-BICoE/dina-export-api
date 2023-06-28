@@ -1,2 +1,2 @@
-# report-label-api
-Report and Label module
+# dina-export-api
+Data Export including report and label.
