@@ -42,7 +42,8 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class ReportRequestService {
 
-  private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>(){};
+  private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
+  };
 
   private final Path workingFolder;
   private final ReportGenerator reportGenerator;
@@ -137,7 +138,7 @@ public class ReportRequestService {
       String htmlContent = Files.readString(htmlFile.toPath(), StandardCharsets.UTF_8);
       pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);
     }
-    if(!htmlFile.delete()){
+    if (!htmlFile.delete()) {
       log.warn("can't delete intermediate file " + htmlFile.getAbsolutePath());
     }
   }
@@ -167,12 +168,10 @@ public class ReportRequestService {
     List<String> headers = payload.isEmpty() ? List.of() : List.copyOf(payload.get(0).keySet());
     try (Writer w = new FileWriter(csvFile);
          CsvOutput<Map<String, Object>> output =
-           CsvOutput.csvOutput(headers, MAP_TYPE_REF, w)) {
+           CsvOutput.create(headers, MAP_TYPE_REF, w)) {
       for (Map<String, Object> line : payload) {
         output.addRow(line);
       }
-    } catch (Exception e) {
-      throw new IOException(e);
     }
 
     if(!jsonFile.delete()){

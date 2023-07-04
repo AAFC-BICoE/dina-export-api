@@ -19,7 +19,7 @@ public class ReportLabelConfig {
   // represents the payload section of the JSON used for the report
   public static final String PAYLOAD_KEY = "payload";
 
-  public static String TEXT_CSV_VALUE = MediaType.parseMediaType("text/csv").toString();
+  public static final String TEXT_CSV_VALUE = MediaType.parseMediaType("text/csv").toString();
 
   public static final String PDF_REPORT_FILENAME = "report.pdf";
   public static final String CSV_REPORT_FILENAME = "report.csv";

@@ -14,7 +14,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
  * Responsible to write a CSV output.
  * @param <T>
  */
-public class CsvOutput<T> implements AutoCloseable {
+public final class CsvOutput<T> implements AutoCloseable {
 
   private final SequenceWriter sw;
 
@@ -24,9 +24,8 @@ public class CsvOutput<T> implements AutoCloseable {
    * @param typeRef the type
    * @param writer won't be closed. Responsibility of the caller.
    * @return
-   * @throws IOException
    */
-  public static <T> CsvOutput<T> csvOutput(List<String> headers, TypeReference<T> typeRef, Writer writer)
+  public static <T> CsvOutput<T> create(List<String> headers, TypeReference<T> typeRef, Writer writer)
     throws IOException {
     CsvSchema.Builder builder = CsvSchema.builder()
       .addColumns(headers, CsvSchema.ColumnType.STRING);
@@ -48,7 +47,7 @@ public class CsvOutput<T> implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() throws IOException {
     sw.close();
   }
 }
