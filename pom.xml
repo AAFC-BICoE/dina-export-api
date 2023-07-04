@@ -6,7 +6,7 @@
   <version>0.2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>report-label API</name>
+  <name>DINA export API</name>
   <url>https://github.com/AAFC-BICoE/dina-export-api</url>
 
   <parent>
