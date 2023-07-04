@@ -166,7 +166,7 @@ public class ReportRequestService {
 
     // Base the headers on the first record
     List<String> headers = payload.isEmpty() ? List.of() : List.copyOf(payload.get(0).keySet());
-    try (Writer w = new FileWriter(csvFile);
+    try (Writer w = new FileWriter(csvFile, StandardCharsets.UTF_8);
          CsvOutput<Map<String, Object>> output =
            CsvOutput.create(headers, MAP_TYPE_REF, w)) {
       for (Map<String, Object> line : payload) {
