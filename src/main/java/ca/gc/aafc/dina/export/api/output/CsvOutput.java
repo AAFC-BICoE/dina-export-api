@@ -25,8 +25,8 @@ public final class CsvOutput<T> implements AutoCloseable {
    * @param writer won't be closed. Responsibility of the caller.
    * @return
    */
-  public static <T> CsvOutput<T> create(List<String> headers, TypeReference<T> typeRef, Writer writer)
-    throws IOException {
+  public static <T> CsvOutput<T> create(List<String> headers, TypeReference<T> typeRef,
+                                        Writer writer) throws IOException {
     CsvSchema.Builder builder = CsvSchema.builder()
       .addColumns(headers, CsvSchema.ColumnType.STRING);
 

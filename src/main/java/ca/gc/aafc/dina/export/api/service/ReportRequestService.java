@@ -174,7 +174,7 @@ public class ReportRequestService {
       }
     }
 
-    if(!jsonFile.delete()){
+    if (!jsonFile.delete()) {
       log.warn("can't delete intermediate file " + jsonFile.getAbsolutePath());
     }
   }
