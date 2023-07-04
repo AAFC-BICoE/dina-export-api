@@ -22,3 +22,19 @@ The `id` will be used to uniquely name the generated png file. The `content` rep
 ----
 
 The barcode can then be used in a template as an `<img src="${element.barcode.id}.png"/>`.
+
+
+== Report
+
+Depending on the settings of the template, the export module can produce the following types of reports:
+
+* PDF
+* CSV
+
+Freemarker https://freemarker.apache.org/docs/dgui_misc_autoescaping.html[output formats] are mostly text-based: HTML, XML, JSON.
+
+In order to render the required types, libraries are used with the output of Freemarker.
+
+* HTML -> PDF
+* JSON -> CSV
+

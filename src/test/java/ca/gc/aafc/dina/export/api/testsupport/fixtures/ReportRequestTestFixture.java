@@ -1,6 +1,5 @@
 package ca.gc.aafc.dina.export.api.testsupport.fixtures;
 
-import ca.gc.aafc.dina.export.api.config.ReportOutputFormat;
 import ca.gc.aafc.dina.export.api.dto.ReportRequestDto;
 
 public final class ReportRequestTestFixture {
@@ -12,7 +11,6 @@ public final class ReportRequestTestFixture {
 
   public static ReportRequestDto.ReportRequestDtoBuilder newReportRequest() {
     return ReportRequestDto.builder()
-      .outputFormat(ReportOutputFormat.PDF)
       .group(GROUP);
   }
 }
