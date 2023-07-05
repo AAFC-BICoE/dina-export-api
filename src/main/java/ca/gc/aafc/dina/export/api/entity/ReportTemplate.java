@@ -67,6 +67,11 @@ public class ReportTemplate implements DinaEntity {
   @Size(max = 100)
   private String templateFilename;
 
+  // can be an intermediate media type like HTML or JSON that will then be transformed in PDF or CSV
+  @NotBlank
+  @Size(max = 100)
+  private String templateOutputMediaType;
+
   @NotBlank
   @Size(max = 100)
   private String outputMediaType;

@@ -4,6 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.zxing.WriterException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
@@ -17,45 +19,55 @@ import ca.gc.aafc.dina.export.api.config.ReportLabelConfig;
 import ca.gc.aafc.dina.export.api.entity.ReportTemplate;
 import ca.gc.aafc.dina.export.api.dto.ReportRequestDto;
 import ca.gc.aafc.dina.export.api.file.FileController;
+import ca.gc.aafc.dina.export.api.output.CsvOutput;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import lombok.extern.log4j.Log4j2;
 
 /**
  * Main service to orchestrate report generation.
  */
 @Service
+@Log4j2
 public class ReportRequestService {
+
+  private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
+  };
 
   private final Path workingFolder;
   private final ReportGenerator reportGenerator;
   private final PDFGenerator pdfGenerator;
   private final BarcodeGenerator barcodeGenerator;
 
+  private final ObjectMapper objectMapper;
   private final Configuration jacksonConfig;
 
   public ReportRequestService(
-    ReportLabelConfig reportLabelConfig,
-    FreemarkerReportGenerator reportGenerator,
-                              OpenhtmltopdfGenerator pdfGenerator,
-                              BarcodeGenerator barcodeGenerator) {
+    ObjectMapper objectMapper,
+    ReportLabelConfig reportLabelConfig, FreemarkerReportGenerator reportGenerator,
+    OpenhtmltopdfGenerator pdfGenerator, BarcodeGenerator barcodeGenerator) {
+
     this.reportGenerator = reportGenerator;
     this.pdfGenerator = pdfGenerator;
     this.barcodeGenerator = barcodeGenerator;
 
     workingFolder = Path.of(reportLabelConfig.getWorkingFolder());
 
+    this.objectMapper = objectMapper;
     jacksonConfig = Configuration.builder()
-      .mappingProvider( new JacksonMappingProvider() )
-      .jsonProvider( new JacksonJsonProvider() )
+      .mappingProvider(new JacksonMappingProvider())
+      .jsonProvider(new JacksonJsonProvider())
       .build();
   }
 
@@ -80,32 +92,91 @@ public class ReportRequestService {
         }
       }
     }
-
-    if(MediaType.APPLICATION_PDF_VALUE.equals(template.getOutputMediaType())) {
-      // Step 1 : Generate report as html
-      File tempHtmlFile = tmpDirectory.resolve(ReportLabelConfig.TEMP_HTML).toFile();
-      try (FileWriter fw = new FileWriter(tempHtmlFile, StandardCharsets.UTF_8)) {
+    
+    // Generate a report based on template
+    File templateOutputFile = null;
+    String extension = FileController.getExtensionForMediaType(template.getTemplateOutputMediaType());
+    if(StringUtils.isNotBlank(extension)) {
+      templateOutputFile = tmpDirectory.resolve(ReportLabelConfig.REPORT_FILENAME + "." + extension).toFile();
+      try (FileWriter fw = new FileWriter(templateOutputFile, StandardCharsets.UTF_8)) {
         reportGenerator.generateReport(template.getTemplateFilename(), reportRequest.getPayload(), fw);
       }
+    } else {
+      throw new IOException("No extension found for " + template.getTemplateOutputMediaType());
+    }
 
-      // Step 2 : transform html to pdf
-      File tempPdfFile = tmpDirectory.resolve(ReportLabelConfig.PDF_REPORT_FILENAME).toFile();
-      try (FileOutputStream bos = new FileOutputStream(tempPdfFile)) {
-        String htmlContent = Files.readString(tempHtmlFile.toPath(), StandardCharsets.UTF_8);
-        pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);
+    // sanity check
+    if(!templateOutputFile.exists()) {
+      throw new IOException("Report output not found.");
+    }
+
+    // If we need a PDF, transform the HTML to PDF
+    if(MediaType.APPLICATION_PDF_VALUE.equals(template.getOutputMediaType())) {
+      if(!MediaType.TEXT_HTML_VALUE.equals(template.getTemplateOutputMediaType())) {
+        throw new IOException("No intermediate html file found");
       }
-    } else { // reports that are the direct output of the report generator
-      String extension = FileController.getExtensionForMediaType(template.getOutputMediaType());
-      if(StringUtils.isNotBlank(extension)) {
-        File tempFile = tmpDirectory.resolve(ReportLabelConfig.REPORT_FILENAME + "." + extension).toFile();
-        try (FileWriter fw = new FileWriter(tempFile, StandardCharsets.UTF_8)) {
-          reportGenerator.generateReport(template.getTemplateFilename(), reportRequest.getPayload(), fw);
-        }
-      } else {
-        throw new IOException("No extension found for " + template.getOutputMediaType());
+      generatePDF(tmpDirectory, templateOutputFile);
+    } else if (ReportLabelConfig.TEXT_CSV_VALUE.equals(template.getOutputMediaType())) {
+      if(!MediaType.APPLICATION_JSON_VALUE.equals(template.getTemplateOutputMediaType())) {
+        throw new IOException("No intermediate json file found");
       }
+      generateCSV(tmpDirectory, templateOutputFile);
     }
     return new ReportGenerationResult(uuid);
+  }
+
+  /**
+   * Generates a PDF from an HTML source.
+   * @param tmpDirectory path where to store the PDF
+   * @param htmlFile the transitory html file to be used to generate the PDF
+   * @throws IOException
+   */
+  private void generatePDF(Path tmpDirectory, File htmlFile) throws IOException {
+    Objects.requireNonNull(htmlFile);
+    File tempPdfFile = tmpDirectory.resolve(ReportLabelConfig.PDF_REPORT_FILENAME).toFile();
+    try (FileOutputStream bos = new FileOutputStream(tempPdfFile)) {
+      String htmlContent = Files.readString(htmlFile.toPath(), StandardCharsets.UTF_8);
+      pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);
+    }
+    if (!htmlFile.delete()) {
+      log.warn("can't delete intermediate file " + htmlFile.getAbsolutePath());
+    }
+  }
+
+  /**
+   * Generates a CSV from a JSON source.
+   * @param tmpDirectory path where to store the CSV
+   * @param jsonFile the transitory json file to be used to generate the CSV
+   * @throws IOException
+   */
+  private void generateCSV(Path tmpDirectory, File jsonFile) throws IOException {
+    Objects.requireNonNull(jsonFile);
+    File csvFile = tmpDirectory.resolve(ReportLabelConfig.CSV_REPORT_FILENAME).toFile();
+
+    // Read json file
+    Map<String, Object> jsonAsMap = objectMapper.readValue(jsonFile, MAP_TYPE_REF);
+
+    // Make sure the structure is as expected
+    if (!jsonAsMap.containsKey(ReportLabelConfig.PAYLOAD_KEY) ||
+      !(jsonAsMap.get(ReportLabelConfig.PAYLOAD_KEY) instanceof List)) {
+      throw new IOException("Can't find payload element");
+    }
+
+    List<Map<String, Object>> payload = (List<Map<String, Object>>) jsonAsMap.get(ReportLabelConfig.PAYLOAD_KEY);
+
+    // Base the headers on the first record
+    List<String> headers = payload.isEmpty() ? List.of() : List.copyOf(payload.get(0).keySet());
+    try (Writer w = new FileWriter(csvFile, StandardCharsets.UTF_8);
+         CsvOutput<Map<String, Object>> output =
+           CsvOutput.create(headers, MAP_TYPE_REF, w)) {
+      for (Map<String, Object> line : payload) {
+        output.addRow(line);
+      }
+    }
+
+    if (!jsonFile.delete()) {
+      log.warn("can't delete intermediate file " + jsonFile.getAbsolutePath());
+    }
   }
 
   /**

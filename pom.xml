@@ -6,7 +6,7 @@
   <version>0.2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>report-label API</name>
+  <name>DINA export API</name>
   <url>https://github.com/AAFC-BICoE/dina-export-api</url>
 
   <parent>
@@ -103,6 +103,12 @@
       <groupId>com.openhtmltopdf</groupId>
       <artifactId>openhtmltopdf-pdfbox</artifactId>
       <version>${openhtml.version}</version>
+    </dependency>
+
+    <!-- CSV-->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-csv</artifactId>
     </dependency>
 
     <dependency>

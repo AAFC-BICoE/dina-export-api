@@ -43,6 +43,9 @@ public class ReportTemplateDto {
   private MultilingualDescription multilingualDescription;
 
   private String templateFilename;
+
+  // can be an intermediate media type like HTML or JSON that will then be transformed in PDF or CSV
+  private String templateOutputMediaType;
   private String outputMediaType;
 
   @Builder.Default

@@ -11,8 +11,6 @@ import lombok.Setter;
 import java.util.Map;
 import java.util.UUID;
 
-import ca.gc.aafc.dina.export.api.config.ReportOutputFormat;
-
 @Getter
 @Setter
 @Builder
@@ -26,8 +24,6 @@ public class ReportRequestDto {
   @JsonApiId
   private UUID uuid;
   private String group;
-
-  private ReportOutputFormat outputFormat = ReportOutputFormat.PDF;
 
   private UUID reportTemplateUUID;
 
