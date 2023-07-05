@@ -1,0 +1,48 @@
+
+== Report Template
+
+The file represented by `templateFilename` must exist in the template folder of the `dina-export-api`.
+
+[source, json]
+----
+{
+  "data": {
+    "type": "report-template",
+    "attributes": {
+        "group": "AAFC",
+        "templateOutputMediaType": "application/json",
+        "outputMediaType": "text/csv",
+        "name": "csv-test",
+        "templateFilename": "testJson.flt"
+    }
+  }
+}
+----
+
+== Report Request
+[source, json]
+----
+{
+    "data": {
+        "type": "report-request",
+        "attributes": {
+            "group": "AAFC",
+            "reportTemplateUUID": "08b871ed-52c3-4ef9-be86-a51504499a21",
+            "payload": {
+                "data": [
+                    {
+                        "sampleName": "ABC-1",
+                        "extractName": "b8",
+                        "date": "2003-04-02"
+                    },
+                    {
+                        "sampleName": "ABC-2",
+                        "extractName": "b45",
+                        "date": "2003-04-03"
+                    }
+                ]
+            }
+        }
+    }
+}
+----

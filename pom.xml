@@ -2,12 +2,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>ca.gc.aafc</groupId>
-  <artifactId>report-label-api</artifactId>
-  <version>0.1</version>
+  <artifactId>dina-export-api</artifactId>
+  <version>0.2</version>
   <packaging>jar</packaging>
 
-  <name>report-label API</name>
-  <url>https://github.com/AAFC-BICoE/report-label-api</url>
+  <name>DINA export API</name>
+  <url>https://github.com/AAFC-BICoE/dina-export-api</url>
 
   <parent>
     <groupId>org.springframework.boot</groupId>
@@ -21,7 +21,7 @@
     <spotbugs.version>4.7.3</spotbugs.version>
     <spotbugs-maven-plugin.version>4.7.3.4</spotbugs-maven-plugin.version>
     <jcip-annotations.version>1.0</jcip-annotations.version>
-    <dependency.check.version>7.1.2</dependency.check.version>
+    <dependency.check.version>8.3.1</dependency.check.version>
     <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
     <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
     <checkstyle.version>8.45.1</checkstyle.version>
@@ -103,6 +103,12 @@
       <groupId>com.openhtmltopdf</groupId>
       <artifactId>openhtmltopdf-pdfbox</artifactId>
       <version>${openhtml.version}</version>
+    </dependency>
+
+    <!-- CSV-->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-csv</artifactId>
     </dependency>
 
     <dependency>
