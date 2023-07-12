@@ -12,7 +12,7 @@ The file represented by `templateFilename` must exist in the template folder of 
       "group": "AAFC",
       "templateOutputMediaType": "text/html",
       "outputMediaType": "application/pdf",
-      "includeBarcode": true,
+      "includesBarcode": true,
       "name": "demo-label",
       "templateFilename": "demo.flth"
     }
