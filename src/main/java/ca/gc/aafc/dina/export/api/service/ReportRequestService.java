@@ -97,7 +97,7 @@ public class ReportRequestService {
     File templateOutputFile = null;
     String extension = FileController.getExtensionForMediaType(template.getTemplateOutputMediaType());
     if(StringUtils.isNotBlank(extension)) {
-      templateOutputFile = tmpDirectory.resolve(ReportLabelConfig.REPORT_FILENAME + "." + extension).toFile();
+      templateOutputFile = tmpDirectory.resolve(ReportLabelConfig.REPORT_FILENAME + extension).toFile();
       try (FileWriter fw = new FileWriter(templateOutputFile, StandardCharsets.UTF_8)) {
         reportGenerator.generateReport(template.getTemplateFilename(), reportRequest.getPayload(), fw);
       }
