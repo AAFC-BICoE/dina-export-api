@@ -50,8 +50,12 @@ keycloak:
 javers:
   # Don't let Javers create its tables
   sqlSchemaManagementEnabled: false
-  packagesToScan: ca.gc.aafc.reportlabel.api
-  
+  packagesToScan: ca.gc.aafc.dina.export.api
+
+elasticsearch:
+  host: localhost
+  port: 9200
+
 # Wait for requests to finish before shutting down:
 server.shutdown: graceful
 

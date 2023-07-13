@@ -112,6 +112,12 @@
     </dependency>
 
     <dependency>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
+      <version>${elasticsearch.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
       <version>${tika.version}</version>
@@ -165,6 +171,16 @@
       <scope>test</scope>
     </dependency>    
   </dependencies>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Required by elasticsearch java-->
+      <dependency>
+        <groupId>jakarta.json</groupId>
+        <artifactId>jakarta.json-api</artifactId>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
     <plugins>
