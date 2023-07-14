@@ -14,7 +14,7 @@ The file represented by `templateFilename` must exist in the template folder of 
       "outputMediaType": "application/pdf",
       "includesBarcode": true,
       "name": "demo-label",
-      "templateFilename": "demo.flth"
+      "templateFilename": "demo.ftlh"
     }
   }
 }
