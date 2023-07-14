@@ -9,7 +9,7 @@ The file represented by `templateFilename` must exist in the template folder of 
   "data": {
     "type": "report-template",
     "attributes": {
-      "group": "AAFC",
+      "group": "aafc",
       "templateOutputMediaType": "text/html",
       "outputMediaType": "application/pdf",
       "includesBarcode": true,
@@ -27,7 +27,7 @@ The file represented by `templateFilename` must exist in the template folder of 
   "data": {
     "type": "report-request",
     "attributes": {
-      "group": "AAFC",
+      "group": "aafc",
       "reportTemplateUUID": "08b871ed-52c3-4ef9-be86-a51504499a21",
       "payload": {
         "elements": [
