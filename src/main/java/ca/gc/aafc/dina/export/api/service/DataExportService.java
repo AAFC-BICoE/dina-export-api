@@ -40,6 +40,8 @@ import java.util.UUID;
 @Service
 public class DataExportService {
 
+  public static final String DATA_EXPORT_CSV_FILENAME = "export.csv";
+
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
   private final Configuration jsonPathConfiguration;
@@ -63,7 +65,7 @@ public class DataExportService {
     Path tmpDirectory = Files.createDirectories(workingFolder.resolve(uuid.toString()));
 
     // csv output
-    try (Writer w = new FileWriter(tmpDirectory.resolve("export.csv").toFile(), StandardCharsets.UTF_8);
+    try (Writer w = new FileWriter(tmpDirectory.resolve(DATA_EXPORT_CSV_FILENAME).toFile(), StandardCharsets.UTF_8);
          CsvOutput<JsonNode> output =
            CsvOutput.create(columns, new TypeReference<>() {
            }, w)) {

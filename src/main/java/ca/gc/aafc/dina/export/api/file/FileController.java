@@ -25,47 +25,63 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.ReportLabelConfig;
+
+import static ca.gc.aafc.dina.export.api.service.DataExportService.DATA_EXPORT_CSV_FILENAME;
 
 @RestController
 @RequestMapping("/api/v1")
 @Log4j2
 public class FileController {
 
+  public enum DownloadType {LABEL, DATA_EXPORT};
   private static final TikaConfig TIKA_CONFIG = TikaConfig.getDefaultConfig();
 
-  private final Path workingFolder;
+  private final Path labelWorkingFolder;
+  private final Path dataExportWorkingFolder;
 
-  public FileController(ReportLabelConfig config) {
-    this.workingFolder = Path.of(config.getWorkingFolder());
+  public FileController(ReportLabelConfig labelConfig, DataExportConfig dataExportConfig) {
+    this.labelWorkingFolder = Path.of(labelConfig.getWorkingFolder());
+    this.dataExportWorkingFolder = Path.of(dataExportConfig.getWorkingFolder());
   }
 
   @GetMapping("/file/{fileId}")
-  public ResponseEntity<InputStreamResource> downloadReport(@PathVariable UUID fileId) throws IOException {
+  public ResponseEntity<InputStreamResource> downloadFile(@PathVariable UUID fileId,
+                                                            @RequestParam( name = "type", required = false) DownloadType type) throws IOException {
 
-    Path reportFolder =
-      workingFolder.resolve(fileId.toString());
+    Optional<Path> filePath = Optional.empty();
 
-    Optional<Path> possibleReportPath;
-    try (Stream<Path> walk = Files.walk(reportFolder, 1)) {
-      possibleReportPath = walk
-        .filter(p-> p.getFileName().toString().startsWith(ReportLabelConfig.REPORT_FILENAME))
-        .findFirst();
+    if(type == null || type == DownloadType.LABEL) {
+      Path reportFolder =
+        labelWorkingFolder.resolve(fileId.toString());
+      try (Stream<Path> walk = Files.walk(reportFolder, 1)) {
+        filePath = walk
+          .filter(p -> p.getFileName().toString().startsWith(ReportLabelConfig.REPORT_FILENAME))
+          .findFirst();
+      }
+    } else if (type == DownloadType.DATA_EXPORT){
+      filePath = Optional.of(dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
     }
 
-    if(possibleReportPath.isPresent()) {
-      Path reportPath = possibleReportPath.get();
-      String filename = Objects.toString(reportPath.getFileName(), "");
-
-      InputStream fis = Files.newInputStream(reportPath);
-      MediaType md = MediaType.parseMediaType(getMediaTypeForFilename(filename).toString());
-      return new ResponseEntity<>(new InputStreamResource(fis),
-        buildHttpHeaders(fileId + "." + StringUtils.substringAfterLast(filename, "."), md,
-          reportPath.toFile().length()), HttpStatus.OK);
+    if(filePath.isPresent()) {
+      return downloadFile(fileId, filePath.get());
     }
     throw new ResourceNotFoundException("Report with ID " + fileId + " Not Found.");
+  }
+
+  private ResponseEntity<InputStreamResource> downloadFile(UUID fileIdentifier, Path filePath) throws IOException {
+
+    String filename = Objects.toString(filePath.getFileName(), "");
+
+    InputStream fis = Files.newInputStream(filePath);
+    MediaType md = MediaType.parseMediaType(getMediaTypeForFilename(filename).toString());
+    return new ResponseEntity<>(new InputStreamResource(fis),
+      buildHttpHeaders(fileIdentifier + "." + StringUtils.substringAfterLast(filename, "."), md,
+        filePath.toFile().length()), HttpStatus.OK);
   }
 
   /**
