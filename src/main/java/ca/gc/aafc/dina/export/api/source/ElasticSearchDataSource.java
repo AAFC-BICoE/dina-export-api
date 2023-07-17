@@ -78,7 +78,6 @@ public class ElasticSearchDataSource {
     Reader strReader = new StringReader(query);
     SearchRequest sr = SearchRequest.of(b -> b
       .withJson(strReader)
-      .index(indexName)
       .size(ES_PAGE_SIZE)
       .searchAfter(sortFieldValues)
       .pit(pit -> pit.keepAlive(KEEP_ALIVE).id(pitId)));
