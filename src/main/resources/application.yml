@@ -63,3 +63,6 @@ dina.auditing.enabled: true
 
 report-label:
   workingFolder: /tmp/dina-report-label
+
+data-export:
+    workingFolder: /tmp/dina-data-export

@@ -9,6 +9,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 
+/**
+ * Configured on DinaExportModuleApiLauncher
+ */
 @ConfigurationProperties(prefix = "report-label")
 @Getter
 @Setter

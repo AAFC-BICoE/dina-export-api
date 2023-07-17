@@ -17,6 +17,10 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.List;
 
+/**
+ * ElasticSearch-backed source of data.
+ * Data is returned as {@link JsonNode} since the export is agnostic of the type of data.
+ */
 @Component
 public class ElasticSearchDataSource {
 
@@ -38,7 +42,11 @@ public class ElasticSearchDataSource {
   }
 
   /**
-   * Search with ElasticSearch Point-in-time
+   * Search with ElasticSearch Point-in-time to go through multiple pages.
+   * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.17/paginate-search-results.html#search-after">https://www.elastic.co/guide/en/elasticsearch/reference/7.17/paginate-search-results.html#search-after</a>
+   *
+   * For the next pages, {@link #searchAfter(String, String, String, List)} should be used.
+   *
    * @param indexName
    * @param query
    * @return
@@ -46,6 +54,7 @@ public class ElasticSearchDataSource {
    */
   public SearchResponse<JsonNode> searchWithPIT(String indexName, String query) throws IOException {
 
+    // create the PIT
     OpenPointInTimeResponse opitResponse =
       client.openPointInTime(b -> b.index(indexName).keepAlive(KEEP_ALIVE));
 
@@ -57,6 +66,14 @@ public class ElasticSearchDataSource {
     return client.search(sr, JsonNode.class);
   }
 
+  /**
+   * Search after (next page) with ElasticSearch Point-in-time.
+   * @param indexName should match what was provided to the initial {@link #searchWithPIT(String, String)} call
+   * @param query should match what was provided to the initial {@link #searchWithPIT(String, String)} call
+   * @param pitId returned from the initial {@link #searchWithPIT(String, String)} call
+   * @param sortFieldValues returned from the initial {@link #searchWithPIT(String, String)} call
+   * @return
+   */
   public SearchResponse<JsonNode> searchAfter(String indexName, String query, String pitId, List<FieldValue> sortFieldValues) throws IOException {
     Reader strReader = new StringReader(query);
     SearchRequest sr = SearchRequest.of(b -> b
@@ -68,37 +85,17 @@ public class ElasticSearchDataSource {
     return client.search(sr, JsonNode.class);
   }
 
+  /**
+   * Close a previously opened PIT.
+   * @param pitId
+   * @return
+   * @throws IOException
+   */
   public boolean closePointInTime(String pitId) throws IOException {
     ClosePointInTimeRequest request = ClosePointInTimeRequest.of(b -> b
       .id(pitId));
     ClosePointInTimeResponse csr = client.closePointInTime(request);
     return csr.succeeded();
   }
-
-//  public SearchResponse<JsonNode> searchWithScroll(String indexName, String query) throws IOException {
-//    Reader strReader = new StringReader(query);
-//    SearchRequest sr = SearchRequest.of(b -> b
-//      .withJson(strReader)
-//      .index(indexName)
-//      .size(ES_SCROLL_SIZE)
-//      .scroll(new Time.Builder().time("60s").build()));
-//    return client.search(sr, JsonNode.class);
-//  }
-
-//  public ScrollResponse<JsonNode> scroll(String scrollId) throws IOException {
-//    ScrollRequest sr = ScrollRequest.of( b -> b
-//      .scrollId(scrollId)
-//      .scroll(new Time.Builder().time("60s").build())
-//    );
-//    return client.scroll(sr, JsonNode.class);
-//  }
-
-//  public boolean clearScroll(String scrollId) throws IOException {
-//    ClearScrollRequest request = ClearScrollRequest.of( b -> b
-//      .scrollId(scrollId));
-//    ClearScrollResponse csr = client.clearScroll(request);
-//    return csr.succeeded();
-//  }
-
 
 }

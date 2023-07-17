@@ -12,8 +12,6 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.TypeRef;
-import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
-import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 
 import ca.gc.aafc.dina.export.api.config.ReportLabelConfig;
 import ca.gc.aafc.dina.export.api.entity.ReportTemplate;
@@ -55,6 +53,7 @@ public class ReportRequestService {
 
   public ReportRequestService(
     ObjectMapper objectMapper,
+    Configuration jsonPathConfiguration,
     ReportLabelConfig reportLabelConfig, FreemarkerReportGenerator reportGenerator,
     OpenhtmltopdfGenerator pdfGenerator, BarcodeGenerator barcodeGenerator) {
 
@@ -65,10 +64,7 @@ public class ReportRequestService {
     workingFolder = Path.of(reportLabelConfig.getWorkingFolder());
 
     this.objectMapper = objectMapper;
-    jacksonConfig = Configuration.builder()
-      .mappingProvider(new JacksonMappingProvider())
-      .jsonProvider(new JacksonJsonProvider())
-      .build();
+    this.jacksonConfig = jsonPathConfiguration;
   }
 
   public ReportGenerationResult generateReport(ReportTemplate template, ReportRequestDto reportRequest) throws IOException {
@@ -170,7 +166,7 @@ public class ReportRequestService {
          CsvOutput<Map<String, Object>> output =
            CsvOutput.create(headers, MAP_TYPE_REF, w)) {
       for (Map<String, Object> line : payload) {
-        output.addRow(line);
+        output.addRecord(line);
       }
     }
 
