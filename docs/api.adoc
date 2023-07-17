@@ -46,3 +46,25 @@ The file represented by `templateFilename` must exist in the template folder of 
     }
 }
 ----
+
+== Data Export Request
+[source, json]
+----
+{
+  "data": {
+    "type": "export-request",
+    "attributes": {
+        "source": "dina_material_sample_index",
+        "query": "{\"query\": {\"match_all\": {}}, \"sort\": [{\"data.attributes.createdOn\": \"asc\"}]}",
+        "columns": ["materialSampleName", "collectingEvent.dwcVerbatimLocality"]
+    }
+  }
+}
+----
+
+== Download File
+
+[source]
+----
+GET /file/{fileId}?type=LABEL|DATA_EXPORT
+----
