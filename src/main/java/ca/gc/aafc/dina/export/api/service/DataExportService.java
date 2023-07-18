@@ -100,7 +100,7 @@ public class DataExportService {
       if (ElasticSearchDataSource.ES_PAGE_SIZE == numberOfHits) {
         Hit<JsonNode> lastHit = response.hits().hits().get(numberOfHits - 1);
         response =
-          elasticSearchDataSource.searchAfter(sourceIndex, query, response.pitId(), lastHit.sort());
+          elasticSearchDataSource.searchAfter(query, response.pitId(), lastHit.sort());
         pageAvailable = true;
       }
     }

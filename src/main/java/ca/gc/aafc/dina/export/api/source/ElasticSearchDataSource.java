@@ -45,7 +45,7 @@ public class ElasticSearchDataSource {
    * Search with ElasticSearch Point-in-time to go through multiple pages.
    * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.17/paginate-search-results.html#search-after">https://www.elastic.co/guide/en/elasticsearch/reference/7.17/paginate-search-results.html#search-after</a>
    *
-   * For the next pages, {@link #searchAfter(String, String, String, List)} should be used.
+   * For the next pages, {@link #searchAfter(String, String, List)} should be used.
    *
    * @param indexName
    * @param query
@@ -68,13 +68,12 @@ public class ElasticSearchDataSource {
 
   /**
    * Search after (next page) with ElasticSearch Point-in-time.
-   * @param indexName should match what was provided to the initial {@link #searchWithPIT(String, String)} call
    * @param query should match what was provided to the initial {@link #searchWithPIT(String, String)} call
    * @param pitId returned from the initial {@link #searchWithPIT(String, String)} call
    * @param sortFieldValues returned from the initial {@link #searchWithPIT(String, String)} call
    * @return
    */
-  public SearchResponse<JsonNode> searchAfter(String indexName, String query, String pitId, List<FieldValue> sortFieldValues) throws IOException {
+  public SearchResponse<JsonNode> searchAfter(String query, String pitId, List<FieldValue> sortFieldValues) throws IOException {
     Reader strReader = new StringReader(query);
     SearchRequest sr = SearchRequest.of(b -> b
       .withJson(strReader)
