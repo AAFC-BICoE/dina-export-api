@@ -178,8 +178,10 @@ public class DataExportService {
       String relName = relKeys.next();
       JsonNode currRelNode = relNode.get(relName);
       // if it's not an array (to-one), we can just take it as is
-      if (!currRelNode.isArray() && currRelNode.has(JSONApiDocumentStructure.DATA) &&
-        !currRelNode.get(JSONApiDocumentStructure.DATA).isArray()) {
+      if (!currRelNode.isArray() &&
+          currRelNode.has(JSONApiDocumentStructure.DATA) &&
+          !currRelNode.get(JSONApiDocumentStructure.DATA).isNull() &&
+          !currRelNode.get(JSONApiDocumentStructure.DATA).isArray()) {
         // get the id value from the relationships section
         String idValue = currRelNode.findValue(JSONApiDocumentStructure.ID).asText();
         // pull the nested-document from the included section
