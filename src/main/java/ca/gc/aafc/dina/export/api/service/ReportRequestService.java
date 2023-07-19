@@ -12,10 +12,8 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.TypeRef;
-import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
-import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 
-import ca.gc.aafc.dina.export.api.config.ReportLabelConfig;
+import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.entity.ReportTemplate;
 import ca.gc.aafc.dina.export.api.dto.ReportRequestDto;
 import ca.gc.aafc.dina.export.api.file.FileController;
@@ -55,20 +53,18 @@ public class ReportRequestService {
 
   public ReportRequestService(
     ObjectMapper objectMapper,
-    ReportLabelConfig reportLabelConfig, FreemarkerReportGenerator reportGenerator,
+    Configuration jsonPathConfiguration,
+    DataExportConfig dataExportConfig, FreemarkerReportGenerator reportGenerator,
     OpenhtmltopdfGenerator pdfGenerator, BarcodeGenerator barcodeGenerator) {
 
     this.reportGenerator = reportGenerator;
     this.pdfGenerator = pdfGenerator;
     this.barcodeGenerator = barcodeGenerator;
 
-    workingFolder = Path.of(reportLabelConfig.getWorkingFolder());
+    workingFolder = dataExportConfig.getGeneratedReportsLabelsPath();
 
     this.objectMapper = objectMapper;
-    jacksonConfig = Configuration.builder()
-      .mappingProvider(new JacksonMappingProvider())
-      .jsonProvider(new JacksonJsonProvider())
-      .build();
+    this.jacksonConfig = jsonPathConfiguration;
   }
 
   public ReportGenerationResult generateReport(ReportTemplate template, ReportRequestDto reportRequest) throws IOException {
@@ -97,7 +93,7 @@ public class ReportRequestService {
     File templateOutputFile = null;
     String extension = FileController.getExtensionForMediaType(template.getTemplateOutputMediaType());
     if(StringUtils.isNotBlank(extension)) {
-      templateOutputFile = tmpDirectory.resolve(ReportLabelConfig.REPORT_FILENAME + extension).toFile();
+      templateOutputFile = tmpDirectory.resolve(DataExportConfig.REPORT_FILENAME + "." + extension).toFile();
       try (FileWriter fw = new FileWriter(templateOutputFile, StandardCharsets.UTF_8)) {
         reportGenerator.generateReport(template.getTemplateFilename(), reportRequest.getPayload(), fw);
       }
@@ -116,7 +112,7 @@ public class ReportRequestService {
         throw new IOException("No intermediate html file found");
       }
       generatePDF(tmpDirectory, templateOutputFile);
-    } else if (ReportLabelConfig.TEXT_CSV_VALUE.equals(template.getOutputMediaType())) {
+    } else if (DataExportConfig.TEXT_CSV_VALUE.equals(template.getOutputMediaType())) {
       if(!MediaType.APPLICATION_JSON_VALUE.equals(template.getTemplateOutputMediaType())) {
         throw new IOException("No intermediate json file found");
       }
@@ -133,7 +129,7 @@ public class ReportRequestService {
    */
   private void generatePDF(Path tmpDirectory, File htmlFile) throws IOException {
     Objects.requireNonNull(htmlFile);
-    File tempPdfFile = tmpDirectory.resolve(ReportLabelConfig.PDF_REPORT_FILENAME).toFile();
+    File tempPdfFile = tmpDirectory.resolve(DataExportConfig.PDF_REPORT_FILENAME).toFile();
     try (FileOutputStream bos = new FileOutputStream(tempPdfFile)) {
       String htmlContent = Files.readString(htmlFile.toPath(), StandardCharsets.UTF_8);
       pdfGenerator.generatePDF(htmlContent, tmpDirectory.toUri().toString(), bos);
@@ -151,18 +147,18 @@ public class ReportRequestService {
    */
   private void generateCSV(Path tmpDirectory, File jsonFile) throws IOException {
     Objects.requireNonNull(jsonFile);
-    File csvFile = tmpDirectory.resolve(ReportLabelConfig.CSV_REPORT_FILENAME).toFile();
+    File csvFile = tmpDirectory.resolve(DataExportConfig.CSV_REPORT_FILENAME).toFile();
 
     // Read json file
     Map<String, Object> jsonAsMap = objectMapper.readValue(jsonFile, MAP_TYPE_REF);
 
     // Make sure the structure is as expected
-    if (!jsonAsMap.containsKey(ReportLabelConfig.PAYLOAD_KEY) ||
-      !(jsonAsMap.get(ReportLabelConfig.PAYLOAD_KEY) instanceof List)) {
+    if (!jsonAsMap.containsKey(DataExportConfig.PAYLOAD_KEY) ||
+      !(jsonAsMap.get(DataExportConfig.PAYLOAD_KEY) instanceof List)) {
       throw new IOException("Can't find payload element");
     }
 
-    List<Map<String, Object>> payload = (List<Map<String, Object>>) jsonAsMap.get(ReportLabelConfig.PAYLOAD_KEY);
+    List<Map<String, Object>> payload = (List<Map<String, Object>>) jsonAsMap.get(DataExportConfig.PAYLOAD_KEY);
 
     // Base the headers on the first record
     List<String> headers = payload.isEmpty() ? List.of() : List.copyOf(payload.get(0).keySet());
@@ -170,7 +166,7 @@ public class ReportRequestService {
          CsvOutput<Map<String, Object>> output =
            CsvOutput.create(headers, MAP_TYPE_REF, w)) {
       for (Map<String, Object> line : payload) {
-        output.addRow(line);
+        output.addRecord(line);
       }
     }
 

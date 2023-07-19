@@ -1,5 +1,6 @@
 package ca.gc.aafc.dina.export.api.config;
 
+import java.nio.file.Path;
 import javax.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,12 +10,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 
-@ConfigurationProperties(prefix = "report-label")
+/**
+ * Configured on DinaExportModuleApiLauncher
+ */
+@ConfigurationProperties(prefix = "dina.export")
 @Getter
 @Setter
 @NoArgsConstructor
 @Validated
-public class ReportLabelConfig {
+public class DataExportConfig {
+
+  public static final String GENERATED_REPORTS_LABELS = "generated_reports_labels";
+  public static final String GENERATED_DATA_EXPORTS = "generated_data_exports";
 
   // represents the payload section of the JSON used for the report
   public static final String PAYLOAD_KEY = "payload";
@@ -28,5 +35,13 @@ public class ReportLabelConfig {
 
   @NotBlank
   private String workingFolder;
+
+  public Path getGeneratedReportsLabelsPath() {
+    return Path.of(workingFolder).resolve(GENERATED_REPORTS_LABELS);
+  }
+
+  public Path getGeneratedDataExportsPath() {
+    return Path.of(workingFolder).resolve(GENERATED_DATA_EXPORTS);
+  }
 
 }

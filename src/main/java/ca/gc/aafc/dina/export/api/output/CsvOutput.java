@@ -14,7 +14,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
  * Responsible to write a CSV output.
  * @param <T>
  */
-public final class CsvOutput<T> implements AutoCloseable {
+public final class CsvOutput<T> implements DataOutput<T> {
 
   private final SequenceWriter sw;
 
@@ -42,8 +42,9 @@ public final class CsvOutput<T> implements AutoCloseable {
     this.sw = sw;
   }
 
-  public void addRow(T row) throws IOException {
-    sw.write(row);
+  @Override
+  public void addRecord(T record) throws IOException {
+    sw.write(record);
   }
 
   @Override

@@ -6,7 +6,7 @@ import org.springframework.http.MediaType;
 
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.DinaExportModuleApiLauncher;
-import ca.gc.aafc.dina.export.api.config.ReportLabelConfig;
+import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.dto.ReportRequestDto;
 import ca.gc.aafc.dina.export.api.dto.ReportTemplateDto;
 import ca.gc.aafc.dina.export.api.file.FileController;
@@ -61,7 +61,7 @@ public class ReportRequestResourceRepositoryIT extends BaseIntegrationTest {
     ReportTemplateDto templateDto = ReportTemplateTestFixture.newReportTemplate()
       .templateFilename("testJson.flt")
       .templateOutputMediaType(MediaType.APPLICATION_JSON_VALUE)
-      .outputMediaType(ReportLabelConfig.TEXT_CSV_VALUE)
+      .outputMediaType(DataExportConfig.TEXT_CSV_VALUE)
       .build();
     templateDto = reportRepository.create(templateDto);
 
