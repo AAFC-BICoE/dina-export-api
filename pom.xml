@@ -30,6 +30,8 @@
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>
     <tika.version>2.6.0</tika.version>
+
+    <spring-security.version>5.7.10</spring-security.version>
     <postgresql.version>42.4.3</postgresql.version>
   </properties>
 
