@@ -6,7 +6,7 @@ spring:
   liquibase:
     change-log: classpath:/db/changelog/db.changelog-master.xml
     contexts: schema-change
-    liquibase-schema: report_label
+    liquibase-schema: export
   jpa:
     open-in-view: false
   # Allow grace timeout period for 20 seconds
