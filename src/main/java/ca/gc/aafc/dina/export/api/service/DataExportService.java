@@ -56,7 +56,7 @@ public class DataExportService {
     this.elasticSearchDataSource = elasticSearchDataSource;
     this.objectMapper = objectMapper;
 
-    workingFolder = Path.of(dataExportConfig.getWorkingFolder());
+    workingFolder = dataExportConfig.getGeneratedDataExportsPath();
   }
 
   public ExportResult export(String source, String query, List<String> columns) throws IOException {

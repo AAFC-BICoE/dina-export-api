@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
-import ca.gc.aafc.dina.export.api.config.ReportLabelConfig;
 
 import static ca.gc.aafc.dina.export.api.service.DataExportService.DATA_EXPORT_CSV_FILENAME;
 
@@ -44,9 +43,9 @@ public class FileController {
   private final Path labelWorkingFolder;
   private final Path dataExportWorkingFolder;
 
-  public FileController(ReportLabelConfig labelConfig, DataExportConfig dataExportConfig) {
-    this.labelWorkingFolder = Path.of(labelConfig.getWorkingFolder());
-    this.dataExportWorkingFolder = Path.of(dataExportConfig.getWorkingFolder());
+  public FileController(DataExportConfig dataExportConfig) {
+    this.labelWorkingFolder = dataExportConfig.getGeneratedReportsLabelsPath();
+    this.dataExportWorkingFolder = dataExportConfig.getGeneratedDataExportsPath();
   }
 
   @GetMapping("/file/{fileId}")
@@ -60,7 +59,7 @@ public class FileController {
         labelWorkingFolder.resolve(fileId.toString());
       try (Stream<Path> walk = Files.walk(reportFolder, 1)) {
         filePath = walk
-          .filter(p -> p.getFileName().toString().startsWith(ReportLabelConfig.REPORT_FILENAME))
+          .filter(p -> p.getFileName().toString().startsWith(DataExportConfig.REPORT_FILENAME))
           .findFirst();
       }
     } else if (type == DownloadType.DATA_EXPORT){

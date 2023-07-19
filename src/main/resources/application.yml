@@ -60,9 +60,4 @@ elasticsearch:
 server.shutdown: graceful
 
 dina.auditing.enabled: true
-
-report-label:
-  workingFolder: /tmp/dina-report-label
-
-data-export:
-    workingFolder: /tmp/dina-data-export
+dina.export.workingFolder: /tmp/dina-data-export
