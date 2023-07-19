@@ -11,9 +11,8 @@ import ca.gc.aafc.dina.export.api.config.DataExportConfig;
  */
 // CHECKSTYLE:OFF HideUtilityClassConstructor (Configuration class can not have
 // invisible constructor, ignore the check style error for this case)
-
 @SpringBootApplication
-@EnableConfigurationProperties(value = {DataExportConfig.class})
+@EnableConfigurationProperties(value = DataExportConfig.class)
 public class DinaExportModuleApiLauncher {
   public static void main(String[] args) {
     SpringApplication.run(DinaExportModuleApiLauncher.class, args);

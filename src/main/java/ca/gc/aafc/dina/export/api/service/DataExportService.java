@@ -82,8 +82,7 @@ public class DataExportService {
    * @param output
    * @throws IOException
    */
-  private void export(String sourceIndex, String query, DataOutput<JsonNode> output)
-    throws IOException {
+  private void export(String sourceIndex, String query, DataOutput<JsonNode> output) throws IOException {
     SearchResponse<JsonNode>
       response = elasticSearchDataSource.searchWithPIT(sourceIndex, query);
 
@@ -125,9 +124,9 @@ public class DataExportService {
 
     Optional<JsonNode> attributes = atJsonPtr(record, JSONApiDocumentStructure.ATTRIBUTES_PTR);
     if (attributes.isPresent() && attributes.get() instanceof ObjectNode attributeObjNode) {
-      for (String relKey : flatRelationshipsDotNotation.keySet()) {
-        attributeObjNode.set(relKey,
-          objectMapper.valueToTree(flatRelationshipsDotNotation.get(relKey)));
+      for (var entry : flatRelationshipsDotNotation.entrySet()) {
+        attributeObjNode.set(entry.getKey(),
+          objectMapper.valueToTree(entry.getValue()));
       }
       output.addRecord(attributeObjNode);
     }

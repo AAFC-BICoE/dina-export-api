@@ -37,7 +37,7 @@ import static ca.gc.aafc.dina.export.api.service.DataExportService.DATA_EXPORT_C
 @Log4j2
 public class FileController {
 
-  public enum DownloadType {LABEL, DATA_EXPORT};
+  public enum DownloadType { LABEL, DATA_EXPORT }
   private static final TikaConfig TIKA_CONFIG = TikaConfig.getDefaultConfig();
 
   private final Path labelWorkingFolder;
@@ -54,7 +54,7 @@ public class FileController {
 
     Optional<Path> filePath = Optional.empty();
 
-    if(type == null || type == DownloadType.LABEL) {
+    if (type == null || type == DownloadType.LABEL) {
       Path reportFolder =
         labelWorkingFolder.resolve(fileId.toString());
       try (Stream<Path> walk = Files.walk(reportFolder, 1)) {
@@ -62,8 +62,9 @@ public class FileController {
           .filter(p -> p.getFileName().toString().startsWith(DataExportConfig.REPORT_FILENAME))
           .findFirst();
       }
-    } else if (type == DownloadType.DATA_EXPORT){
-      filePath = Optional.of(dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
+    } else if (type == DownloadType.DATA_EXPORT) {
+      filePath = Optional.of(
+        dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
     }
 
     if(filePath.isPresent()) {

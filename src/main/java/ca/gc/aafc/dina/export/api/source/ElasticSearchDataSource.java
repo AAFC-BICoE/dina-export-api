@@ -29,7 +29,7 @@ public class ElasticSearchDataSource {
 
   private final ElasticsearchClient client;
 
-  public ElasticSearchDataSource(ElasticsearchClient client){
+  public ElasticSearchDataSource(ElasticsearchClient client) {
     this.client = client;
   }
 
@@ -50,7 +50,6 @@ public class ElasticSearchDataSource {
    * @param indexName
    * @param query
    * @return
-   * @throws IOException
    */
   public SearchResponse<JsonNode> searchWithPIT(String indexName, String query) throws IOException {
 
@@ -87,7 +86,6 @@ public class ElasticSearchDataSource {
    * Close a previously opened PIT.
    * @param pitId
    * @return
-   * @throws IOException
    */
   public boolean closePointInTime(String pitId) throws IOException {
     ClosePointInTimeRequest request = ClosePointInTimeRequest.of(b -> b

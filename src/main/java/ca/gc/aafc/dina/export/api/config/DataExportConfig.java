@@ -21,7 +21,7 @@ import org.springframework.validation.annotation.Validated;
 public class DataExportConfig {
 
   public static final String GENERATED_REPORTS_LABELS = "generated_reports_labels";
-  public static final String GENERATED_DATA_EXPORTS= "generated_data_exports";
+  public static final String GENERATED_DATA_EXPORTS = "generated_data_exports";
 
   // represents the payload section of the JSON used for the report
   public static final String PAYLOAD_KEY = "payload";
