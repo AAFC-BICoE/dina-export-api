@@ -56,7 +56,7 @@ public class FileControllerIT extends BaseIntegrationTest {
       .build();
 
     ReportRequestService.ReportGenerationResult result = reportRequestService.generateReport(templateEntity, request);
-    ResponseEntity<InputStreamResource> response = fileController.downloadReport(result.resultIdentifier());
+    ResponseEntity<InputStreamResource> response = fileController.downloadFile(result.resultIdentifier(), FileController.DownloadType.LABEL);
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
