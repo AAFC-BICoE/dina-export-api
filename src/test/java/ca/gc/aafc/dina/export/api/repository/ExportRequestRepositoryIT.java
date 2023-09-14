@@ -41,7 +41,7 @@ public class ExportRequestRepositoryIT extends BaseIntegrationTest {
     ExportRequestDto dto = new ExportRequestDto();
     dto.setSource(MAT_SAMPLE_INDEX);
     dto.setQuery(query);
-    dto.setColumns(List.of("materialSampleName", "collectingEvent.dwcVerbatimLocality"));
+    dto.setColumns(List.of("materialSampleName", "collectingEvent.dwcVerbatimLocality", "managedAttributes.attribute_1"));
     exportRepo.create(dto);
 
     assertNotNull(dto.getUuid());
