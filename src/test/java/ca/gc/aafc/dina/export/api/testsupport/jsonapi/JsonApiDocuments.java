@@ -19,7 +19,7 @@ public class JsonApiDocuments {
             "materialSampleName" : "Yves",
             "materialSampleChildren" : [ ],
             "preparationDate" : null,
-            "managedAttributes" : { },
+            "managedAttributes" : { "attribute_1":"value 1"},
             "determination" : [
               {
                 "verbatimScientificName" : "Yves computer science",

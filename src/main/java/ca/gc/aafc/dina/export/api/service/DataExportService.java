@@ -42,6 +42,11 @@ public class DataExportService {
 
   public static final String DATA_EXPORT_CSV_FILENAME = "export.csv";
 
+  private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPEREF = new TypeReference<>() {
+  };
+  private static final TypeReference<Map<String, Object>> MAP_TYPEREF = new TypeReference<>() {
+  };
+
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
   private final Configuration jsonPathConfiguration;
@@ -118,12 +123,28 @@ public class DataExportService {
       return;
     }
 
-    Map<String, Object> flatRelationships = flatRelationships(record);
-    Map<String, Object> flatRelationshipsDotNotation =
-      JSONApiDocumentStructure.mergeNestedMapUsingDotNotation(flatRelationships);
-
     Optional<JsonNode> attributes = atJsonPtr(record, JSONApiDocumentStructure.ATTRIBUTES_PTR);
     if (attributes.isPresent() && attributes.get() instanceof ObjectNode attributeObjNode) {
+
+      // handle nested maps (e.g. managed attributes)
+      JSONApiDocumentStructure.ExtractNestedMapResult nestedObjectsResult =
+        JSONApiDocumentStructure.extractNestedMapUsingDotNotation(objectMapper.convertValue(attributeObjNode, MAP_TYPEREF));
+
+      // we add the nested objects with dot notation version
+      for (var nestedMap : nestedObjectsResult.nestedMapsMap().entrySet()) {
+        attributeObjNode.set(nestedMap.getKey(),
+          objectMapper.valueToTree(nestedMap.getValue()));
+      }
+      // remove previous entries
+      for (String key : nestedObjectsResult.usedKeys()) {
+        attributeObjNode.remove(key);
+      }
+
+      // handle relationships
+      Map<String, Object> flatRelationships = flatRelationships(record);
+      Map<String, Object> flatRelationshipsDotNotation =
+        JSONApiDocumentStructure.mergeNestedMapUsingDotNotation(flatRelationships);
+      // we add the relationships in the attributes using dot notation
       for (var entry : flatRelationshipsDotNotation.entrySet()) {
         attributeObjNode.set(entry.getKey(),
           objectMapper.valueToTree(entry.getValue()));
@@ -153,9 +174,6 @@ public class DataExportService {
    */
   private Map<String, Object> flatRelationships(JsonNode jsonApiDocumentRecord) {
 
-    TypeReference<List<Map<String, Object>>> listTypeRef = new TypeReference<>() {
-    };
-
     Optional<JsonNode> relNodeOpt =
       atJsonPtr(jsonApiDocumentRecord, JSONApiDocumentStructure.RELATIONSHIP_PTR);
     Optional<JsonNode> includedNodeOpt =
@@ -169,7 +187,7 @@ public class DataExportService {
     JsonNode relNode = relNodeOpt.get();
     JsonNode includedNode = includedNodeOpt.get();
 
-    List<Map<String, Object>> includedDoc = objectMapper.convertValue(includedNode, listTypeRef);
+    List<Map<String, Object>> includedDoc = objectMapper.convertValue(includedNode, LIST_MAP_TYPEREF);
 
     // loop over relationships
     Iterator<String> relKeys = relNode.fieldNames();
