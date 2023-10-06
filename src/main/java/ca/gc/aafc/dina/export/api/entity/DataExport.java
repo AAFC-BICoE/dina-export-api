@@ -32,7 +32,7 @@ import ca.gc.aafc.dina.entity.DinaEntity;
 @RequiredArgsConstructor
 public class DataExport implements DinaEntity {
 
-  public enum ExportStatus { NEW, RUNNING, DONE, ERROR}
+  public enum ExportStatus { NEW, RUNNING, COMPLETED, ERROR}
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

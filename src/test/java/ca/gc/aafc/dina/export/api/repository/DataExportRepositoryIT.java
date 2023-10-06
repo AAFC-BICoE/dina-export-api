@@ -70,7 +70,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       throw new RuntimeException(e);
     }
 
-    assertEquals(DataExport.ExportStatus.DONE,
+    assertEquals(DataExport.ExportStatus.COMPLETED,
       dataExportRepository.findOne(dto.getUuid(), new QuerySpec(DataExportDto.class)).getStatus());
 
     ResponseEntity<InputStreamResource>
