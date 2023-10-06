@@ -15,6 +15,9 @@ import ca.gc.aafc.dina.export.api.generator.DataExportGenerator;
 import ca.gc.aafc.dina.jpa.BaseDAO;
 import ca.gc.aafc.dina.service.DefaultDinaService;
 
+/**
+ * Called by the repository. Responsible for main database operations and to call the generator.
+ */
 @Service
 public class DataExportService extends DefaultDinaService<DataExport> {
 

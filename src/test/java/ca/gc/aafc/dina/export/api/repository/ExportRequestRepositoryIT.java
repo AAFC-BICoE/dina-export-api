@@ -8,15 +8,18 @@ import org.springframework.test.context.ContextConfiguration;
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.ElasticSearchTestContainerInitializer;
 import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
-import ca.gc.aafc.dina.export.api.dto.ExportRequestDto;
+import ca.gc.aafc.dina.export.api.dto.DataExportDto;
+import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileController;
 import ca.gc.aafc.dina.export.api.testsupport.jsonapi.JsonApiDocuments;
 import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchTestUtils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.crnk.core.queryspec.QuerySpec;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -30,8 +33,9 @@ public class ExportRequestRepositoryIT extends BaseIntegrationTest {
 
   private static final String MAT_SAMPLE_INDEX = "dina_material_sample_index";
 
+
   @Inject
-  private ExportRequestRepository exportRepo;
+  private DataExportRepository dataExportRepository;
 
   @Inject
   private FileController fileController;
@@ -52,12 +56,13 @@ public class ExportRequestRepositoryIT extends BaseIntegrationTest {
 
     String query = "{\"query\": {\"match_all\": {}}, \"sort\": [{\"data.attributes.createdOn\": \"asc\"}]}";
 
-    ExportRequestDto dto = new ExportRequestDto();
-    dto.setSource(MAT_SAMPLE_INDEX);
-    dto.setQuery(query);
-    dto.setColumns(List.of("materialSampleName", "collectingEvent.dwcVerbatimLocality",
-      "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1"));
-    exportRepo.create(dto);
+    DataExportDto dto =
+      dataExportRepository.create(DataExportDto.builder()
+        .source(MAT_SAMPLE_INDEX)
+        .query(query)
+        .columns(List.of("materialSampleName", "collectingEvent.dwcVerbatimLocality",
+          "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1"))
+        .build());
     assertNotNull(dto.getUuid());
 
     try {
@@ -65,6 +70,9 @@ public class ExportRequestRepositoryIT extends BaseIntegrationTest {
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
+
+    assertEquals(DataExport.ExportStatus.DONE,
+      dataExportRepository.findOne(dto.getUuid(), new QuerySpec(DataExportDto.class)).getStatus());
 
     ResponseEntity<InputStreamResource>
       response = fileController.downloadFile(dto.getUuid(), FileController.DownloadType.DATA_EXPORT);

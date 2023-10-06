@@ -10,7 +10,6 @@ import ca.gc.aafc.dina.security.auth.GroupAuthorizationService;
 import ca.gc.aafc.dina.security.TextHtmlSanitizer;
 import ca.gc.aafc.dina.export.api.dto.ReportRequestDto;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.crnk.core.exception.MethodNotAllowedException;
 import io.crnk.core.exception.ResourceNotFoundException;
@@ -31,12 +30,11 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
+import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPEREF;
+
 @Repository
 @Transactional
 public class ReportRequestRepository implements ResourceRepository<ReportRequestDto, Serializable> {
-
-  protected static final TypeReference<Map<String, Object>> IT_OM_TYPE_REF = new TypeReference<>() {
-  };
 
   private final GroupAuthorizationService authorizationService;
 
@@ -109,7 +107,7 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
 
   protected <S extends ReportRequestDto> void checkSubmittedData(S resource) {
     Objects.requireNonNull(objMapper);
-    Map<String, Object> convertedObj = objMapper.convertValue(resource, IT_OM_TYPE_REF);
+    Map<String, Object> convertedObj = objMapper.convertValue(resource, MAP_TYPEREF);
     if (!JsonDocumentInspector.testPredicateOnValues(convertedObj, TextHtmlSanitizer::isSafeText)) {
       throw new IllegalArgumentException("Unaccepted value detected in attributes");
     }

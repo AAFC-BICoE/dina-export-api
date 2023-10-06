@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.zxing.WriterException;
 import com.jayway.jsonpath.Configuration;
@@ -38,15 +37,14 @@ import java.util.Objects;
 import java.util.UUID;
 import lombok.extern.log4j.Log4j2;
 
+import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPEREF;
+
 /**
  * Main service to orchestrate report generation.
  */
 @Service
 @Log4j2
 public class ReportRequestService {
-
-  private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
-  };
 
   private final Path workingFolder;
   private final ReportGenerator reportGenerator;
@@ -155,7 +153,7 @@ public class ReportRequestService {
     File csvFile = tmpDirectory.resolve(DataExportConfig.CSV_REPORT_FILENAME).toFile();
 
     // Read json file
-    Map<String, Object> jsonAsMap = objectMapper.readValue(jsonFile, MAP_TYPE_REF);
+    Map<String, Object> jsonAsMap = objectMapper.readValue(jsonFile, MAP_TYPEREF);
 
     // Make sure the structure is as expected
     if (!jsonAsMap.containsKey(DataExportConfig.PAYLOAD_KEY) ||
@@ -169,7 +167,7 @@ public class ReportRequestService {
     List<String> headers = payload.isEmpty() ? List.of() : List.copyOf(payload.get(0).keySet());
     try (Writer w = new FileWriter(csvFile, StandardCharsets.UTF_8);
          CsvOutput<Map<String, Object>> output =
-           CsvOutput.create(headers, MAP_TYPE_REF, w)) {
+           CsvOutput.create(headers, MAP_TYPEREF, w)) {
       for (Map<String, Object> line : payload) {
         output.addRecord(line);
       }
