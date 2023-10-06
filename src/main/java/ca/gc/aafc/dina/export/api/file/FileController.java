@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 
-import static ca.gc.aafc.dina.export.api.service.DataExportService.DATA_EXPORT_CSV_FILENAME;
+import static ca.gc.aafc.dina.export.api.generator.DataExportGenerator.DATA_EXPORT_CSV_FILENAME;
 
 @RestController
 @RequestMapping("/api/v1")

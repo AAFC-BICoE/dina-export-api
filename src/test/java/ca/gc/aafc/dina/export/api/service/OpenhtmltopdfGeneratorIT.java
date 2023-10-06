@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.DinaExportModuleApiLauncher;
+import ca.gc.aafc.dina.export.api.generator.OpenhtmltopdfGenerator;
 
 @SpringBootTest(classes = {BaseIntegrationTest.TestConfig.class, DinaExportModuleApiLauncher.class })
 public class OpenhtmltopdfGeneratorIT extends BaseIntegrationTest {

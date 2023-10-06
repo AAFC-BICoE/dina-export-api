@@ -7,6 +7,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import ca.gc.aafc.dina.export.api.generator.BarcodeGenerator;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class BarcodeGeneratorTest {

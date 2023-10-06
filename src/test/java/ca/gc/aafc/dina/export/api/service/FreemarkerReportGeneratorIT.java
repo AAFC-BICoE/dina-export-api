@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.DinaExportModuleApiLauncher;
+import ca.gc.aafc.dina.export.api.generator.FreemarkerReportGenerator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

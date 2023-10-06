@@ -1,4 +1,4 @@
-package ca.gc.aafc.dina.export.api.service;
+package ca.gc.aafc.dina.export.api.generator;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
@@ -98,7 +98,7 @@ public class BarcodeGenerator {
    * @param dataMatrixShape
    * @param format
    */
-  record CodeGenerationOption(Integer width, Integer height,
+  public record CodeGenerationOption(Integer width, Integer height,
                                     Integer margin, Integer qrcodeVersion, String correction, String dataMatrixShape,
                                     CodeFormat format) {
   }
