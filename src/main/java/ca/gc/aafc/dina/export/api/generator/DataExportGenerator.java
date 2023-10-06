@@ -80,6 +80,8 @@ public class DataExportGenerator {
   @Async(DataExportConfig.DINA_THREAD_POOL_BEAN_NAME)
   public CompletableFuture<UUID> export(DataExport dinaExport) throws IOException {
 
+    dataExportStatusService.waitForEntity(dinaExport.getUuid());
+
     dataExportStatusService.updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
 
     Path tmpDirectory = Files.createDirectories(workingFolder.resolve(dinaExport.getUuid().toString()));

@@ -49,6 +49,7 @@ public class DataExportService extends DefaultDinaService<DataExport> {
 
   @Override
   public void postCreate(DataExport dinaExport) {
+    flush();
     try {
       if(asyncConsumer == null) {
         dataExportGenerator.export(dinaExport);
