@@ -1,4 +1,4 @@
-package ca.gc.aafc.dina.export.api.service;
+package ca.gc.aafc.dina.export.api.generator;
 
 import com.google.zxing.WriterException;
 import org.junit.jupiter.api.Test;

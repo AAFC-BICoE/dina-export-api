@@ -29,10 +29,9 @@ import java.util.concurrent.Future;
 import javax.inject.Inject;
 
 @ContextConfiguration(initializers = { ElasticSearchTestContainerInitializer.class })
-public class ExportRequestRepositoryIT extends BaseIntegrationTest {
+public class DataExportRepositoryIT extends BaseIntegrationTest {
 
   private static final String MAT_SAMPLE_INDEX = "dina_material_sample_index";
-
 
   @Inject
   private DataExportRepository dataExportRepository;
