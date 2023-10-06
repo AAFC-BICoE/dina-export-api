@@ -17,6 +17,11 @@ import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.entity.ReportTemplate;
 import ca.gc.aafc.dina.export.api.dto.ReportRequestDto;
 import ca.gc.aafc.dina.export.api.file.FileController;
+import ca.gc.aafc.dina.export.api.generator.BarcodeGenerator;
+import ca.gc.aafc.dina.export.api.generator.FreemarkerReportGenerator;
+import ca.gc.aafc.dina.export.api.generator.OpenhtmltopdfGenerator;
+import ca.gc.aafc.dina.export.api.generator.PDFGenerator;
+import ca.gc.aafc.dina.export.api.generator.ReportGenerator;
 import ca.gc.aafc.dina.export.api.output.CsvOutput;
 
 import java.io.File;

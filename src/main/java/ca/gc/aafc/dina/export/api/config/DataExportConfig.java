@@ -20,6 +20,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class DataExportConfig {
 
+  public static final String DINA_THREAD_POOL_BEAN_NAME = "DinaThreadPoolTaskExecutor";
+
   public static final String GENERATED_REPORTS_LABELS = "generated_reports_labels";
   public static final String GENERATED_DATA_EXPORTS = "generated_data_exports";
 

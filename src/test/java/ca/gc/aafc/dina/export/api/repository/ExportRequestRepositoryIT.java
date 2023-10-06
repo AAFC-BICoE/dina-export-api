@@ -7,6 +7,7 @@ import org.springframework.test.context.ContextConfiguration;
 
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.ElasticSearchTestContainerInitializer;
+import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
 import ca.gc.aafc.dina.export.api.dto.ExportRequestDto;
 import ca.gc.aafc.dina.export.api.file.FileController;
 import ca.gc.aafc.dina.export.api.testsupport.jsonapi.JsonApiDocuments;
@@ -20,6 +21,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import javax.inject.Inject;
 
 @ContextConfiguration(initializers = { ElasticSearchTestContainerInitializer.class })
@@ -35,6 +38,9 @@ public class ExportRequestRepositoryIT extends BaseIntegrationTest {
 
   @Inject
   private ElasticsearchClient esClient;
+
+  @Inject
+  private AsyncConsumer<Future<UUID>> asyncConsumer;
 
   @Test
   public void testESDatasource() throws IOException {
@@ -53,6 +59,12 @@ public class ExportRequestRepositoryIT extends BaseIntegrationTest {
       "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1"));
     exportRepo.create(dto);
     assertNotNull(dto.getUuid());
+
+    try {
+      asyncConsumer.getAccepted().get(0).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
 
     ResponseEntity<InputStreamResource>
       response = fileController.downloadFile(dto.getUuid(), FileController.DownloadType.DATA_EXPORT);
