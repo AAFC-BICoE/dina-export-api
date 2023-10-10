@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+import javax.persistence.NoResultException;
 import lombok.extern.log4j.Log4j2;
 
 import org.apache.commons.lang3.StringUtils;
@@ -29,6 +30,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
+import ca.gc.aafc.dina.export.api.entity.DataExport;
+import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 
 import static ca.gc.aafc.dina.export.api.generator.DataExportGenerator.DATA_EXPORT_CSV_FILENAME;
 
@@ -40,12 +43,14 @@ public class FileController {
   public enum DownloadType { LABEL, DATA_EXPORT }
   private static final TikaConfig TIKA_CONFIG = TikaConfig.getDefaultConfig();
 
+  private final DataExportStatusService dataExportStatusService;
   private final Path labelWorkingFolder;
   private final Path dataExportWorkingFolder;
 
-  public FileController(DataExportConfig dataExportConfig) {
+  public FileController(DataExportConfig dataExportConfig, DataExportStatusService dataExportStatusService) {
     this.labelWorkingFolder = dataExportConfig.getGeneratedReportsLabelsPath();
     this.dataExportWorkingFolder = dataExportConfig.getGeneratedDataExportsPath();
+    this.dataExportStatusService = dataExportStatusService;
   }
 
   @GetMapping("/file/{fileId}")
@@ -63,8 +68,16 @@ public class FileController {
           .findFirst();
       }
     } else if (type == DownloadType.DATA_EXPORT) {
-      filePath = Optional.of(
-        dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
+      // make sure the export is completed
+      try {
+        if (DataExport.ExportStatus.COMPLETED == dataExportStatusService.findStatus(fileId)) {
+          filePath = Optional.of(
+            dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
+        }
+      }
+      catch (NoResultException ignored) {
+        // nothing to do since filePath will remain empty
+      }
     }
 
     if(filePath.isPresent()) {
