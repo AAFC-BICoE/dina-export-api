@@ -74,8 +74,7 @@ public class FileController {
           filePath = Optional.of(
             dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
         }
-      }
-      catch (NoResultException ignored) {
+      } catch (NoResultException ignored) {
         // nothing to do since filePath will remain empty
       }
     }

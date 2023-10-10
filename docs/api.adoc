@@ -50,6 +50,11 @@ The file represented by `templateFilename` must exist in the template folder of 
 ----
 
 == Data Export Request
+
+Data Exports are running asynchronously. Upon creation using a POST, an export UUID will be returned. The UUID can
+be used to query the state using the same (`data-export`) with a GET.
+
+POST /data-export
 [source, json]
 ----
 {
@@ -65,6 +70,8 @@ The file represented by `templateFilename` must exist in the template folder of 
 ----
 
 == Download File
+
+For data exports, the `fileId` is the UUID returned by the export request.
 
 [source]
 ----
