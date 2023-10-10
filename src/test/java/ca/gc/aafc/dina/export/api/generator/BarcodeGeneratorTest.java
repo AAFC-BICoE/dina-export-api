@@ -1,4 +1,4 @@
-package ca.gc.aafc.dina.export.api.service;
+package ca.gc.aafc.dina.export.api.generator;
 
 import com.google.zxing.WriterException;
 import org.junit.jupiter.api.Test;
@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import ca.gc.aafc.dina.export.api.generator.BarcodeGenerator;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 

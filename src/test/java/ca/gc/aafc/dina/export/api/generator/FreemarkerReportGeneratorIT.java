@@ -1,4 +1,4 @@
-package ca.gc.aafc.dina.export.api.service;
+package ca.gc.aafc.dina.export.api.generator;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.DinaExportModuleApiLauncher;
+import ca.gc.aafc.dina.export.api.generator.FreemarkerReportGenerator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

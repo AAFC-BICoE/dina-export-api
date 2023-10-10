@@ -10,7 +10,7 @@ import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.dto.ReportRequestDto;
 import ca.gc.aafc.dina.export.api.dto.ReportTemplateDto;
 import ca.gc.aafc.dina.export.api.file.FileController;
-import ca.gc.aafc.dina.export.api.service.FreemarkerReportGeneratorIT;
+import ca.gc.aafc.dina.export.api.generator.FreemarkerReportGeneratorIT;
 import ca.gc.aafc.dina.export.api.testsupport.fixtures.ReportRequestTestFixture;
 import ca.gc.aafc.dina.export.api.testsupport.fixtures.ReportTemplateTestFixture;
 import ca.gc.aafc.dina.testsupport.security.WithMockKeycloakUser;

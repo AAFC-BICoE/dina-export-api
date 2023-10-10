@@ -1,4 +1,4 @@
-package ca.gc.aafc.dina.export.api.service;
+package ca.gc.aafc.dina.export.api.generator;
 
 import java.io.IOException;
 import java.io.OutputStream;

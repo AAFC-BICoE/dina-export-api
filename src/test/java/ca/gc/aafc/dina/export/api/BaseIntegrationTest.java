@@ -7,8 +7,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
+import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
+import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
 import ca.gc.aafc.dina.testsupport.PostgresTestContainerInitializer;
 
 @SpringBootTest(classes = {BaseIntegrationTest.TestConfig.class, DinaExportModuleApiLauncher.class })
@@ -24,5 +29,12 @@ public class BaseIntegrationTest {
       props.setProperty("version", "test-api-version");
       return new BuildProperties(props);
     }
+
+    @Bean
+    public AsyncConsumer<Future<UUID>> futureConsumer() {
+      return new AsyncConsumer<>();
+    }
   }
+
+
 }

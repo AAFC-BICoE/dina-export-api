@@ -5,4 +5,5 @@
   <include file="db/changelog/db.changelog-init.xml"/>
   <include file="db/changelog/migrations/1-Add_report_template_table.xml"/>
   <include file="db/changelog/migrations/2-Add_template_output_mediatype_to_report_template_table.xml"/>
+  <include file="db/changelog/migrations/3-Add_data_export_table.xml"/>
 </databaseChangeLog>
