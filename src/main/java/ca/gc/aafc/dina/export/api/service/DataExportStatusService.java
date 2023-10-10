@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.service;
 
 import java.util.UUID;
+import javax.persistence.NoResultException;
 import lombok.NonNull;
 
 import org.springframework.stereotype.Service;
@@ -16,9 +17,6 @@ import ca.gc.aafc.dina.jpa.BaseDAO;
 @Service
 public class DataExportStatusService {
 
-  private static final int MAX_RETRY = 100;
-  private static final int RETRY_SLEEP = 100;
-
   private final BaseDAO baseDAO;
 
   public DataExportStatusService(@NonNull BaseDAO baseDAO) {
@@ -33,26 +31,19 @@ public class DataExportStatusService {
   }
 
   /**
-   * to be improved
+   * Find the current ExportStatus of a DataExport by UUID.
    * @param uuid
-   * @return
+   * @return the status or throws NoResultException if no record can be found with the provided uuid
    */
   @Transactional(
     readOnly = true
   )
-  public DataExport waitForEntity(UUID uuid) {
-    DataExport da = null;
-    int retry = 0;
-    while(da == null && retry < MAX_RETRY) {
-      da = baseDAO.findOneByNaturalId(uuid, DataExport.class);
-      try {
-        Thread.sleep(RETRY_SLEEP);
-        retry++;
-      } catch (InterruptedException e) {
-        return null;
-      }
+  public DataExport.ExportStatus findStatus(UUID uuid) {
+    DataExport da = baseDAO.findOneByNaturalId(uuid, DataExport.class);
+    if(da == null) {
+      throw new NoResultException();
     }
-    return da;
+    return da.getStatus();
   }
 
 }

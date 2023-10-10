@@ -16,8 +16,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import javax.persistence.NoResultException;
+import lombok.extern.log4j.Log4j2;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -48,8 +51,12 @@ import static ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure.atJsonPtr;
  * Responsible to generate the export file.
  */
 @Service
+@Log4j2
 public class DataExportGenerator {
   public static final String DATA_EXPORT_CSV_FILENAME = "export.csv";
+
+  private static final int MAX_RETRY = 5;
+  private static final long RETRY_INTERVAL = 500;
 
   private final DataExportStatusService dataExportStatusService;
   private final ObjectMapper objectMapper;
@@ -80,22 +87,43 @@ public class DataExportGenerator {
   @Async(DataExportConfig.DINA_THREAD_POOL_BEAN_NAME)
   public CompletableFuture<UUID> export(DataExport dinaExport) throws IOException {
 
-    dataExportStatusService.waitForEntity(dinaExport.getUuid());
+    DataExport.ExportStatus currStatus = waitForRecord(dinaExport.getUuid());
 
-    dataExportStatusService.updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
+    // Should only work for NEW record at this point
+    if (DataExport.ExportStatus.NEW == currStatus) {
+      dataExportStatusService.updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
 
-    Path tmpDirectory = Files.createDirectories(workingFolder.resolve(dinaExport.getUuid().toString()));
-    // csv output
-    try (Writer w = new FileWriter(tmpDirectory.resolve(DATA_EXPORT_CSV_FILENAME).toFile(), StandardCharsets.UTF_8);
-         CsvOutput<JsonNode> output =
-           CsvOutput.create(Arrays.asList(dinaExport.getColumns()), new TypeReference<>() {
-           }, w)) {
-      export(dinaExport.getSource(), objectMapper.writeValueAsString(dinaExport.getQuery()), output);
+      Path tmpDirectory =
+        Files.createDirectories(workingFolder.resolve(dinaExport.getUuid().toString()));
+      // csv output
+      try (Writer w = new FileWriter(tmpDirectory.resolve(DATA_EXPORT_CSV_FILENAME).toFile(),
+        StandardCharsets.UTF_8);
+           CsvOutput<JsonNode> output =
+             CsvOutput.create(Arrays.asList(dinaExport.getColumns()), new TypeReference<>() {
+             }, w)) {
+        export(dinaExport.getSource(), objectMapper.writeValueAsString(dinaExport.getQuery()),
+          output);
+      }
+      dataExportStatusService.updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
+    } else {
+      log.error("Unexpected DataExport status: {}", currStatus);
     }
 
-    dataExportStatusService.updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.DONE);
-
     return CompletableFuture.completedFuture(dinaExport.getUuid());
+  }
+
+  /**
+   * Wait for the DataExport record to exist and return its status.
+   * @param uuid
+   * @return
+   */
+  private DataExport.ExportStatus waitForRecord(UUID uuid) {
+    RetryTemplate template = RetryTemplate.builder()
+      .maxAttempts(MAX_RETRY)
+      .fixedBackoff(RETRY_INTERVAL)
+      .retryOn(NoResultException.class)
+      .build();
+    return template.execute(ctx -> dataExportStatusService.findStatus(uuid));
   }
 
   /**
