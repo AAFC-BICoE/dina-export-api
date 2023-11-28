@@ -19,8 +19,13 @@ import io.crnk.core.resource.list.ResourceList;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 import javax.transaction.Transactional;
 import lombok.NonNull;
+
+import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Repository;
 
@@ -35,6 +40,8 @@ import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPERE
 @Repository
 @Transactional
 public class ReportRequestRepository implements ResourceRepository<ReportRequestDto, Serializable> {
+
+  private static final Safelist SIMPLE_TEXT = Safelist.simpleText();
 
   private final GroupAuthorizationService authorizationService;
 
@@ -108,9 +115,17 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
   protected <S extends ReportRequestDto> void checkSubmittedData(S resource) {
     Objects.requireNonNull(objMapper);
     Map<String, Object> convertedObj = objMapper.convertValue(resource, MAP_TYPEREF);
-    if (!JsonDocumentInspector.testPredicateOnValues(convertedObj, TextHtmlSanitizer::isSafeText)) {
+    if (!JsonDocumentInspector.testPredicateOnValues(convertedObj, ReportRequestRepository.supplyCheckSubmittedDataPredicate())) {
       throw new IllegalArgumentException("Unaccepted value detected in attributes");
     }
+  }
+
+  protected static Predicate<String> supplyCheckSubmittedDataPredicate() {
+    return txt -> isSafeSimpleText(txt) || TextHtmlSanitizer.isAcceptableText(txt);
+  }
+
+  private static boolean isSafeSimpleText(String txt) {
+    return StringUtils.isBlank(txt) || Jsoup.isValid(txt, SIMPLE_TEXT);
   }
 
   @Override
