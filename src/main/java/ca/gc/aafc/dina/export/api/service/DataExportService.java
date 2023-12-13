@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import lombok.NonNull;
+import lombok.extern.log4j.Log4j2;
 
 import org.springframework.stereotype.Service;
 import org.springframework.validation.SmartValidator;
@@ -18,6 +19,7 @@ import ca.gc.aafc.dina.service.DefaultDinaService;
 /**
  * Called by the repository. Responsible for main database operations and to call the generator.
  */
+@Log4j2
 @Service
 public class DataExportService extends DefaultDinaService<DataExport> {
 
@@ -51,8 +53,12 @@ public class DataExportService extends DefaultDinaService<DataExport> {
   public void postCreate(DataExport dinaExport) {
     flush();
     try {
-      if(asyncConsumer == null) {
-        dataExportGenerator.export(dinaExport);
+      if (asyncConsumer == null) {
+        dataExportGenerator.export(dinaExport)
+          .exceptionally(ex -> {
+            log.error("Async exception:", ex);
+            return null;
+          });
       } else {
         asyncConsumer.accept(dataExportGenerator.export(dinaExport));
       }
