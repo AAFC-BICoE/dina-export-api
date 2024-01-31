@@ -59,5 +59,9 @@ elasticsearch:
 # Wait for requests to finish before shutting down:
 server.shutdown: graceful
 
-dina.auditing.enabled: true
-dina.export.workingFolder: /tmp/dina-data-export
+dina:
+  auditing.enabled: true
+  export.workingFolder: /tmp/dina-data-export
+  messaging:
+    export:
+      queue: dina.export.queue
