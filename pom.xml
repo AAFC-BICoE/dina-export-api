@@ -12,7 +12,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>2.7.13</version>
+    <version>2.7.18</version>
   </parent>
 
   <properties>
@@ -25,13 +25,12 @@
     <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
     <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
     <checkstyle.version>8.45.1</checkstyle.version>
-    <dina-base-api.version>0.111</dina-base-api.version>
+    <dina-base-api.version>0.116</dina-base-api.version>
     <spring-boot-maven-plugin.fork>false</spring-boot-maven-plugin.fork>
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>
     <tika.version>2.6.0</tika.version>
 
-    <spring-security.version>5.7.10</spring-security.version>
     <postgresql.version>42.4.3</postgresql.version>
   </properties>
 
@@ -51,6 +50,11 @@
     <dependency>
       <groupId>io.github.aafc-bicoe</groupId>
       <artifactId>dina-base-api</artifactId>
+      <version>${dina-base-api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.aafc-bicoe</groupId>
+      <artifactId>dina-search</artifactId>
       <version>${dina-base-api.version}</version>
     </dependency>
     <!-- Spring -->
@@ -118,12 +122,6 @@
     </dependency>
 
     <dependency>
-      <groupId>co.elastic.clients</groupId>
-      <artifactId>elasticsearch-java</artifactId>
-      <version>${elasticsearch.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
       <version>${tika.version}</version>
@@ -180,7 +178,7 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Required by elasticsearch java-->
+      <!-- Required by elasticsearch java (from dina-search)-->
       <dependency>
         <groupId>jakarta.json</groupId>
         <artifactId>jakarta.json-api</artifactId>
