@@ -38,6 +38,8 @@ public class DataExportDto {
   private OffsetDateTime createdOn;
   private String createdBy;
 
+  private DataExport.ExportType exportType;
+
   private String source;
 
   @IgnoreDinaMapping(reason = "handled by DataExportQueryFieldAdapter")

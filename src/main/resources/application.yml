@@ -59,9 +59,18 @@ elasticsearch:
 # Wait for requests to finish before shutting down:
 server.shutdown: graceful
 
+# configuration for internal http client to contact other APIs
+http-client:
+  openid-connect-base-url: http://localhost:8080/auth/realms/dina/protocol/openid-connect/token/
+  client-id: objectstore
+  username: cnc-cm
+  password: cnc-cm
+
 dina:
   auditing.enabled: true
-  export.workingFolder: /tmp/dina-data-export
+  export:
+    workingFolder: /tmp/dina-data-export
+    objectStoreDownloadUrl: ${OBJECTSTORE_API_URL:http://localhost:8081}/api/v1/toa
   messaging:
     export:
       queue: dina.export.queue

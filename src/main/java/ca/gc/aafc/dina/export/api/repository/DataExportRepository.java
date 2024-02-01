@@ -42,6 +42,13 @@ public class DataExportRepository extends DinaRepository<DataExportDto, DataExpo
   @Override
   public <S extends DataExportDto> S create(S resource) {
     dinaAuthenticatedUser.ifPresent( user -> resource.setCreatedBy(user.getUsername()));
+
+    // make sure uuid will be auto-generated
+    resource.setUuid(null);
+
+    // for now the repository can only create csv
+    resource.setExportType(DataExport.ExportType.TABULAR_DATA);
+
     return super.create(resource);
   }
 

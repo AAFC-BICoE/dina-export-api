@@ -8,6 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -24,6 +25,9 @@ import org.hibernate.annotations.Type;
 
 import ca.gc.aafc.dina.entity.DinaEntity;
 
+/**
+ * Data export represents a single file export. The file can be a package.
+ */
 @Entity
 @AllArgsConstructor
 @Setter
@@ -32,7 +36,8 @@ import ca.gc.aafc.dina.entity.DinaEntity;
 @RequiredArgsConstructor
 public class DataExport implements DinaEntity {
 
-  public enum ExportStatus { NEW, RUNNING, COMPLETED, ERROR}
+  public enum ExportStatus { NEW, RUNNING, COMPLETED, ERROR }
+  public enum ExportType { TABULAR_DATA, OBJECT_ARCHIVE }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,6 +56,10 @@ public class DataExport implements DinaEntity {
   @Column(name = "created_by", updatable = false)
   private String createdBy;
 
+  @NotNull
+  @Column
+  private ExportType exportType;
+
   @NotBlank
   @Size(max = 100)
   private String source;
@@ -65,5 +74,8 @@ public class DataExport implements DinaEntity {
 
   @Column
   private ExportStatus status;
+
+  @Transient
+  private Map<String, String> transitiveData;
 
 }
