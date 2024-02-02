@@ -51,7 +51,6 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
     workingFolder = dataExportConfig.getGeneratedDataExportsPath();
   }
 
- // @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
   @Async(DataExportConfig.DINA_THREAD_POOL_BEAN_NAME)
   @Override
   public CompletableFuture<UUID> export(DataExport dinaExport) throws IOException {
@@ -67,6 +66,8 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
       .build();
 
     Path destinationFile = workingFolder.resolve(dinaExport.getUuid().toString());
+
+    DataExport.ExportStatus currStatus = waitForRecord(dinaExport.getUuid());
 
     updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
 

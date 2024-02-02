@@ -61,7 +61,7 @@ server.shutdown: graceful
 
 # configuration for internal http client to contact other APIs
 http-client:
-  openid-connect-base-url: http://localhost:8080/auth/realms/dina/protocol/openid-connect/token/
+  openid-connect-base-url: http://localhost:8080/auth/realms/dina/protocol/openid-connect/
   client-id: objectstore
   username: cnc-cm
   password: cnc-cm
