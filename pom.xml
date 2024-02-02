@@ -18,8 +18,8 @@
   <properties>
     <java.version>17</java.version>
     <javax.interceptor-api>1.2.2</javax.interceptor-api>
-    <spotbugs.version>4.7.3</spotbugs.version>
-    <spotbugs-maven-plugin.version>4.7.3.4</spotbugs-maven-plugin.version>
+    <spotbugs.version>4.8.3</spotbugs.version>
+    <spotbugs-maven-plugin.version>4.8.3.0</spotbugs-maven-plugin.version>
     <jcip-annotations.version>1.0</jcip-annotations.version>
     <dependency.check.version>8.3.1</dependency.check.version>
     <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>

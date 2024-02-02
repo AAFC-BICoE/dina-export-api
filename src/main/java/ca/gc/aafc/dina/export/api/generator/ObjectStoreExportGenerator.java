@@ -5,13 +5,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.log4j.Log4j2;
+import okhttp3.Call;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 import org.apache.commons.io.IOUtils;
 import org.springframework.scheduling.annotation.Async;
@@ -50,13 +51,17 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
     workingFolder = dataExportConfig.getGeneratedDataExportsPath();
   }
 
+ // @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
   @Async(DataExportConfig.DINA_THREAD_POOL_BEAN_NAME)
   @Override
   public CompletableFuture<UUID> export(DataExport dinaExport) throws IOException {
 
     // Prepare url
     HttpUrl baseUrl = HttpUrl.parse(dataExportConfig.getObjectStoreDownloadUrl());
-    HttpUrl toaUrl = Objects.requireNonNull(baseUrl).newBuilder()
+    if (baseUrl == null) {
+      throw new IllegalStateException("Can't parse ObjectStoreDownloadUrl");
+    }
+    HttpUrl toaUrl = baseUrl.newBuilder()
       .addPathSegment(dinaExport.getTransitiveData()
         .get(DataExportConfig.OBJECT_STORE_TOA))
       .build();
@@ -65,18 +70,23 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
     updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
 
-    try (Response response = httpClient.newCall(tokenBasedRequestBuilder.newBuilder().url(toaUrl).build()).execute();
-         OutputStream outputStream = new FileOutputStream(destinationFile.toFile());
-         InputStream inputStream = Objects.requireNonNull(response.body()).byteStream()) {
-      IOUtils.copy(inputStream, outputStream);
-      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
-    } catch (IOException ioEx) {
+    Call downloadCall = httpClient.newCall(tokenBasedRequestBuilder.newBuilder().url(toaUrl).build());
+    try (Response response = downloadCall.execute()) {
+      ResponseBody body = response.body();
+      if (body == null) {
+        throw new IllegalStateException("Can't read response body from object-store");
+      }
+      try (OutputStream outputStream = new FileOutputStream(destinationFile.toFile());
+           InputStream inputStream = body.byteStream()) {
+        IOUtils.copy(inputStream, outputStream);
+        updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
+      }
+    } catch (IOException | IllegalStateException ex) {
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
-      throw ioEx;
+      throw ex;
     }
 
     return CompletableFuture.completedFuture(dinaExport.getUuid());
   }
-
 
 }

@@ -35,8 +35,8 @@ public class DataExportService extends DefaultDinaService<DataExport> {
    * @param tabularDataExportGenerator
    * @param asyncConsumer optional consumer to get the Future created for the async export
    */
-  public DataExportService(@NonNull BaseDAO baseDAO,
-                           @NonNull SmartValidator validator,
+  public DataExportService(BaseDAO baseDAO,
+                           SmartValidator validator,
                            DataExportGenerator tabularDataExportGenerator,
                            DataExportGenerator objectStoreExportGenerator,
                            Optional<Consumer<Future<UUID>>> asyncConsumer) {

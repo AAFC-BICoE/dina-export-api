@@ -19,7 +19,7 @@ public class DataExportStatusService {
 
   private final BaseDAO baseDAO;
 
-  public DataExportStatusService(@NonNull BaseDAO baseDAO) {
+  public DataExportStatusService(BaseDAO baseDAO) {
     this.baseDAO = baseDAO;
   }
 

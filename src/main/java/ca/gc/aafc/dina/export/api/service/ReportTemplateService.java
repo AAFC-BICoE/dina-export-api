@@ -13,8 +13,8 @@ import ca.gc.aafc.dina.service.DefaultDinaService;
 @Service
 public class ReportTemplateService extends DefaultDinaService<ReportTemplate> {
 
-  public ReportTemplateService(@NonNull BaseDAO baseDAO,
-                               @NonNull SmartValidator validator) {
+  public ReportTemplateService(BaseDAO baseDAO,
+                               SmartValidator validator) {
     super(baseDAO, validator);
   }
 

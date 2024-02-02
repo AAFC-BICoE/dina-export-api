@@ -50,12 +50,12 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
   private final ObjectMapper objMapper;
 
   public ReportRequestRepository(
-    @NonNull GroupAuthorizationService authorizationService,
+    GroupAuthorizationService authorizationService,
     Optional<DinaAuthenticatedUser> dinaAuthenticatedUser,
     ReportRequestService reportRequestService,
     ReportTemplateService reportService,
-    @NonNull BuildProperties props,
-    @NonNull ObjectMapper objMapper
+    BuildProperties props,
+    ObjectMapper objMapper
   ) {
     this.authorizationService = authorizationService;
     this.reportRequestService = reportRequestService;
