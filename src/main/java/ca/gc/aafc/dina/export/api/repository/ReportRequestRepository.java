@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import javax.transaction.Transactional;
-import lombok.NonNull;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
