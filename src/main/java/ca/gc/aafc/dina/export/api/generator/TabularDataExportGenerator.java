@@ -1,26 +1,6 @@
 package ca.gc.aafc.dina.export.api.generator;
 
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.Hit;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import javax.persistence.NoResultException;
-import lombok.extern.log4j.Log4j2;
-
 import org.apache.commons.collections.CollectionUtils;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -47,18 +27,32 @@ import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.LIST_MAP_T
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPEREF;
 import static ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure.atJsonPtr;
 
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import lombok.extern.log4j.Log4j2;
+
 /**
  * Responsible to generate tabular export file.
  */
 @Service
 @Log4j2
-public class TabularDataExportGenerator implements DataExportGenerator {
+public class TabularDataExportGenerator extends DataExportGenerator {
   public static final String DATA_EXPORT_CSV_FILENAME = "export.csv";
 
-  private static final int MAX_RETRY = 5;
-  private static final long RETRY_INTERVAL = 500;
-
-  private final DataExportStatusService dataExportStatusService;
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
   private final Configuration jsonPathConfiguration;
@@ -71,7 +65,8 @@ public class TabularDataExportGenerator implements DataExportGenerator {
     Configuration jsonPathConfiguration, ElasticSearchDataSource elasticSearchDataSource,
     ObjectMapper objectMapper) {
 
-    this.dataExportStatusService = dataExportStatusService;
+    super(dataExportStatusService);
+
     this.jsonPathConfiguration = jsonPathConfiguration;
     this.elasticSearchDataSource = elasticSearchDataSource;
     this.objectMapper = objectMapper;
@@ -91,39 +86,30 @@ public class TabularDataExportGenerator implements DataExportGenerator {
 
     // Should only work for NEW record at this point
     if (DataExport.ExportStatus.NEW == currStatus) {
-      dataExportStatusService.updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
+      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
 
-      Path tmpDirectory =
-        Files.createDirectories(workingFolder.resolve(dinaExport.getUuid().toString()));
-      // csv output
-      try (Writer w = new FileWriter(tmpDirectory.resolve(DATA_EXPORT_CSV_FILENAME).toFile(),
-        StandardCharsets.UTF_8);
-           CsvOutput<JsonNode> output =
-             CsvOutput.create(Arrays.asList(dinaExport.getColumns()), new TypeReference<>() {
-             }, w)) {
-        export(dinaExport.getSource(), objectMapper.writeValueAsString(dinaExport.getQuery()),
-          output);
+      try {
+        Path tmpDirectory =
+          Files.createDirectories(workingFolder.resolve(dinaExport.getUuid().toString()));
+        // csv output
+        try (Writer w = new FileWriter(tmpDirectory.resolve(DATA_EXPORT_CSV_FILENAME).toFile(),
+          StandardCharsets.UTF_8);
+             CsvOutput<JsonNode> output =
+               CsvOutput.create(Arrays.asList(dinaExport.getColumns()), new TypeReference<>() {
+               }, w)) {
+          export(dinaExport.getSource(), objectMapper.writeValueAsString(dinaExport.getQuery()),
+            output);
+        }
+      } catch (IOException ioEx) {
+        updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
+        throw ioEx;
       }
-      dataExportStatusService.updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
+      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
     } else {
       log.error("Unexpected DataExport status: {}", currStatus);
     }
 
     return CompletableFuture.completedFuture(dinaExport.getUuid());
-  }
-
-  /**
-   * Wait for the DataExport record to exist and return its status.
-   * @param uuid
-   * @return
-   */
-  private DataExport.ExportStatus waitForRecord(UUID uuid) {
-    RetryTemplate template = RetryTemplate.builder()
-      .maxAttempts(MAX_RETRY)
-      .fixedBackoff(RETRY_INTERVAL)
-      .retryOn(NoResultException.class)
-      .build();
-    return template.execute(ctx -> dataExportStatusService.findStatus(uuid));
   }
 
   /**
@@ -254,14 +240,6 @@ public class TabularDataExportGenerator implements DataExportGenerator {
     }
 
     return flatRelationships;
-  }
-
-  /**
-   * Result of the Export request.
-   * @param resultIdentifier
-   */
-  public record ExportResult(UUID resultIdentifier) {
-
   }
 
 }

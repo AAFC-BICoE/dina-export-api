@@ -22,10 +22,11 @@ import ca.gc.aafc.dina.client.token.AccessTokenManager;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.HttpClientConfig;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
+import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 
 @Service
 @Log4j2
-public class ObjectStoreExportGenerator implements DataExportGenerator {
+public class ObjectStoreExportGenerator extends DataExportGenerator {
 
   private final Path workingFolder;
 
@@ -34,14 +35,17 @@ public class ObjectStoreExportGenerator implements DataExportGenerator {
   private final DataExportConfig dataExportConfig;
   private final TokenBasedRequestBuilder tokenBasedRequestBuilder;
 
-  public ObjectStoreExportGenerator(HttpClientConfig openIdConnectConfig, DataExportConfig dataExportConfig) {
+  public ObjectStoreExportGenerator(HttpClientConfig openIdConnectConfig, DataExportConfig dataExportConfig,
+                                    DataExportStatusService dataExportStatusService) {
+
+    super(dataExportStatusService);
+
     this.dataExportConfig = dataExportConfig;
     AccessTokenManager accessTokenManager = new AccessTokenManager(openIdConnectConfig);
     httpClient = new OkHttpClient.Builder()
       .authenticator(new AccessTokenAuthenticator(accessTokenManager))
       .build();
     tokenBasedRequestBuilder = new TokenBasedRequestBuilder(accessTokenManager);
-
     workingFolder = dataExportConfig.getGeneratedDataExportsPath();
   }
 
@@ -55,11 +59,16 @@ public class ObjectStoreExportGenerator implements DataExportGenerator {
 
     Path destinationFile = workingFolder.resolve(dinaExport.getUuid().toString());
 
+    updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
+
     try (Response response = httpClient.newCall(tokenBasedRequestBuilder.newBuilder().url(toaUrl).build()).execute();
          OutputStream outputStream = new FileOutputStream(destinationFile.toFile());
          InputStream inputStream = response.body().byteStream()) {
-
       IOUtils.copy(inputStream, outputStream);
+      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
+    } catch (IOException ioEx) {
+      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
+      throw ioEx;
     }
 
     return CompletableFuture.completedFuture(dinaExport.getUuid());
