@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.log4j.Log4j2;
@@ -55,7 +56,10 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
     // Prepare url
     HttpUrl baseUrl = HttpUrl.parse(dataExportConfig.getObjectStoreDownloadUrl());
-    HttpUrl toaUrl = baseUrl.newBuilder().addPathSegment(dinaExport.getTransitiveData().get(DataExportConfig.OBJECT_STORE_TOA)).build();
+    HttpUrl toaUrl = Objects.requireNonNull(baseUrl).newBuilder()
+      .addPathSegment(dinaExport.getTransitiveData()
+        .get(DataExportConfig.OBJECT_STORE_TOA))
+      .build();
 
     Path destinationFile = workingFolder.resolve(dinaExport.getUuid().toString());
 
@@ -63,7 +67,7 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
     try (Response response = httpClient.newCall(tokenBasedRequestBuilder.newBuilder().url(toaUrl).build()).execute();
          OutputStream outputStream = new FileOutputStream(destinationFile.toFile());
-         InputStream inputStream = response.body().byteStream()) {
+         InputStream inputStream = Objects.requireNonNull(response.body()).byteStream()) {
       IOUtils.copy(inputStream, outputStream);
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
     } catch (IOException ioEx) {
@@ -73,4 +77,6 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
     return CompletableFuture.completedFuture(dinaExport.getUuid());
   }
+
+
 }
