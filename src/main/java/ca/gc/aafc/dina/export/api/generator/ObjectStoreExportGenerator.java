@@ -105,9 +105,9 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
   private static String extractFileExtensionFromResponse(Response response) {
     String ext = "";
     String contentDisposition = response.header(HttpHeaders.CONTENT_DISPOSITION);
-    if(contentDisposition!= null) {
+    if (contentDisposition != null) {
       ContentDisposition cd = ContentDisposition.parse(contentDisposition);
-      if(StringUtils.isNotBlank(cd.getFilename())) {
+      if (StringUtils.isNotBlank(cd.getFilename())) {
         ext = FilenameUtils.getExtension(cd.getFilename());
       }
     }
