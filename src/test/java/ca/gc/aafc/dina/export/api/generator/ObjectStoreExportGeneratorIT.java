@@ -21,6 +21,8 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.model.Parameter;
 import org.mockserver.model.ParameterBody;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -29,7 +31,10 @@ import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
+import ca.gc.aafc.dina.export.api.file.FileController;
 import ca.gc.aafc.dina.testsupport.TestResourceHelper;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockServerExtension.class)
 @MockServerSettings(ports = {8080, 8081})
@@ -49,8 +54,11 @@ public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
   @Inject
   private AsyncConsumer<Future<UUID>> asyncConsumer;
 
+  @Inject
+  private FileController fileController;
+
   @Test
-  public void test() throws IOException {
+  public void onExportFromObjectStore_fileDownloadedAndStoredProperly() throws IOException {
 
     mockKeycloak(mockServer);
     mockObjectStoreDownloadResponse(mockServer, TEST_TOA, "/barcodes/06-01001016875.png");
@@ -70,6 +78,9 @@ public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
+
+    ResponseEntity<?> downloadResponse = fileController.downloadFile(uuid, FileController.DownloadType.DATA_EXPORT);
+    assertEquals(HttpStatus.OK, downloadResponse.getStatusCode());
   }
 
   private static void mockObjectStoreDownloadResponse(ClientAndServer mockServer, String toa, String resource)

@@ -77,26 +77,32 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
     DataExport.ExportStatus currStatus = waitForRecord(dinaExport.getUuid());
 
-    updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
+    if(currStatus == DataExport.ExportStatus.NEW) {
 
-    Call downloadCall = httpClient.newCall(tokenBasedRequestBuilder.newBuilder().url(toaUrl).build());
-    try (Response response = downloadCall.execute()) {
+      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
 
-      Path destinationFile = workingFolder.resolve(dinaExport.getUuid().toString() +
-        extractFileExtensionFromResponse(response));
+      Call downloadCall =
+        httpClient.newCall(tokenBasedRequestBuilder.newBuilder().url(toaUrl).build());
+      try (Response response = downloadCall.execute()) {
 
-      ResponseBody body = response.body();
-      if (!response.isSuccessful() || body == null) {
-        throw new IllegalStateException("Can't read response body from object-store");
+        Path destinationFile = workingFolder.resolve(dinaExport.getUuid().toString() +
+          extractFileExtensionFromResponse(response));
+
+        ResponseBody body = response.body();
+        if (!response.isSuccessful() || body == null) {
+          throw new IllegalStateException("Can't read response body from object-store");
+        }
+        try (OutputStream outputStream = new FileOutputStream(destinationFile.toFile());
+             InputStream inputStream = body.byteStream()) {
+          IOUtils.copy(inputStream, outputStream);
+          updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
+        }
+      } catch (IOException | IllegalStateException ex) {
+        updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
+        throw ex;
       }
-      try (OutputStream outputStream = new FileOutputStream(destinationFile.toFile());
-           InputStream inputStream = body.byteStream()) {
-        IOUtils.copy(inputStream, outputStream);
-        updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
-      }
-    } catch (IOException | IllegalStateException ex) {
-      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
-      throw ex;
+    } else {
+      log.error("Unexpected DataExport status: {}", currStatus);
     }
 
     return CompletableFuture.completedFuture(dinaExport.getUuid());

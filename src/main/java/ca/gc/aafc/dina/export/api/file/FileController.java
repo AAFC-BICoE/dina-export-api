@@ -3,6 +3,7 @@ package ca.gc.aafc.dina.export.api.file;
 import io.crnk.core.exception.ResourceNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -71,8 +72,22 @@ public class FileController {
       // make sure the export is completed
       try {
         if (DataExport.ExportStatus.COMPLETED == dataExportStatusService.findStatus(fileId)) {
-          filePath = Optional.of(
-            dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
+
+          Path csvPath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME);
+
+          if(csvPath.toFile().exists()) {
+            filePath = Optional.of(
+              dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
+          } else {
+            // try to find a file matching that uuid
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataExportWorkingFolder,
+              fileId + ".*")) {
+              // Print all the files to output stream
+              for (Path p : stream) {
+                filePath = Optional.of(p);
+              }
+            }
+          }
         }
       } catch (NoResultException ignored) {
         // nothing to do since filePath will remain empty
