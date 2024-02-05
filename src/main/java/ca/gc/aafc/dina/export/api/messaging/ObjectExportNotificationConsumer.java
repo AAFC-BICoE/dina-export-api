@@ -2,6 +2,7 @@ package ca.gc.aafc.dina.export.api.messaging;
 
 import java.util.Map;
 import javax.inject.Named;
+import javax.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -32,6 +33,7 @@ public class ObjectExportNotificationConsumer implements RabbitMQMessageConsumer
   }
 
   @RabbitListener(queues = "#{exportQueueProperties.getQueue()}")
+  @Transactional
   @Override
   public void receiveMessage(ObjectExportNotification objectExportNotification) {
     log.info("Received message and deserialized to : {}", objectExportNotification::toString);

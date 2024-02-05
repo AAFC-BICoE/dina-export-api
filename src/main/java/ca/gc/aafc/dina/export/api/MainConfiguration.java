@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import ca.gc.aafc.dina.DinaBaseApiAutoConfiguration;
+import ca.gc.aafc.dina.search.common.config.SearchQueueConsumerConfiguration;
 import ca.gc.aafc.dina.search.messaging.consumer.DocumentOperationNotificationConsumer;
 import ca.gc.aafc.dina.service.JaversDataService;
 
@@ -20,7 +21,8 @@ import static ca.gc.aafc.dina.export.api.config.DataExportConfig.DINA_THREAD_POO
 
 @Configuration
 @ComponentScan(basePackageClasses = DinaBaseApiAutoConfiguration.class,
-  excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = DocumentOperationNotificationConsumer.class))
+  excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
+    value = {DocumentOperationNotificationConsumer.class, SearchQueueConsumerConfiguration.class}))
 @ImportAutoConfiguration(DinaBaseApiAutoConfiguration.class)
 @MapperScan(basePackageClasses = JaversDataService.class)
 @EnableAsync
