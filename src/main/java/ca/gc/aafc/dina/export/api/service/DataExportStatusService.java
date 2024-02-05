@@ -2,7 +2,6 @@ package ca.gc.aafc.dina.export.api.service;
 
 import java.util.UUID;
 import javax.persistence.NoResultException;
-import lombok.NonNull;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +18,7 @@ public class DataExportStatusService {
 
   private final BaseDAO baseDAO;
 
-  public DataExportStatusService(@NonNull BaseDAO baseDAO) {
+  public DataExportStatusService(BaseDAO baseDAO) {
     this.baseDAO = baseDAO;
   }
 

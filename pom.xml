@@ -18,8 +18,8 @@
   <properties>
     <java.version>17</java.version>
     <javax.interceptor-api>1.2.2</javax.interceptor-api>
-    <spotbugs.version>4.7.3</spotbugs.version>
-    <spotbugs-maven-plugin.version>4.7.3.4</spotbugs-maven-plugin.version>
+    <spotbugs.version>4.8.3</spotbugs.version>
+    <spotbugs-maven-plugin.version>4.8.3.0</spotbugs-maven-plugin.version>
     <jcip-annotations.version>1.0</jcip-annotations.version>
     <dependency.check.version>8.3.1</dependency.check.version>
     <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
@@ -32,6 +32,9 @@
     <tika.version>2.6.0</tika.version>
 
     <postgresql.version>42.4.3</postgresql.version>
+
+    <!-- test-related properties-->
+    <mockserver.version>5.14.0</mockserver.version>
   </properties>
 
   <!--  temporary until we can migrate to a newer version of Crnk-->
@@ -55,6 +58,16 @@
     <dependency>
       <groupId>io.github.aafc-bicoe</groupId>
       <artifactId>dina-search</artifactId>
+      <version>${dina-base-api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.aafc-bicoe</groupId>
+      <artifactId>dina-client</artifactId>
+      <version>${dina-base-api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.aafc-bicoe</groupId>
+      <artifactId>dina-messaging</artifactId>
       <version>${dina-base-api.version}</version>
     </dependency>
     <!-- Spring -->
@@ -173,7 +186,12 @@
       <artifactId>dina-test-support</artifactId>
       <version>${dina-base-api.version}</version>
       <scope>test</scope>
-    </dependency>    
+    </dependency>
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-junit-jupiter-no-dependencies</artifactId>
+      <version>${mockserver.version}</version>
+    </dependency>
   </dependencies>
 
   <dependencyManagement>

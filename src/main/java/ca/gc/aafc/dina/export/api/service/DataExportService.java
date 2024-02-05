@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
-import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 
 import org.springframework.stereotype.Service;
@@ -17,13 +16,14 @@ import ca.gc.aafc.dina.jpa.BaseDAO;
 import ca.gc.aafc.dina.service.DefaultDinaService;
 
 /**
- * Called by the repository. Responsible for main database operations and to call the generator.
+ * Responsible for main database operations and to call the generator based on export type.
  */
 @Log4j2
 @Service
 public class DataExportService extends DefaultDinaService<DataExport> {
 
-  private final DataExportGenerator dataExportGenerator;
+  private final DataExportGenerator tabularDataExportGenerator;
+  private final DataExportGenerator objectStoreExportGenerator;
 
   private final Consumer<Future<UUID>> asyncConsumer;
 
@@ -31,40 +31,54 @@ public class DataExportService extends DefaultDinaService<DataExport> {
    *
    * @param baseDAO
    * @param validator
-   * @param dataExportGenerator
+   * @param tabularDataExportGenerator
    * @param asyncConsumer optional consumer to get the Future created for the async export
    */
-  public DataExportService(@NonNull BaseDAO baseDAO,
-                           @NonNull SmartValidator validator,
-                           DataExportGenerator dataExportGenerator,
+  public DataExportService(BaseDAO baseDAO,
+                           SmartValidator validator,
+                           DataExportGenerator tabularDataExportGenerator,
+                           DataExportGenerator objectStoreExportGenerator,
                            Optional<Consumer<Future<UUID>>> asyncConsumer) {
     super(baseDAO, validator);
-    this.dataExportGenerator = dataExportGenerator;
+    this.tabularDataExportGenerator = tabularDataExportGenerator;
+    this.objectStoreExportGenerator = objectStoreExportGenerator;
     this.asyncConsumer = asyncConsumer.orElse(null);
   }
 
   @Override
   public void preCreate(DataExport dinaExport) {
-    dinaExport.setUuid(UUID.randomUUID());
+
+    if(dinaExport.getUuid() == null) {
+      dinaExport.setUuid(UUID.randomUUID());
+    }
     dinaExport.setStatus(DataExport.ExportStatus.NEW);
   }
 
   @Override
   public void postCreate(DataExport dinaExport) {
     flush();
+
+    DataExportGenerator exportGenerator = generatorByExportType(dinaExport.getExportType());
+
     try {
       if (asyncConsumer == null) {
-        dataExportGenerator.export(dinaExport)
+        exportGenerator.export(dinaExport)
           .exceptionally(ex -> {
             log.error("Async exception:", ex);
             return null;
           });
       } else {
-        asyncConsumer.accept(dataExportGenerator.export(dinaExport));
+        asyncConsumer.accept(exportGenerator.export(dinaExport));
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
+  private DataExportGenerator generatorByExportType(DataExport.ExportType type) {
+    return switch (type) {
+      case TABULAR_DATA -> tabularDataExportGenerator;
+      case OBJECT_ARCHIVE -> objectStoreExportGenerator;
+    };
+  }
 }

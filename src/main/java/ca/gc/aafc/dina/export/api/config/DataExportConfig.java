@@ -35,8 +35,13 @@ public class DataExportConfig {
   public static final String REPORT_FILENAME = "report";
   public static final String TEMP_HTML = "report_1.html";
 
+  public static final String OBJECT_STORE_TOA = "toa";
+  public static final String OBJECT_STORE_SOURCE = "object-store";
+
   @NotBlank
   private String workingFolder;
+
+  private String objectStoreDownloadUrl;
 
   public Path getGeneratedReportsLabelsPath() {
     return Path.of(workingFolder).resolve(GENERATED_REPORTS_LABELS);

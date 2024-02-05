@@ -3,6 +3,7 @@ package ca.gc.aafc.dina.export.api.file;
 import io.crnk.core.exception.ResourceNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -33,7 +34,7 @@ import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 
-import static ca.gc.aafc.dina.export.api.generator.DataExportGenerator.DATA_EXPORT_CSV_FILENAME;
+import static ca.gc.aafc.dina.export.api.generator.TabularDataExportGenerator.DATA_EXPORT_CSV_FILENAME;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -71,8 +72,22 @@ public class FileController {
       // make sure the export is completed
       try {
         if (DataExport.ExportStatus.COMPLETED == dataExportStatusService.findStatus(fileId)) {
-          filePath = Optional.of(
-            dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
+
+          Path csvPath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME);
+
+          if(csvPath.toFile().exists()) {
+            filePath = Optional.of(
+              dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
+          } else {
+            // try to find a file matching that uuid
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataExportWorkingFolder,
+              fileId + ".*")) {
+              // we should only have one returned
+              for (Path p : stream) {
+                filePath = Optional.of(p);
+              }
+            }
+          }
         }
       } catch (NoResultException ignored) {
         // nothing to do since filePath will remain empty

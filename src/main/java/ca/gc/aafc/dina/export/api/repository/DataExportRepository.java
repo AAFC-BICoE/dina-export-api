@@ -17,7 +17,6 @@ import ca.gc.aafc.dina.service.AuditService;
 import io.crnk.core.exception.MethodNotAllowedException;
 import java.io.Serializable;
 import java.util.Optional;
-import lombok.NonNull;
 
 @Repository
 public class DataExportRepository extends DinaRepository<DataExportDto, DataExport> {
@@ -25,11 +24,11 @@ public class DataExportRepository extends DinaRepository<DataExportDto, DataExpo
   private final Optional<DinaAuthenticatedUser> dinaAuthenticatedUser;
 
   public DataExportRepository(
-    @NonNull DataExportService dinaService,
-    @NonNull ObjectOwnerAuthorizationService authorizationService,
+    DataExportService dinaService,
+    ObjectOwnerAuthorizationService authorizationService,
     Optional<DinaAuthenticatedUser> dinaAuthenticatedUser,
-    @NonNull Optional<AuditService> auditService,
-    @NonNull BuildProperties buildProperties, ObjectMapper objMapper) {
+    Optional<AuditService> auditService,
+    BuildProperties buildProperties, ObjectMapper objMapper) {
 
     super(dinaService, authorizationService, auditService,
       new DinaMapper<>(DataExportDto.class),
@@ -42,6 +41,13 @@ public class DataExportRepository extends DinaRepository<DataExportDto, DataExpo
   @Override
   public <S extends DataExportDto> S create(S resource) {
     dinaAuthenticatedUser.ifPresent( user -> resource.setCreatedBy(user.getUsername()));
+
+    // make sure uuid will be auto-generated
+    resource.setUuid(null);
+
+    // for now the repository can only create csv
+    resource.setExportType(DataExport.ExportType.TABULAR_DATA);
+
     return super.create(resource);
   }
 
