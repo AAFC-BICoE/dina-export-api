@@ -82,7 +82,7 @@ public class FileController {
             // try to find a file matching that uuid
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataExportWorkingFolder,
               fileId + ".*")) {
-              // Print all the files to output stream
+              // we should only have one returned
               for (Path p : stream) {
                 filePath = Optional.of(p);
               }
