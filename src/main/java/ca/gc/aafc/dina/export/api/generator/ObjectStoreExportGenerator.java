@@ -90,7 +90,7 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
         ResponseBody body = response.body();
         if (!response.isSuccessful() || body == null) {
-          throw new IllegalStateException("Can't read response body from object-store");
+          throw new IllegalStateException("Can't read response body from object-store. Returned code: " + response.code());
         }
         try (OutputStream outputStream = new FileOutputStream(destinationFile.toFile());
              InputStream inputStream = body.byteStream()) {
