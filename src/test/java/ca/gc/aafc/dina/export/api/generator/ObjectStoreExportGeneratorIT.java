@@ -1,5 +1,7 @@
 package ca.gc.aafc.dina.export.api.generator;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -7,6 +9,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
+import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
@@ -17,18 +20,22 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.Parameter;
 import org.mockserver.model.ParameterBody;
-import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpHeaders;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import ca.gc.aafc.dina.client.token.AccessToken;
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
+import ca.gc.aafc.dina.testsupport.TestResourceHelper;
 
 @ExtendWith(MockServerExtension.class)
 @MockServerSettings(ports = {8080, 8081})
 public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
+
+  private static final String TEST_TOA = "sfsHG5eFW";
 
   private final ClientAndServer mockServer;
 
@@ -43,10 +50,10 @@ public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
   private AsyncConsumer<Future<UUID>> asyncConsumer;
 
   @Test
-  public void test() throws JsonProcessingException {
+  public void test() throws IOException {
 
     mockKeycloak(mockServer);
-    mockObjectStoreResponse(mockServer);
+    mockObjectStoreDownloadResponse(mockServer, TEST_TOA, "/barcodes/06-01001016875.png");
 
     UUID uuid = UUID.randomUUID();
     DataExport dataExport = new DataExport();
@@ -54,7 +61,7 @@ public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
     dataExport.setExportType(DataExport.ExportType.OBJECT_ARCHIVE);
     dataExport.setCreatedBy("test-user");
     dataExport.setSource(DataExportConfig.OBJECT_STORE_SOURCE);
-    dataExport.setTransitiveData(Map.of(DataExportConfig.OBJECT_STORE_TOA, "abc"));
+    dataExport.setTransitiveData(Map.of(DataExportConfig.OBJECT_STORE_TOA, TEST_TOA));
 
     dataExportServiceTransactionWrapper.createEntity(dataExport);
 
@@ -65,13 +72,26 @@ public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
     }
   }
 
-  private static void mockObjectStoreResponse(ClientAndServer mockServer) {
+  private static void mockObjectStoreDownloadResponse(ClientAndServer mockServer, String toa, String resource)
+    throws IOException {
+
+    HttpHeaders respHeaders = new HttpHeaders();
+    respHeaders.setContentDispositionFormData("attachment", FilenameUtils.getName(resource));
+
+    var mockResponse = HttpResponse.response()
+      .withHeader(HttpHeaders.CONTENT_DISPOSITION, respHeaders.getFirst(HttpHeaders.CONTENT_DISPOSITION))
+      .withStatusCode(200);
+    try (InputStream is = ObjectStoreExportGeneratorIT.class.getResourceAsStream(resource)) {
+      if (is != null) {
+        mockResponse.withBody(is.readAllBytes());
+      }
+    }
+    mockResponse.withDelay(TimeUnit.SECONDS, 1);
+
     mockServer.when(setupMockRequest()
         .withMethod("GET")
-        .withPath("/api/v1/toa/"))
-      .respond(HttpResponse.response().withStatusCode(200)
-        .withBody("")
-        .withDelay(TimeUnit.SECONDS, 1));
+        .withPath("/api/v1/toa/" + toa))
+      .respond(mockResponse);
   }
 
   public static void mockKeycloak(ClientAndServer mockServer) throws JsonProcessingException {
@@ -86,7 +106,6 @@ public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
     Parameter grantType = new Parameter("grant_type", "password");
     ParameterBody.params(clientId, username, password, grantType);
 
-    ObjectMapper OM = new ObjectMapper();
 
     // Expectation for Authentication Token
     mockServer
@@ -101,7 +120,7 @@ public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
         .withHeaders(
           new Header("Content-Type", "application/json; charset=utf-8"),
           new Header("Cache-Control", "public, max-age=86400"))
-        .withBody(OM.writeValueAsString(mockAccessToken))
+        .withBody(TestResourceHelper.OBJECT_MAPPER.writeValueAsString(mockAccessToken))
         .withDelay(TimeUnit.SECONDS, 1));
   }
 
@@ -116,8 +135,6 @@ public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
   public static HttpRequest setupMockRequest() {
     return HttpRequest.request()
       .withHeader("Authorization", "Bearer " + "abc")
-      .withHeader("crnk-compact", "true")
-      .withHeader("Connection", "Keep-Alive")
-      .withHeader("Accept-Encoding", "application/json");
+      .withHeader("Connection", "Keep-Alive");
   }
 }

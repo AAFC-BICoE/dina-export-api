@@ -4,6 +4,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -14,7 +15,11 @@ import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -65,7 +70,10 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
         .get(DataExportConfig.OBJECT_STORE_TOA))
       .build();
 
-    Path destinationFile = workingFolder.resolve(dinaExport.getUuid().toString());
+    // make sure the destination folder exists
+    if(!workingFolder.toFile().exists()) {
+      Files.createDirectories(workingFolder);
+    }
 
     DataExport.ExportStatus currStatus = waitForRecord(dinaExport.getUuid());
 
@@ -73,8 +81,12 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
     Call downloadCall = httpClient.newCall(tokenBasedRequestBuilder.newBuilder().url(toaUrl).build());
     try (Response response = downloadCall.execute()) {
+
+      Path destinationFile = workingFolder.resolve(dinaExport.getUuid().toString() +
+        extractFileExtensionFromResponse(response));
+
       ResponseBody body = response.body();
-      if (body == null) {
+      if (!response.isSuccessful() || body == null) {
         throw new IllegalStateException("Can't read response body from object-store");
       }
       try (OutputStream outputStream = new FileOutputStream(destinationFile.toFile());
@@ -88,6 +100,18 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
     }
 
     return CompletableFuture.completedFuture(dinaExport.getUuid());
+  }
+
+  private static String extractFileExtensionFromResponse(Response response) {
+    String ext = "";
+    String contentDisposition = response.header(HttpHeaders.CONTENT_DISPOSITION);
+    if(contentDisposition!= null) {
+      ContentDisposition cd = ContentDisposition.parse(contentDisposition);
+      if(StringUtils.isNotBlank(cd.getFilename())) {
+        ext = FilenameUtils.getExtension(cd.getFilename());
+      }
+    }
+    return "." + StringUtils.defaultIfBlank(ext, "tmp");
   }
 
 }
