@@ -1,0 +1,5 @@
+== Messaging
+
+The export-api can listen to RabbitMQ queue (defined by property `dina.messaging.export.queue`) for object export notifications.
+
+The api will download the object export using the toa (temporary object access) key to store it as a data export. The export will then appear as a data export of type `OBJECT_ARCHIVE`.
