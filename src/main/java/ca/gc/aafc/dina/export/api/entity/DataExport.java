@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -56,6 +58,7 @@ public class DataExport implements DinaEntity {
   @Column(name = "created_by", updatable = false)
   private String createdBy;
 
+  @Enumerated(EnumType.STRING)
   @NotNull
   @Column
   private ExportType exportType;
@@ -72,6 +75,8 @@ public class DataExport implements DinaEntity {
   @Column
   private String[] columns;
 
+  @Enumerated(EnumType.STRING)
+  @NotNull
   @Column
   private ExportStatus status;
 
