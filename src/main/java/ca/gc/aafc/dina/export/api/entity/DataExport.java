@@ -75,6 +75,8 @@ public class DataExport implements DinaEntity {
   @Column
   private String[] columns;
 
+  @Enumerated(EnumType.STRING)
+  @NotNull
   @Column
   private ExportStatus status;
 
