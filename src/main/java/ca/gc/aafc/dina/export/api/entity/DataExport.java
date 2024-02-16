@@ -58,6 +58,9 @@ public class DataExport implements DinaEntity {
   @Column(name = "created_by", updatable = false)
   private String createdBy;
 
+  @Size(max = 100)
+  private String name;
+
   @Enumerated(EnumType.STRING)
   @NotNull
   @Column

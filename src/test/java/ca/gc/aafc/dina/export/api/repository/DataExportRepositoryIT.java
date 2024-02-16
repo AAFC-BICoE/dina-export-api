@@ -58,6 +58,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     DataExportDto dto =
       dataExportRepository.create(DataExportDto.builder()
         .source(MAT_SAMPLE_INDEX)
+        .name("my export")
         .query(query)
         .columns(List.of("materialSampleName", "collectingEvent.dwcVerbatimLocality",
           "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1"))
@@ -70,8 +71,10 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       throw new RuntimeException(e);
     }
 
-    assertEquals(DataExport.ExportStatus.COMPLETED,
-      dataExportRepository.findOne(dto.getUuid(), new QuerySpec(DataExportDto.class)).getStatus());
+    DataExportDto savedDataExportDto = dataExportRepository.findOne(dto.getUuid(), new QuerySpec(DataExportDto.class));
+    assertEquals(DataExport.ExportStatus.COMPLETED, savedDataExportDto.getStatus());
+    assertEquals(DataExport.ExportType.TABULAR_DATA, savedDataExportDto.getExportType());
+    assertEquals("my export", savedDataExportDto.getName());
 
     ResponseEntity<InputStreamResource>
       response = fileController.downloadFile(dto.getUuid(), FileController.DownloadType.DATA_EXPORT);

@@ -38,6 +38,7 @@ public class DataExportDto {
   private OffsetDateTime createdOn;
   private String createdBy;
 
+  private String name;
   private DataExport.ExportType exportType;
 
   private String source;
