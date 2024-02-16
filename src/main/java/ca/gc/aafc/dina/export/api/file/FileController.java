@@ -116,7 +116,6 @@ public class FileController {
    * @param filePath
    * @param customFilename optional, filename to return in the http response
    * @return
-   * @throws IOException
    */
   private ResponseEntity<InputStreamResource> downloadFile(UUID fileIdentifier, Path filePath, String customFilename) throws IOException {
 
