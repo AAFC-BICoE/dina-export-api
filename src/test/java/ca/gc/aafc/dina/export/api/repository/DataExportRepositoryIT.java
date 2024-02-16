@@ -79,6 +79,8 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     ResponseEntity<InputStreamResource>
       response = fileController.downloadFile(dto.getUuid(), FileController.DownloadType.DATA_EXPORT);
 
+    assertEquals("my_export.csv", response.getHeaders().getContentDisposition().getFilename());
+
     assertNotNull(response.getBody());
     String text = new String(response.getBody().getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     List<String> lines = text.lines().toList();
