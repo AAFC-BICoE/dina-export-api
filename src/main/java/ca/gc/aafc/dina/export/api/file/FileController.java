@@ -1,6 +1,5 @@
 package ca.gc.aafc.dina.export.api.file;
 
-import io.crnk.core.exception.ResourceNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.DirectoryStream;
@@ -9,6 +8,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.persistence.NoResultException;
 import lombok.extern.log4j.Log4j2;
@@ -29,10 +29,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
-import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
+import ca.gc.aafc.dina.export.api.service.DataExportService;
+import ca.gc.aafc.dina.export.api.service.TransactionWrapper;
 
 import static ca.gc.aafc.dina.export.api.generator.TabularDataExportGenerator.DATA_EXPORT_CSV_FILENAME;
 
@@ -41,24 +43,30 @@ import static ca.gc.aafc.dina.export.api.generator.TabularDataExportGenerator.DA
 @Log4j2
 public class FileController {
 
+  // that regex will also remove accentuated characters
+  private static final Pattern FILENAME_REGEX = Pattern.compile("[^a-zA-Z0-9_-]");
+
   public enum DownloadType { LABEL, DATA_EXPORT }
   private static final TikaConfig TIKA_CONFIG = TikaConfig.getDefaultConfig();
 
-  private final DataExportStatusService dataExportStatusService;
+  private final DataExportService dataExportService;
   private final Path labelWorkingFolder;
   private final Path dataExportWorkingFolder;
+  private final TransactionWrapper transactionWrapper;
 
-  public FileController(DataExportConfig dataExportConfig, DataExportStatusService dataExportStatusService) {
+  public FileController(DataExportConfig dataExportConfig, DataExportService dataExportService,
+                        TransactionWrapper transactionWrapper) {
     this.labelWorkingFolder = dataExportConfig.getGeneratedReportsLabelsPath();
     this.dataExportWorkingFolder = dataExportConfig.getGeneratedDataExportsPath();
-    this.dataExportStatusService = dataExportStatusService;
+    this.dataExportService = dataExportService;
+    this.transactionWrapper = transactionWrapper;
   }
 
   @GetMapping("/file/{fileId}")
   public ResponseEntity<InputStreamResource> downloadFile(@PathVariable UUID fileId,
-                                                            @RequestParam( name = "type", required = false) DownloadType type) throws IOException {
-
+                                                          @RequestParam( name = "type", required = false) DownloadType type) throws IOException {
     Optional<Path> filePath = Optional.empty();
+    String customFilename = null;
 
     if (type == null || type == DownloadType.LABEL) {
       Path reportFolder =
@@ -69,12 +77,14 @@ public class FileController {
           .findFirst();
       }
     } else if (type == DownloadType.DATA_EXPORT) {
+      DataExport exportEntity = transactionWrapper
+        .runInsideReadTransaction( () -> dataExportService.findOne(fileId));
       // make sure the export is completed
       try {
-        if (DataExport.ExportStatus.COMPLETED == dataExportStatusService.findStatus(fileId)) {
+        if (DataExport.ExportStatus.COMPLETED == exportEntity.getStatus()) {
 
           Path csvPath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME);
-
+          customFilename = exportEntity.getName();
           if(csvPath.toFile().exists()) {
             filePath = Optional.of(
               dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
@@ -95,19 +105,30 @@ public class FileController {
     }
 
     if(filePath.isPresent()) {
-      return downloadFile(fileId, filePath.get());
+      return downloadFile(fileId, filePath.get(), customFilename);
     }
-    throw new ResourceNotFoundException("Report with ID " + fileId + " Not Found.");
+    throw buildNotFoundException("DataExport or Report with ID " + fileId + " Not Found.");
   }
 
-  private ResponseEntity<InputStreamResource> downloadFile(UUID fileIdentifier, Path filePath) throws IOException {
+  /**
+   * Inner function to handle file download.
+   * @param fileIdentifier
+   * @param filePath
+   * @param customFilename optional, filename to return in the http response
+   * @return
+   */
+  private ResponseEntity<InputStreamResource> downloadFile(UUID fileIdentifier, Path filePath, String customFilename) throws IOException {
 
     String filename = Objects.toString(filePath.getFileName(), "");
+    String downloadFilename = StringUtils.defaultString(customFilename, fileIdentifier.toString());
+
+    // make sure the filename is alphanumeric
+    downloadFilename = FILENAME_REGEX.matcher(downloadFilename).replaceAll("_");
 
     InputStream fis = Files.newInputStream(filePath);
     MediaType md = MediaType.parseMediaType(getMediaTypeForFilename(filename).toString());
     return new ResponseEntity<>(new InputStreamResource(fis),
-      buildHttpHeaders(fileIdentifier + "." + StringUtils.substringAfterLast(filename, "."), md,
+      buildHttpHeaders(downloadFilename + "." + StringUtils.substringAfterLast(filename, "."), md,
         filePath.toFile().length()), HttpStatus.OK);
   }
 
@@ -156,5 +177,16 @@ public class FileController {
     respHeaders.setContentLength(contentLength);
     respHeaders.setContentDispositionFormData("attachment", filename);
     return respHeaders;
+  }
+
+  /**
+   * Utility method to generate a NOT_FOUND ResponseStatusException based on the given parameters.
+   *
+   * @param message not found message
+   * @return a ResponseStatusException Not found
+   */
+  private ResponseStatusException buildNotFoundException(String message) {
+    return new ResponseStatusException(
+      HttpStatus.NOT_FOUND, message, null);
   }
 }

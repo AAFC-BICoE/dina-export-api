@@ -75,6 +75,10 @@ public class DataExportService extends DefaultDinaService<DataExport> {
     }
   }
 
+  public DataExport findOne(UUID uuid) {
+    return findOne(uuid, DataExport.class);
+  }
+
   private DataExportGenerator generatorByExportType(DataExport.ExportType type) {
     return switch (type) {
       case TABULAR_DATA -> tabularDataExportGenerator;
