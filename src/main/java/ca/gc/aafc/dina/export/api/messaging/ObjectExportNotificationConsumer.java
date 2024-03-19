@@ -44,6 +44,7 @@ public class ObjectExportNotificationConsumer implements RabbitMQMessageConsumer
     dataExport.setCreatedBy(objectExportNotification.getUsername());
     dataExport.setSource(DataExportConfig.OBJECT_STORE_SOURCE);
     dataExport.setTransitiveData(Map.of(DataExportConfig.OBJECT_STORE_TOA, objectExportNotification.getToa()));
+    dataExport.setName(objectExportNotification.getName());
 
     dataExportService.create(dataExport);
   }
