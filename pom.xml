@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>ca.gc.aafc</groupId>
@@ -23,9 +25,13 @@
     <jcip-annotations.version>1.0</jcip-annotations.version>
     <dependency.check.version>8.3.1</dependency.check.version>
     <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
+
+    <!-- Checkstyle-->
     <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
     <checkstyle.version>8.45.1</checkstyle.version>
-    <dina-base-api.version>0.117</dina-base-api.version>
+    <checkstyle-antlr.version>4.9.3</checkstyle-antlr.version>
+
+    <dina-base-api.version>0.119.1</dina-base-api.version>
     <spring-boot-maven-plugin.fork>false</spring-boot-maven-plugin.fork>
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>
@@ -74,12 +80,12 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
-        <exclusions>
-            <exclusion>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-logging</artifactId>
-            </exclusion>
-        </exclusions>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -174,7 +180,7 @@
       <version>${spotbugs.version}</version>
       <scope>provided</scope>
     </dependency>
-    
+
     <!-- TEST Scope -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -256,6 +262,11 @@
             <artifactId>checkstyle</artifactId>
             <version>${checkstyle.version}</version>
           </dependency>
+          <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>${checkstyle-antlr.version}</version>
+          </dependency>
         </dependencies>
         <configuration>
           <configLocation>checkstyle.xml</configLocation>
@@ -280,28 +291,28 @@
         </dependencies>
       </plugin>
       <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-dependency-plugin</artifactId>
-      <executions>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
           <execution>
-              <id>unpack</id>
-              <phase>generate-sources</phase>
-              <goals>
-                  <goal>unpack</goal>
-              </goals>
-              <configuration>
-                  <artifactItems>
-                      <artifactItem>
-                          <groupId>io.github.aafc-bicoe</groupId>
-                          <artifactId>dina-base-api</artifactId>
-                          <version>${dina-base-api.version}</version>
-                          <outputDirectory>${basedir}/src/main/resources/local.xsd</outputDirectory>
-                          <includes>dbchangelog-4.4.xsd</includes>
-                      </artifactItem>
-                  </artifactItems>
-              </configuration>
+            <id>unpack</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.github.aafc-bicoe</groupId>
+                  <artifactId>dina-base-api</artifactId>
+                  <version>${dina-base-api.version}</version>
+                  <outputDirectory>${basedir}/src/main/resources/local.xsd</outputDirectory>
+                  <includes>dbchangelog-4.4.xsd</includes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
           </execution>
-      </executions>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
