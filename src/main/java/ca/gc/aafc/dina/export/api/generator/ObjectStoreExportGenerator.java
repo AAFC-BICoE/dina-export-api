@@ -51,12 +51,12 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
 
-      String downLoadUrl = StringUtils.appendIfMissing(dataExportConfig.getObjectStoreDownloadUrl(), "/")
+      String downloadUrl = StringUtils.appendIfMissing(dataExportConfig.getObjectStoreDownloadUrl(), "/")
         + dinaExport.getTransitiveData().get(DataExportConfig.OBJECT_STORE_TOA);
 
       try {
         // call download
-        fileDownloader.downloadFile(downLoadUrl,
+        fileDownloader.downloadFile(downloadUrl,
           filename -> generatePath(dinaExport.getUuid(), filename));
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
       } catch (IOException | IllegalStateException ex) {

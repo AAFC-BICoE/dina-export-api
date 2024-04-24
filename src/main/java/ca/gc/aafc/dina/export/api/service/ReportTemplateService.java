@@ -9,6 +9,9 @@ import ca.gc.aafc.dina.export.api.entity.ReportTemplate;
 import ca.gc.aafc.dina.jpa.BaseDAO;
 import ca.gc.aafc.dina.service.DefaultDinaService;
 
+/**
+ * Responsible for the database record of the ReportTemplate.
+ */
 @Service
 public class ReportTemplateService extends DefaultDinaService<ReportTemplate> {
 
