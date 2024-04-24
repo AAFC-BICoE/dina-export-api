@@ -74,3 +74,5 @@ dina:
   messaging:
     export:
       queue: dina.export.queue
+  report:
+    templateFolder: /tmp/dina-data-export-template

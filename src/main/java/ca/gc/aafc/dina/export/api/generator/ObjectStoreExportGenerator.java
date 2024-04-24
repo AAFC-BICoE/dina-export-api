@@ -57,7 +57,7 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
       try {
         // call download
         fileDownloader.downloadFile(downLoadUrl,
-          (filename) -> generatePath(dinaExport.getUuid(), filename));
+          filename -> generatePath(dinaExport.getUuid(), filename));
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
       } catch (IOException | IllegalStateException ex) {
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
