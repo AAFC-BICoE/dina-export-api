@@ -1,28 +1,23 @@
 package ca.gc.aafc.dina.export.api;
 
-import java.util.concurrent.Executor;
-
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import ca.gc.aafc.dina.DinaBaseApiAutoConfiguration;
-import ca.gc.aafc.dina.search.common.config.SearchQueueConsumerConfiguration;
-import ca.gc.aafc.dina.search.messaging.consumer.DocumentOperationNotificationConsumer;
 import ca.gc.aafc.dina.service.JaversDataService;
 
 import static ca.gc.aafc.dina.export.api.config.DataExportConfig.DINA_THREAD_POOL_BEAN_NAME;
 
+import java.util.concurrent.Executor;
+
 @Configuration
-@ComponentScan(basePackageClasses = DinaBaseApiAutoConfiguration.class,
-  excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
-    value = {DocumentOperationNotificationConsumer.class, SearchQueueConsumerConfiguration.class}))
+@ComponentScan(basePackageClasses = DinaBaseApiAutoConfiguration.class)
 @ImportAutoConfiguration(DinaBaseApiAutoConfiguration.class)
 @MapperScan(basePackageClasses = JaversDataService.class)
 @EnableAsync

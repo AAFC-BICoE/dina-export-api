@@ -31,7 +31,7 @@
     <checkstyle.version>8.45.1</checkstyle.version>
     <checkstyle-antlr.version>4.9.3</checkstyle-antlr.version>
 
-    <dina-base-api.version>0.119.1</dina-base-api.version>
+    <dina-base-api.version>0.124</dina-base-api.version>
     <spring-boot-maven-plugin.fork>false</spring-boot-maven-plugin.fork>
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>
