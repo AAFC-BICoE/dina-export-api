@@ -16,6 +16,9 @@ spring:
     # comma separated list of path. To use a filesystem path use file:/tmp/template/
     template-loader-path: classpath:/templates/
     enabled: false # disable Spring Freemarker MVC view resolution
+
+  rabbitmq.listener.simple.default-requeue-rejected: false
+
 crnk:
   pathPrefix: /api/v1
   domainName: ""
