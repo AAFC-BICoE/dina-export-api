@@ -55,9 +55,10 @@ public class ObjectExportNotificationConsumer {
   }
 
   @RabbitHandler
-  public void handleReportTemplateUploadNotification(ReportTemplateUploadNotification reportTemplateUploadNotification)
-    throws IOException {
-    log.info("Received message and deserialized to : {}", reportTemplateUploadNotification::toString);
+  public void handleReportTemplateUploadNotification(
+    ReportTemplateUploadNotification reportTemplateUploadNotification) throws IOException {
+    log.info("Received message and deserialized to : {}",
+      reportTemplateUploadNotification::toString);
     reportTemplateFileService.downloadTemplate(reportTemplateUploadNotification.getToa());
   }
 }
