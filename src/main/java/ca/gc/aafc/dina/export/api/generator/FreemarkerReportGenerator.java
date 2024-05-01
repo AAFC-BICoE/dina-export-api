@@ -1,5 +1,6 @@
 package ca.gc.aafc.dina.export.api.generator;
 
+import freemarker.core.TemplateClassResolver;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
@@ -17,6 +18,8 @@ public class FreemarkerReportGenerator implements ReportGenerator {
 
   public FreemarkerReportGenerator(Configuration freemarkerConfiguration) {
     this.freemarkerConfiguration = freemarkerConfiguration;
+    // By default, allow nothing. We can eventually have an allowed list by using OptInTemplateClassResolver
+    this.freemarkerConfiguration.setNewBuiltinClassResolver(TemplateClassResolver.ALLOWS_NOTHING_RESOLVER);
   }
 
   @Override
@@ -29,6 +32,5 @@ public class FreemarkerReportGenerator implements ReportGenerator {
     } catch (TemplateException e) {
       throw new IOException(e);
     }
-
   }
 }

@@ -9,7 +9,11 @@ import ca.gc.aafc.dina.export.api.DinaExportModuleApiLauncher;
 import ca.gc.aafc.dina.export.api.generator.FreemarkerReportGenerator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import freemarker.core._MiscTemplateException;
+import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -52,6 +56,15 @@ public class FreemarkerReportGeneratorIT extends BaseIntegrationTest {
       writer);
     assertEquals("{\"payload\":[{\"lineId\":1,\"generatedName\":\"ABC-1_b8_2003-04-02\"},{\"lineId\":2,\"generatedName\":\"ABC-2_b45_2003-04-03\"}]}",
       StringUtils.deleteWhitespace(writer.toString()));
+  }
+
+  @Test
+  public void testUnsafeTemplate() {
+    Writer writer = new StringWriter();
+    IOException tEx = assertThrows(IOException.class,
+      () -> freemarkerReportGenerator.generateReport("unsafe_demo.ftlh",
+      Map.of(), writer));
+    assertTrue(tEx.getMessage().contains("not allowed in the template for security reasons"));
   }
 
   @Setter
