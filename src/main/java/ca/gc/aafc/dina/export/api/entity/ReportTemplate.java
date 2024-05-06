@@ -35,7 +35,7 @@ import ca.gc.aafc.dina.i18n.MultilingualDescription;
 @RequiredArgsConstructor
 public class ReportTemplate implements DinaEntity {
 
-  public enum ReportType {MATERIAL_SAMPLE_LABEL, STORAGE_LABEL}
+  public enum ReportType { MATERIAL_SAMPLE_LABEL, STORAGE_LABEL }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
