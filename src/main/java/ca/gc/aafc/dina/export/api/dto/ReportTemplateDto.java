@@ -40,6 +40,7 @@ public class ReportTemplateDto {
   private String createdBy;
 
   private String name;
+  private ReportTemplate.ReportType reportType;
   private MultilingualDescription multilingualDescription;
 
   private String templateFilename;
@@ -47,6 +48,8 @@ public class ReportTemplateDto {
   // can be an intermediate media type like HTML or JSON that will then be transformed in PDF or CSV
   private String templateOutputMediaType;
   private String outputMediaType;
+
+  private String[] reportVariables;
 
   @Builder.Default
   private Boolean includesBarcode = false;

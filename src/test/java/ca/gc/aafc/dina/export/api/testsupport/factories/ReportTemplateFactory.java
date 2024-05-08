@@ -21,6 +21,7 @@ public class ReportTemplateFactory implements TestableEntityFactory<ReportTempla
       .uuid(UUID.randomUUID())
       .group("aafc")
       .name(TestableEntityFactory.generateRandomNameLettersOnly(7))
+      .reportType(ReportTemplate.ReportType.MATERIAL_SAMPLE_LABEL)
       .outputMediaType(MediaType.APPLICATION_PDF_VALUE)
       .templateOutputMediaType(MediaType.TEXT_HTML_VALUE)
       .templateFilename("test.ftl")

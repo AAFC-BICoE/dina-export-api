@@ -8,4 +8,5 @@
   <include file="db/changelog/migrations/3-Add_data_export_table.xml"/>
   <include file="db/changelog/migrations/4-Add_export_type_to_export_table.xml"/>
   <include file="db/changelog/migrations/5-Add_name_to_export_table.xml"/>
+  <include file="db/changelog/migrations/6-Add_type_variables_to_report_template_table.xml"/>
 </databaseChangeLog>

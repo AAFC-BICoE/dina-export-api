@@ -1,0 +1,17 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no" ?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://local.xsd/dbchangelog-4.4.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="6-Add_type_variables_to_report_template_table" context="schema-change" author="cgendreau">
+        <addColumn tableName="report_template">
+            <column name="report_type" type="VARCHAR(50)" defaultValue="MATERIAL_SAMPLE_LABEL">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="report_template">
+            <column name="report_variables" type="text[]"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

@@ -4,6 +4,8 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.validation.constraints.NotBlank;
@@ -33,6 +35,8 @@ import ca.gc.aafc.dina.i18n.MultilingualDescription;
 @RequiredArgsConstructor
 public class ReportTemplate implements DinaEntity {
 
+  public enum ReportType { MATERIAL_SAMPLE_LABEL, STORAGE_LABEL }
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer id;
@@ -59,6 +63,10 @@ public class ReportTemplate implements DinaEntity {
   @Size(max = 100)
   private String name;
 
+  @Enumerated(EnumType.STRING)
+  @NotNull
+  private ReportType reportType;
+
   @Type(type = "jsonb")
   @Column(name = "multilingual_description")
   private MultilingualDescription multilingualDescription;
@@ -79,5 +87,9 @@ public class ReportTemplate implements DinaEntity {
   @NotNull
   @Builder.Default
   private Boolean includesBarcode = false;
+
+  @Type(type = "string-array")
+  @Column
+  private String[] reportVariables;
 
 }
