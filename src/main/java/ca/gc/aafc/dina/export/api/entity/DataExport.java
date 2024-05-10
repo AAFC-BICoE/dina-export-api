@@ -38,7 +38,7 @@ import ca.gc.aafc.dina.entity.DinaEntity;
 @RequiredArgsConstructor
 public class DataExport implements DinaEntity {
 
-  public enum ExportStatus { NEW, RUNNING, COMPLETED, ERROR }
+  public enum ExportStatus { NEW, RUNNING, COMPLETED, EXPIRED, ERROR }
   public enum ExportType { TABULAR_DATA, OBJECT_ARCHIVE }
 
   @Id

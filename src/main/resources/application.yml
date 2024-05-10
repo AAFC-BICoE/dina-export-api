@@ -74,6 +74,8 @@ dina:
   export:
     workingFolder: /tmp/dina-data-export
     objectStoreDownloadUrl: ${OBJECTSTORE_API_URL:http://localhost:8081}/api/v1/toa
+#    expiredExportMaxAge: 12d
+#    expiredExportCronExpression: "* * */1 * * *"
   messaging:
     export:
       queue: dina.export.queue

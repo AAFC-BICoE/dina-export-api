@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import ca.gc.aafc.dina.DinaBaseApiAutoConfiguration;
@@ -21,6 +22,7 @@ import java.util.concurrent.Executor;
 @ImportAutoConfiguration(DinaBaseApiAutoConfiguration.class)
 @MapperScan(basePackageClasses = JaversDataService.class)
 @EnableAsync
+@EnableScheduling
 public class MainConfiguration {
 
   @Bean(name = DINA_THREAD_POOL_BEAN_NAME)
