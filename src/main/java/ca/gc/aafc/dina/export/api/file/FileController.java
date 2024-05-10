@@ -82,22 +82,8 @@ public class FileController {
       // make sure the export is completed
       try {
         if (DataExport.ExportStatus.COMPLETED == exportEntity.getStatus()) {
-
-          Path csvPath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME);
           customFilename = exportEntity.getName();
-          if(csvPath.toFile().exists()) {
-            filePath = Optional.of(
-              dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
-          } else {
-            // try to find a file matching that uuid
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataExportWorkingFolder,
-              fileId + ".*")) {
-              // we should only have one returned
-              for (Path p : stream) {
-                filePath = Optional.of(p);
-              }
-            }
-          }
+          filePath = getExportFileLocation(fileId);
         }
       } catch (NoResultException ignored) {
         // nothing to do since filePath will remain empty
@@ -108,6 +94,32 @@ public class FileController {
       return downloadFile(fileId, filePath.get(), customFilename);
     }
     throw buildNotFoundException("DataExport or Report with ID " + fileId + " Not Found.");
+  }
+
+  /**
+   * Get location, on disk, of an export file.
+   * @param fileId
+   * @return Optional with the Path if found or empty if not
+   */
+  public Optional<Path> getExportFileLocation(UUID fileId) {
+
+    Path csvPath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME);
+    if(csvPath.toFile().exists()) {
+      return Optional.of(
+        dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
+    } else {
+      // try to find a file matching that uuid
+      try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataExportWorkingFolder,
+        fileId + ".*")) {
+        // we should only have one returned
+        for (Path p : stream) {
+          return Optional.of(p);
+        }
+      } catch (IOException e) {
+        log.error(e);
+      }
+    }
+    return Optional.empty();
   }
 
   /**

@@ -1,13 +1,18 @@
 package ca.gc.aafc.dina.export.api.config;
 
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import javax.inject.Named;
 import javax.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.validation.annotation.Validated;
 
 /**
@@ -18,6 +23,7 @@ import org.springframework.validation.annotation.Validated;
 @Setter
 @NoArgsConstructor
 @Validated
+@Named("dataExportConfig")
 public class DataExportConfig {
 
   public static final String DINA_THREAD_POOL_BEAN_NAME = "DinaThreadPoolTaskExecutor";
@@ -42,6 +48,12 @@ public class DataExportConfig {
   private String workingFolder;
 
   private String objectStoreDownloadUrl;
+
+  // default to DISABLED
+  private String expiredExportCronExpression = Scheduled.CRON_DISABLED;
+
+  @DurationUnit(ChronoUnit.SECONDS)
+  private Duration expiredExportMaxAge;
 
   public Path getGeneratedReportsLabelsPath() {
     return Path.of(workingFolder).resolve(GENERATED_REPORTS_LABELS);
