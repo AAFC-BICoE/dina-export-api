@@ -1,0 +1,29 @@
+= Configuration
+
+== Report Template
+
+Freemarker will check templates in the configuration `spring.freemarker.template-loader-path`.
+
+When a report template is downloaded from the object store, it will be stored in the folder specified by `dina.report.templateFolder`.
+
+To have the downloaded templates be automatically available for Freemarker, settings should be like:
+
+[source,properties]
+----
+spring.freemarker.template-loader-path= classpath:/templates/,file:/data/templates/
+dina.report.templateFolder= /data/templates
+----
+
+Where `/data/templates` is backed by a volume.
+
+== Orphan Removal
+
+The expired export cron job is responsible for identifying and removing expired exports. The export files are deleted while the export
+status is set to `EXPIRED`.
+
+[source,properties]
+----
+dina.export.expiredExportMaxAge="20d"
+dina.export.expiredExportCronExpression="* * */1 * * *"
+----
+If the `dina.export.expiredExportCronExpression` variable is not specified (default), the removal service will not be performed.

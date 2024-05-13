@@ -1,8 +1,4 @@
 
-== Set Freemarker Template folder
-
-In `application.yml`, change the value of `spring.freemarker.template-loader-path`.
-
 == Generate Barcode
 
 In order to instruct the api to generate barcodes, a `barcode` element must be present in the `elements` JSON element of the `payload`.
