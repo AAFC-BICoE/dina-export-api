@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.source;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,22 +21,29 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.List;
 
+import ca.gc.aafc.dina.export.api.config.DataExportConfig;
+
 /**
  * ElasticSearch-backed source of data.
  * Data is returned as {@link JsonNode} since the export is agnostic of the type of data.
  */
 @Component
 public class ElasticSearchDataSource {
-
-  public static final int ES_DEFAULT_PAGE_SIZE = 10;
+  private static final int ES_DEFAULT_PAGE_SIZE = 10;
   private static final Time KEEP_ALIVE = new Time.Builder().time("60s").build();
   private static final SortOptions DEFAULT_SORT =
     new SortOptions.Builder().field(fs -> fs.field("_id").order(SortOrder.Asc)).build();
 
   private final ElasticsearchClient client;
+  private final int esPageSize;
 
-  public ElasticSearchDataSource(ElasticsearchClient client) {
+  public ElasticSearchDataSource(DataExportConfig dataExportConfig, ElasticsearchClient client) {
     this.client = client;
+    this.esPageSize = ObjectUtils.defaultIfNull(dataExportConfig.getElasticSearchPageSize(), ES_DEFAULT_PAGE_SIZE);
+  }
+
+  public int getPageSize() {
+    return esPageSize;
   }
 
   public SearchResponse<JsonNode> search(String indexName, String query) throws IOException {
@@ -101,15 +109,15 @@ public class ElasticSearchDataSource {
     return csr.succeeded();
   }
 
-  private static SearchRequest buildSearchRequestWithPIT(String pitId, String query, boolean setDefaultSort) {
+  private SearchRequest buildSearchRequestWithPIT(String pitId, String query, boolean setDefaultSort) {
     return buildSearchRequestWithPIT(pitId, query, setDefaultSort, null);
   }
 
-  private static SearchRequest buildSearchRequestWithPIT(String pitId, String query, boolean setDefaultSort, List<FieldValue> searchAfter) {
+  private SearchRequest buildSearchRequestWithPIT(String pitId, String query, boolean setDefaultSort, List<FieldValue> searchAfter) {
     Reader strReader = new StringReader(query);
     SearchRequest.Builder builder = new SearchRequest.Builder();
     builder.withJson(strReader)
-      .size(ES_DEFAULT_PAGE_SIZE)
+      .size(esPageSize)
       .pit(pit -> pit.id(pitId).keepAlive(KEEP_ALIVE));
 
     if(CollectionUtils.isNotEmpty(searchAfter)) {
