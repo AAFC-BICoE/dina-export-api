@@ -1,11 +1,14 @@
 package ca.gc.aafc.dina.export.api.source;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.core.ClosePointInTimeRequest;
 import co.elastic.clients.elasticsearch.core.ClosePointInTimeResponse;
@@ -24,8 +27,10 @@ import java.util.List;
 @Component
 public class ElasticSearchDataSource {
 
-  public static final int ES_PAGE_SIZE = 5;
+  public static final int ES_DEFAULT_PAGE_SIZE = 10;
   private static final Time KEEP_ALIVE = new Time.Builder().time("60s").build();
+  private static final SortOptions DEFAULT_SORT =
+    new SortOptions.Builder().field(fs -> fs.field("_id").order(SortOrder.Asc)).build();
 
   private final ElasticsearchClient client;
 
@@ -57,11 +62,13 @@ public class ElasticSearchDataSource {
     OpenPointInTimeResponse opitResponse =
       client.openPointInTime(b -> b.index(indexName).keepAlive(KEEP_ALIVE));
 
-    Reader strReader = new StringReader(query);
-    SearchRequest sr = SearchRequest.of(b -> b
-      .withJson(strReader)
-      .size(ES_PAGE_SIZE)
-      .pit(pit -> pit.id(opitResponse.id()).keepAlive(KEEP_ALIVE)));
+    SearchRequest sr = buildSearchRequestWithPIT(opitResponse.id(), query, false);
+
+    //We need a sort so if the query doesn't include one, use the default one
+    if(CollectionUtils.isEmpty(sr.sort())) {
+      sr = buildSearchRequestWithPIT(opitResponse.id(), query, true);
+    }
+
     return client.search(sr, JsonNode.class);
   }
 
@@ -73,12 +80,12 @@ public class ElasticSearchDataSource {
    * @return
    */
   public SearchResponse<JsonNode> searchAfter(String query, String pitId, List<FieldValue> sortFieldValues) throws IOException {
-    Reader strReader = new StringReader(query);
-    SearchRequest sr = SearchRequest.of(b -> b
-      .withJson(strReader)
-      .size(ES_PAGE_SIZE)
-      .searchAfter(sortFieldValues)
-      .pit(pit -> pit.keepAlive(KEEP_ALIVE).id(pitId)));
+
+    SearchRequest sr = buildSearchRequestWithPIT(pitId, query, false, sortFieldValues);
+    //We need a sort so if the query doesn't include one, use the default one
+    if(CollectionUtils.isEmpty(sr.sort())) {
+      sr = buildSearchRequestWithPIT(pitId, query, true, sortFieldValues);
+    }
     return client.search(sr, JsonNode.class);
   }
 
@@ -92,6 +99,28 @@ public class ElasticSearchDataSource {
       .id(pitId));
     ClosePointInTimeResponse csr = client.closePointInTime(request);
     return csr.succeeded();
+  }
+
+  private static SearchRequest buildSearchRequestWithPIT(String pitId, String query, boolean setDefaultSort) {
+    return buildSearchRequestWithPIT(pitId, query, setDefaultSort, null);
+  }
+
+  private static SearchRequest buildSearchRequestWithPIT(String pitId, String query, boolean setDefaultSort, List<FieldValue> searchAfter) {
+    Reader strReader = new StringReader(query);
+    SearchRequest.Builder builder = new SearchRequest.Builder();
+    builder.withJson(strReader)
+      .size(ES_DEFAULT_PAGE_SIZE)
+      .pit(pit -> pit.id(pitId).keepAlive(KEEP_ALIVE));
+
+    if(CollectionUtils.isNotEmpty(searchAfter)) {
+      builder.searchAfter(searchAfter);
+    }
+
+    if(setDefaultSort) {
+      builder.sort(DEFAULT_SORT);
+    }
+
+    return SearchRequest.of(b -> builder);
   }
 
 }
