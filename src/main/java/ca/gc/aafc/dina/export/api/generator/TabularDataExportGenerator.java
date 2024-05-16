@@ -124,7 +124,6 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       response = elasticSearchDataSource.searchWithPIT(sourceIndex, query);
 
     boolean pageAvailable = response.hits().hits().size() != 0;
-
     while (pageAvailable) {
       for (Hit<JsonNode> hit : response.hits().hits()) {
         processRecord(hit.source(), output);
@@ -133,7 +132,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
       int numberOfHits = response.hits().hits().size();
       // if we have a full page, try to get the next one
-      if (ElasticSearchDataSource.ES_PAGE_SIZE == numberOfHits) {
+      if (elasticSearchDataSource.getPageSize() == numberOfHits) {
         Hit<JsonNode> lastHit = response.hits().hits().get(numberOfHits - 1);
         response =
           elasticSearchDataSource.searchAfter(query, response.pitId(), lastHit.sort());

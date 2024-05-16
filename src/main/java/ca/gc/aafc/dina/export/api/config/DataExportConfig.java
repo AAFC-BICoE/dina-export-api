@@ -47,6 +47,8 @@ public class DataExportConfig {
   @NotBlank
   private String workingFolder;
 
+  private Integer elasticSearchPageSize;
+
   private String objectStoreDownloadUrl;
 
   // default to DISABLED

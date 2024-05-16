@@ -1,11 +1,15 @@
 package ca.gc.aafc.dina.export.api.source;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.core.ClosePointInTimeRequest;
 import co.elastic.clients.elasticsearch.core.ClosePointInTimeResponse;
@@ -17,20 +21,29 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.List;
 
+import ca.gc.aafc.dina.export.api.config.DataExportConfig;
+
 /**
  * ElasticSearch-backed source of data.
  * Data is returned as {@link JsonNode} since the export is agnostic of the type of data.
  */
 @Component
 public class ElasticSearchDataSource {
-
-  public static final int ES_PAGE_SIZE = 5;
+  private static final int ES_DEFAULT_PAGE_SIZE = 10;
   private static final Time KEEP_ALIVE = new Time.Builder().time("60s").build();
+  private static final SortOptions DEFAULT_SORT =
+    new SortOptions.Builder().field(fs -> fs.field("_id").order(SortOrder.Asc)).build();
 
   private final ElasticsearchClient client;
+  private final int esPageSize;
 
-  public ElasticSearchDataSource(ElasticsearchClient client) {
+  public ElasticSearchDataSource(DataExportConfig dataExportConfig, ElasticsearchClient client) {
     this.client = client;
+    this.esPageSize = ObjectUtils.defaultIfNull(dataExportConfig.getElasticSearchPageSize(), ES_DEFAULT_PAGE_SIZE);
+  }
+
+  public int getPageSize() {
+    return esPageSize;
   }
 
   public SearchResponse<JsonNode> search(String indexName, String query) throws IOException {
@@ -57,11 +70,13 @@ public class ElasticSearchDataSource {
     OpenPointInTimeResponse opitResponse =
       client.openPointInTime(b -> b.index(indexName).keepAlive(KEEP_ALIVE));
 
-    Reader strReader = new StringReader(query);
-    SearchRequest sr = SearchRequest.of(b -> b
-      .withJson(strReader)
-      .size(ES_PAGE_SIZE)
-      .pit(pit -> pit.id(opitResponse.id()).keepAlive(KEEP_ALIVE)));
+    SearchRequest sr = buildSearchRequestWithPIT(opitResponse.id(), query, false);
+
+    //We need a sort so if the query doesn't include one, use the default one
+    if(CollectionUtils.isEmpty(sr.sort())) {
+      sr = buildSearchRequestWithPIT(opitResponse.id(), query, true);
+    }
+
     return client.search(sr, JsonNode.class);
   }
 
@@ -73,12 +88,12 @@ public class ElasticSearchDataSource {
    * @return
    */
   public SearchResponse<JsonNode> searchAfter(String query, String pitId, List<FieldValue> sortFieldValues) throws IOException {
-    Reader strReader = new StringReader(query);
-    SearchRequest sr = SearchRequest.of(b -> b
-      .withJson(strReader)
-      .size(ES_PAGE_SIZE)
-      .searchAfter(sortFieldValues)
-      .pit(pit -> pit.keepAlive(KEEP_ALIVE).id(pitId)));
+
+    SearchRequest sr = buildSearchRequestWithPIT(pitId, query, false, sortFieldValues);
+    //We need a sort so if the query doesn't include one, use the default one
+    if(CollectionUtils.isEmpty(sr.sort())) {
+      sr = buildSearchRequestWithPIT(pitId, query, true, sortFieldValues);
+    }
     return client.search(sr, JsonNode.class);
   }
 
@@ -92,6 +107,28 @@ public class ElasticSearchDataSource {
       .id(pitId));
     ClosePointInTimeResponse csr = client.closePointInTime(request);
     return csr.succeeded();
+  }
+
+  private SearchRequest buildSearchRequestWithPIT(String pitId, String query, boolean setDefaultSort) {
+    return buildSearchRequestWithPIT(pitId, query, setDefaultSort, null);
+  }
+
+  private SearchRequest buildSearchRequestWithPIT(String pitId, String query, boolean setDefaultSort, List<FieldValue> searchAfter) {
+    Reader strReader = new StringReader(query);
+    SearchRequest.Builder builder = new SearchRequest.Builder();
+    builder.withJson(strReader)
+      .size(esPageSize)
+      .pit(pit -> pit.id(pitId).keepAlive(KEEP_ALIVE));
+
+    if(CollectionUtils.isNotEmpty(searchAfter)) {
+      builder.searchAfter(searchAfter);
+    }
+
+    if(setDefaultSort) {
+      builder.sort(DEFAULT_SORT);
+    }
+
+    return SearchRequest.of(b -> builder);
   }
 
 }
