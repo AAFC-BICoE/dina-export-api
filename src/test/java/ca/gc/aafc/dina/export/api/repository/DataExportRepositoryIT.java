@@ -8,6 +8,7 @@ import org.springframework.test.context.ContextConfiguration;
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.ElasticSearchTestContainerInitializer;
 import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
+import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.dto.DataExportDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileController;
@@ -34,6 +35,9 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
   private static final String MAT_SAMPLE_INDEX = "dina_material_sample_index";
 
   @Inject
+  private DataExportConfig dataExportConfig;
+
+  @Inject
   private DataExportRepository dataExportRepository;
 
   @Inject
@@ -50,10 +54,15 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     ElasticSearchTestUtils.createIndex(esClient, MAT_SAMPLE_INDEX, "elasticsearch/material_sample_index_settings.json");
 
+    // Add 2 documents with  page size of 1 (from application-test.yml) to ensure paging is working
+    assertEquals(1, dataExportConfig.getElasticSearchPageSize());
     UUID docId = UUID.randomUUID();
     ElasticSearchTestUtils.indexDocument(esClient, MAT_SAMPLE_INDEX, docId.toString(), JsonApiDocuments.getMaterialSampleDocument(docId));
+    UUID docId2 = UUID.randomUUID();
+    ElasticSearchTestUtils.indexDocument(esClient, MAT_SAMPLE_INDEX, docId.toString(), JsonApiDocuments.getMaterialSampleDocument(docId2));
 
-    String query = "{\"query\": {\"match_all\": {}}, \"sort\": [{\"data.attributes.createdOn\": \"asc\"}]}";
+    // Do a query with no sort to ensure a default sort will be added for paging
+    String query = "{\"query\": {\"match_all\": {}}}";
 
     DataExportDto dto =
       dataExportRepository.create(DataExportDto.builder()
