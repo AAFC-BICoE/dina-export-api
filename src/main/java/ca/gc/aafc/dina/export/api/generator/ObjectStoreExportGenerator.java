@@ -65,12 +65,13 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
     return CompletableFuture.completedFuture(dinaExport.getUuid());
   }
 
-//  private Path generatePath(UUID exportUuid, String downloadFilename) {
-//    String ext = "";
-//    if (StringUtils.isNotBlank(downloadFilename)) {
-//      ext = FilenameUtils.getExtension(downloadFilename);
-//    }
-//    return workingFolder.resolve(exportUuid.toString() + "." + StringUtils.defaultIfBlank(ext, "tmp"));
-//  }
-
+  @Override
+  public void deleteExport(DataExport dinaExport) throws IOException {
+    Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
+    if (exportPath.toFile().exists()) {
+      Files.delete(exportPath);
+    } else {
+      log.warn("export {} files could not be deleted, not found", dinaExport.getUuid());
+    }
+  }
 }

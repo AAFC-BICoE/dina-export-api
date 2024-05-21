@@ -32,6 +32,8 @@ public abstract class DataExportGenerator {
    */
   public abstract CompletableFuture<UUID> export(DataExport dinaExport) throws IOException;
 
+  public abstract void deleteExport(DataExport dinaExport) throws IOException;
+
   protected void updateStatus(UUID uuid, DataExport.ExportStatus status) {
     dataExportStatusService.updateStatus(uuid, status);
   }

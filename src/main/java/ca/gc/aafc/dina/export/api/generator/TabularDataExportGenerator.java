@@ -111,6 +111,16 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     return CompletableFuture.completedFuture(dinaExport.getUuid());
   }
 
+  @Override
+  public void deleteExport(DataExport dinaExport) throws IOException {
+    Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
+    if (exportPath.toFile().exists()) {
+      Files.delete(exportPath);
+    } else {
+      log.warn("export {} files could not be deleted, not found", dinaExport.getUuid());
+    }
+  }
+
   /**
    * Inner export method
    * @param sourceIndex
