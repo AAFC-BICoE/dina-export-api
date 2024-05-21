@@ -36,7 +36,7 @@ import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.service.DataExportService;
 import ca.gc.aafc.dina.export.api.service.TransactionWrapper;
 
-import static ca.gc.aafc.dina.export.api.generator.TabularDataExportGenerator.DATA_EXPORT_CSV_FILENAME;
+import static ca.gc.aafc.dina.export.api.config.DataExportConfig.DATA_EXPORT_CSV_FILENAME;
 
 @RestController
 @RequestMapping("/api/v1")

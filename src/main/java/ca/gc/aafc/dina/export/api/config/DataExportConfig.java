@@ -1,5 +1,13 @@
 package ca.gc.aafc.dina.export.api.config;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DurationUnit;
+import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.validation.annotation.Validated;
+
+import ca.gc.aafc.dina.export.api.entity.DataExport;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -8,12 +16,6 @@ import javax.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.convert.DurationUnit;
-import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.validation.annotation.Validated;
 
 /**
  * Configured on DinaExportModuleApiLauncher
@@ -35,6 +37,9 @@ public class DataExportConfig {
   public static final String PAYLOAD_KEY = "payload";
 
   public static final String TEXT_CSV_VALUE = MediaType.parseMediaType("text/csv").toString();
+  public static final String DATA_EXPORT_CSV_FILENAME = "export.csv";
+
+  public static final String ZIP_EXT = "zip";
 
   public static final String PDF_REPORT_FILENAME = "report.pdf";
   public static final String CSV_REPORT_FILENAME = "report.csv";
@@ -63,6 +68,13 @@ public class DataExportConfig {
 
   public Path getGeneratedDataExportsPath() {
     return Path.of(workingFolder).resolve(GENERATED_DATA_EXPORTS);
+  }
+
+  public Path getPathForDataExport(DataExport dataExport) {
+    return switch (dataExport.getExportType()) {
+      case TABULAR_DATA -> getGeneratedDataExportsPath().resolve(dataExport.getUuid().toString()).resolve(DATA_EXPORT_CSV_FILENAME);
+      case OBJECT_ARCHIVE -> getGeneratedDataExportsPath().resolve(dataExport.getUuid().toString() + "." + ZIP_EXT);
+    };
   }
 
 }

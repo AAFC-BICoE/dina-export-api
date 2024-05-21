@@ -51,13 +51,12 @@ import lombok.extern.log4j.Log4j2;
 @Service
 @Log4j2
 public class TabularDataExportGenerator extends DataExportGenerator {
-  public static final String DATA_EXPORT_CSV_FILENAME = "export.csv";
 
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
   private final Configuration jsonPathConfiguration;
 
-  private final Path workingFolder;
+  private final DataExportConfig dataExportConfig;
 
   public TabularDataExportGenerator(
     DataExportStatusService dataExportStatusService,
@@ -70,8 +69,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     this.jsonPathConfiguration = jsonPathConfiguration;
     this.elasticSearchDataSource = elasticSearchDataSource;
     this.objectMapper = objectMapper;
-
-    workingFolder = dataExportConfig.getGeneratedDataExportsPath();
+    this.dataExportConfig = dataExportConfig;
   }
 
   /**
@@ -89,10 +87,11 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
 
       try {
-        Path tmpDirectory =
-          Files.createDirectories(workingFolder.resolve(dinaExport.getUuid().toString()));
+        Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
+        //Create the directory
+        Files.createDirectories(exportPath.getParent());
         // csv output
-        try (Writer w = new FileWriter(tmpDirectory.resolve(DATA_EXPORT_CSV_FILENAME).toFile(),
+        try (Writer w = new FileWriter(exportPath.toFile(),
           StandardCharsets.UTF_8);
              CsvOutput<JsonNode> output =
                CsvOutput.create(Arrays.asList(dinaExport.getColumns()), new TypeReference<>() {
