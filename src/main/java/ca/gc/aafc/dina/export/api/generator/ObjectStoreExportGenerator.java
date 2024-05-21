@@ -42,12 +42,12 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
     if(currStatus == DataExport.ExportStatus.NEW) {
 
       Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
-      if(exportPath == null || !Files.exists(exportPath)) {
-        log.error("No export path could be found");
+      if(exportPath == null) {
+        log.error("Null export path");
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
         return CompletableFuture.completedFuture(dinaExport.getUuid());
       }
-      
+
       //Create the directory if it doesn't exist
       Files.createDirectories(exportPath.getParent());
 

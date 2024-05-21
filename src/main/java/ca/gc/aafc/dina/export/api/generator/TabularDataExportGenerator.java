@@ -86,8 +86,8 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     if (DataExport.ExportStatus.NEW == currStatus) {
 
       Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
-      if(exportPath == null || !Files.exists(exportPath)) {
-        log.error("No export path could be found");
+      if(exportPath == null) {
+        log.error("Null export path");
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
         return CompletableFuture.completedFuture(dinaExport.getUuid());
       }
