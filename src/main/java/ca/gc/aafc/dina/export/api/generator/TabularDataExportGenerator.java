@@ -84,10 +84,17 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
     // Should only work for NEW record at this point
     if (DataExport.ExportStatus.NEW == currStatus) {
+
+      Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
+      if(exportPath == null || !Files.exists(exportPath)) {
+        log.error("No export path could be found");
+        updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
+        return CompletableFuture.completedFuture(dinaExport.getUuid());
+      }
+
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
 
       try {
-        Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
         //Create the directory
         Files.createDirectories(exportPath.getParent());
         // csv output
