@@ -115,8 +115,8 @@ public class DataExportConfig {
     }
 
     UUID exportId = dataExport.getUuid();
-    if(exportId == null) {
-       throw new IllegalArgumentException("DataExport UUID can't be null");
+    if (exportId == null) {
+      throw new IllegalArgumentException("DataExport UUID can't be null");
     }
 
     return dirFile.toString().equals(exportId.toString());
