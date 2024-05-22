@@ -96,7 +96,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
       try {
         //Create the directory
-        Files.createDirectories(exportPath.getParent());
+        ensureDirectoryExists(exportPath.getParent());
         // csv output
         try (Writer w = new FileWriter(exportPath.toFile(),
           StandardCharsets.UTF_8);

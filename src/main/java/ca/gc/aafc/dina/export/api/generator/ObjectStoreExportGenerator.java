@@ -49,7 +49,7 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
       }
 
       //Create the directory if it doesn't exist
-      Files.createDirectories(exportPath.getParent());
+      ensureDirectoryExists(exportPath.getParent());
 
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
 

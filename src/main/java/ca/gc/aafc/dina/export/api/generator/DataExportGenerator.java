@@ -1,6 +1,8 @@
 package ca.gc.aafc.dina.export.api.generator;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import javax.persistence.NoResultException;
@@ -33,6 +35,12 @@ public abstract class DataExportGenerator {
   public abstract CompletableFuture<UUID> export(DataExport dinaExport) throws IOException;
 
   public abstract void deleteExport(DataExport dinaExport) throws IOException;
+
+  protected void ensureDirectoryExists(Path directory) throws IOException {
+    if (directory != null) {
+      Files.createDirectories(directory);
+    }
+  }
 
   protected void updateStatus(UUID uuid, DataExport.ExportStatus status) {
     dataExportStatusService.updateStatus(uuid, status);
