@@ -11,10 +11,12 @@ import ca.gc.aafc.dina.export.api.entity.DataExport;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 import javax.inject.Named;
 import javax.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.Setter;
 
 /**
@@ -101,8 +103,23 @@ public class DataExportConfig {
    * @param dataExport
    * @return
    */
-  public static boolean isDataExportDirectory(Path directory, DataExport dataExport) {
-    return directory.getFileName().toString().equals(dataExport.getUuid().toString());
+  public static boolean isDataExportDirectory(Path directory, @NonNull DataExport dataExport) {
+
+    if (directory == null) {
+      return false;
+    }
+
+    Path dirFile = directory.getFileName();
+    if (dirFile == null) {
+      return false;
+    }
+
+    UUID exportId = dataExport.getUuid();
+    if(exportId == null) {
+       throw new IllegalArgumentException("DataExport UUID can't be null");
+    }
+
+    return dirFile.toString().equals(exportId.toString());
   }
 
 }

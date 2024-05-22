@@ -45,6 +45,12 @@ public abstract class DataExportGenerator {
   }
 
   protected void deleteIfExists(Path filePath) throws IOException {
+
+    if(filePath == null) {
+      log.warn("Export file path is null, ignoring");
+      return;
+    }
+
     if (filePath.toFile().exists()) {
       Files.delete(filePath);
     } else {
