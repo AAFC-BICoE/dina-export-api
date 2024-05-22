@@ -10,7 +10,6 @@ import ca.gc.aafc.dina.export.api.file.FileDownloader;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -73,11 +72,11 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
   @Override
   public void deleteExport(DataExport dinaExport) throws IOException {
-    Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
-    if (exportPath.toFile().exists()) {
-      Files.delete(exportPath);
-    } else {
-      log.warn("export {} files could not be deleted, not found", dinaExport.getUuid());
+    if(dinaExport.getExportType() != DataExport.ExportType.OBJECT_ARCHIVE) {
+      throw new IllegalArgumentException("Should only be used for ExportType OBJECT_ARCHIVE");
     }
+
+    Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
+    deleteIfExists(exportPath);
   }
 }

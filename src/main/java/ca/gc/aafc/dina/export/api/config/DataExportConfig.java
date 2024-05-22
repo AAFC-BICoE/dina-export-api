@@ -71,10 +71,38 @@ public class DataExportConfig {
   }
 
   public Path getPathForDataExport(DataExport dataExport) {
+
+    Path path = isExportTypeUsesDirectory(dataExport.getExportType()) ?
+      getGeneratedDataExportsPath().resolve(dataExport.getUuid().toString()) :
+      getGeneratedDataExportsPath();
+
     return switch (dataExport.getExportType()) {
-      case TABULAR_DATA -> getGeneratedDataExportsPath().resolve(dataExport.getUuid().toString()).resolve(DATA_EXPORT_CSV_FILENAME);
-      case OBJECT_ARCHIVE -> getGeneratedDataExportsPath().resolve(dataExport.getUuid().toString() + "." + ZIP_EXT);
+      case TABULAR_DATA -> path.resolve(DATA_EXPORT_CSV_FILENAME);
+      case OBJECT_ARCHIVE -> path.resolve(dataExport.getUuid().toString() + "." + ZIP_EXT);
     };
+  }
+
+  /**
+   * Is the export type uses a directory to store the export or is it storing it in the main
+   * directory ?
+   * @param type
+   * @return
+   */
+  public static boolean isExportTypeUsesDirectory(DataExport.ExportType type) {
+    return switch (type) {
+      case TABULAR_DATA -> true;
+      case OBJECT_ARCHIVE -> false;
+    };
+  }
+
+  /**
+   * Checks if the directory is a data export directory (matching the uuid of the data export)
+   * @param directory
+   * @param dataExport
+   * @return
+   */
+  public static boolean isDataExportDirectory(Path directory, DataExport dataExport) {
+    return directory.getFileName().toString().equals(dataExport.getUuid().toString());
   }
 
 }

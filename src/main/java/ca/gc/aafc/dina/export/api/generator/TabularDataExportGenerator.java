@@ -33,7 +33,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -120,12 +119,19 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
   @Override
   public void deleteExport(DataExport dinaExport) throws IOException {
-    Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
-    if (exportPath.toFile().exists()) {
-      Files.delete(exportPath);
-    } else {
-      log.warn("export {} files could not be deleted, not found", dinaExport.getUuid());
+
+    if(dinaExport.getExportType() != DataExport.ExportType.TABULAR_DATA) {
+      throw new IllegalArgumentException("Should only be used for ExportType TABULAR_DATA");
     }
+
+    Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
+    deleteIfExists(exportPath);
+
+    if (DataExportConfig.isExportTypeUsesDirectory(DataExport.ExportType.TABULAR_DATA) &&
+      DataExportConfig.isDataExportDirectory(exportPath.getParent(), dinaExport)) {
+      deleteIfExists(exportPath.getParent());
+    }
+
   }
 
   /**
