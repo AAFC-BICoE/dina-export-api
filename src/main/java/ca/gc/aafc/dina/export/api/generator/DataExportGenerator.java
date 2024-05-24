@@ -1,9 +1,12 @@
 package ca.gc.aafc.dina.export.api.generator;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import javax.persistence.NoResultException;
+import lombok.extern.log4j.Log4j2;
 
 import org.springframework.retry.support.RetryTemplate;
 
@@ -14,6 +17,7 @@ import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
  * Main abstract class for data export generator.
  * Also responsible to handle export status.
  */
+@Log4j2
 public abstract class DataExportGenerator {
 
   private static final int MAX_RETRY = 5;
@@ -31,6 +35,28 @@ public abstract class DataExportGenerator {
    * @return
    */
   public abstract CompletableFuture<UUID> export(DataExport dinaExport) throws IOException;
+
+  public abstract void deleteExport(DataExport dinaExport) throws IOException;
+
+  protected void ensureDirectoryExists(Path directory) throws IOException {
+    if (directory != null) {
+      Files.createDirectories(directory);
+    }
+  }
+
+  protected void deleteIfExists(Path filePath) throws IOException {
+
+    if(filePath == null) {
+      log.warn("Export file path is null, ignoring");
+      return;
+    }
+
+    if (filePath.toFile().exists()) {
+      Files.delete(filePath);
+    } else {
+      log.warn("Export {} file could not be deleted, not found", filePath);
+    }
+  }
 
   protected void updateStatus(UUID uuid, DataExport.ExportStatus status) {
     dataExportStatusService.updateStatus(uuid, status);

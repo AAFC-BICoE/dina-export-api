@@ -17,9 +17,11 @@ import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.crnk.core.exception.ResourceNotFoundException;
 import io.crnk.core.queryspec.QuerySpec;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -99,6 +101,10 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     // check that arrays are exported using ; as element separator
     assertTrue(lines.get(1).contains("cn1;cn1-1"));
 
+    // delete the export
+    dataExportRepository.delete(dto.getUuid());
+    assertThrows(
+      ResourceNotFoundException.class, () -> dataExportRepository.findOne(dto.getUuid(), new QuerySpec(DataExportDto.class)));
   }
 
 }

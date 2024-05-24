@@ -15,7 +15,6 @@ import ca.gc.aafc.dina.security.auth.ObjectOwnerAuthorizationService;
 import ca.gc.aafc.dina.service.AuditService;
 
 import io.crnk.core.exception.MethodNotAllowedException;
-import java.io.Serializable;
 import java.util.Optional;
 
 @Repository
@@ -56,8 +55,4 @@ public class DataExportRepository extends DinaRepository<DataExportDto, DataExpo
     throw new MethodNotAllowedException("PUT/PATCH");
   }
 
-  @Override
-  public void delete(Serializable serializable) {
-    throw new MethodNotAllowedException("DELETE");
-  }
 }

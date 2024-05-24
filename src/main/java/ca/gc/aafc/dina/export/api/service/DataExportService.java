@@ -79,6 +79,17 @@ public class DataExportService extends DefaultDinaService<DataExport> {
     return findOne(uuid, DataExport.class);
   }
 
+  @Override
+  public void delete(DataExport dinaExport) {
+    DataExportGenerator exportGenerator = generatorByExportType(dinaExport.getExportType());
+    try {
+      exportGenerator.deleteExport(dinaExport);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    super.delete(dinaExport);
+  }
+
   private DataExportGenerator generatorByExportType(DataExport.ExportType type) {
     return switch (type) {
       case TABULAR_DATA -> tabularDataExportGenerator;
