@@ -75,7 +75,8 @@ public class JsonApiDocuments {
                 "type": "collecting-event",
                 "attributes": {
                   "group": "cnc",
-                  "dwcVerbatimLocality" : "Montreal"
+                  "dwcVerbatimLocality" : "Montreal",
+                  "managedAttributes" : { "attribute_ce_1":"value ce 1"}
                 }
               }
          ],
