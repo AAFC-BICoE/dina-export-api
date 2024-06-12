@@ -72,7 +72,8 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
         .name("my export")
         .query(query)
         .columns(List.of("materialSampleName", "collectingEvent.dwcVerbatimLocality",
-          "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1"))
+          "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
+          "collectingEvent.managedAttributes.attribute_ce_1"))
         .build());
     assertNotNull(dto.getUuid());
 
@@ -97,6 +98,12 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     List<String> lines = text.lines().toList();
     // make sure managedAttributes are extracted to specific column(s)
     assertTrue(lines.get(0).contains("managedAttributes.attribute_1"));
+
+    // Check that values are exported
+    // from relationship/included
+    assertTrue(lines.get(1).contains("Montreal"));
+
+    assertTrue(lines.get(1).contains("value ce 1"));
 
     // check that arrays are exported using ; as element separator
     assertTrue(lines.get(1).contains("cn1;cn1-1"));

@@ -58,16 +58,28 @@ public class JsonApiDocuments {
           },
           "relationships" : {
             "collectingEvent" : {
-              "data" : null
+               "data": {
+                 "id": "01900d5a-dc89-7adc-b1cd-bc99ef3d910d",
+                 "type": "collecting-event"
+               }
             },
             "storageUnit" : {
               "data" : null
-            },
-            "attachment" : {
-              "data" : [ ]
             }
           }
         },
+        "included":
+         [
+              {
+                "id": "01900d5a-dc89-7adc-b1cd-bc99ef3d910d",
+                "type": "collecting-event",
+                "attributes": {
+                  "group": "cnc",
+                  "dwcVerbatimLocality" : "Montreal",
+                  "managedAttributes" : { "attribute_ce_1":"value ce 1"}
+                }
+              }
+         ],
         "meta" : {
           "totalResourceCount" : 1,
           "moduleVersion" : "0.47"
