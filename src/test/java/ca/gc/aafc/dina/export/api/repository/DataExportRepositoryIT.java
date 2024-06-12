@@ -97,6 +97,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     List<String> lines = text.lines().toList();
     // make sure managedAttributes are extracted to specific column(s)
     assertTrue(lines.get(0).contains("managedAttributes.attribute_1"));
+    assertTrue(lines.get(1).contains("Montreal"));
 
     // check that arrays are exported using ; as element separator
     assertTrue(lines.get(1).contains("cn1;cn1-1"));
