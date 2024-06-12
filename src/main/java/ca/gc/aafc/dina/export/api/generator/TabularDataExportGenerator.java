@@ -51,6 +51,9 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class TabularDataExportGenerator extends DataExportGenerator {
 
+  private static final TypeRef<List<Map<String, Object>>> JSON_PATH_TYPE_REF = new TypeRef<>() {
+  };
+
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
   private final Configuration jsonPathConfiguration;
@@ -180,27 +183,20 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     if (attributes.isPresent() && attributes.get() instanceof ObjectNode attributeObjNode) {
 
       // handle nested maps (e.g. managed attributes)
-      JSONApiDocumentStructure.ExtractNestedMapResult nestedObjectsResult =
-        JSONApiDocumentStructure.extractNestedMapUsingDotNotation(objectMapper.convertValue(attributeObjNode, MAP_TYPEREF));
-
-      // we add the nested objects with dot notation version
-      for (var nestedMap : nestedObjectsResult.nestedMapsMap().entrySet()) {
-        attributeObjNode.set(nestedMap.getKey(),
-          objectMapper.valueToTree(nestedMap.getValue()));
-      }
-      // remove previous entries
-      for (String key : nestedObjectsResult.usedKeys()) {
-        attributeObjNode.remove(key);
-      }
+      replaceNestedByDotNotation(attributeObjNode);
 
       // handle relationships
+      // Get a map of all relationships (to-one only)
       Map<String, Object> flatRelationships = flatRelationships(record);
+
+      // transform "collectingEvent": {"location" : "value"} in "collectingEvent.location" : "value"
       Map<String, Object> flatRelationshipsDotNotation =
         JSONApiDocumentStructure.mergeNestedMapUsingDotNotation(flatRelationships);
       // we add the relationships in the attributes using dot notation
       for (var entry : flatRelationshipsDotNotation.entrySet()) {
         attributeObjNode.set(entry.getKey(),
           objectMapper.valueToTree(entry.getValue()));
+        replaceNestedByDotNotation(attributeObjNode);
       }
       output.addRecord(attributeObjNode);
     }
@@ -208,10 +204,8 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
   private Map<String, Object> extractById(String id, List<Map<String, Object>> document) {
     DocumentContext dc = JsonPath.using(jsonPathConfiguration).parse(document);
-    TypeRef<List<Map<String, Object>>> typeRef = new TypeRef<>() {
-    };
     try {
-      List<Map<String, Object>> includedObj = JsonPathHelper.extractById(dc, id, typeRef);
+      List<Map<String, Object>> includedObj = JsonPathHelper.extractById(dc, id, JSON_PATH_TYPE_REF);
       return CollectionUtils.isEmpty(includedObj) ? Map.of() : includedObj.get(0);
     } catch (PathNotFoundException pnf) {
       return Map.of();
@@ -261,6 +255,27 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     }
 
     return flatRelationships;
+  }
+
+  /**
+   * Replaces nested map(s) with a key using dot notation.
+   * Example: "managedAttributes": {"attribute_key" : "value"} becomes "managedAttributes.attribute_key" : "value"
+   * @param attributeObjNode the object node where to replace the nested map(s)
+   */
+  private void replaceNestedByDotNotation(ObjectNode attributeObjNode) {
+    // handle nested maps (e.g. managed attributes)
+    JSONApiDocumentStructure.ExtractNestedMapResult nestedObjectsResult =
+      JSONApiDocumentStructure.extractNestedMapUsingDotNotation(objectMapper.convertValue(attributeObjNode, MAP_TYPEREF));
+
+    // we add the nested objects with dot notation version
+    for (var nestedMap : nestedObjectsResult.nestedMapsMap().entrySet()) {
+      attributeObjNode.set(nestedMap.getKey(),
+        objectMapper.valueToTree(nestedMap.getValue()));
+    }
+    // remove previous entries
+    for (String key : nestedObjectsResult.usedKeys()) {
+      attributeObjNode.remove(key);
+    }
   }
 
 }
