@@ -90,7 +90,7 @@ public class FileController {
       }
     }
 
-    if(filePath.isPresent()) {
+    if (filePath.isPresent()) {
       return downloadFile(fileId, filePath.get(), customFilename);
     }
     throw buildNotFoundException("DataExport or Report with ID " + fileId + " Not Found.");
@@ -104,7 +104,7 @@ public class FileController {
   public Optional<Path> getExportFileLocation(UUID fileId) {
 
     Path csvPath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME);
-    if(csvPath.toFile().exists()) {
+    if (csvPath.toFile().exists()) {
       return Optional.of(
         dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
     } else {

@@ -47,11 +47,11 @@ public class BarcodeGenerator {
 
     //set specific parameters
     Map<EncodeHintType,Object> hints = new HashMap<>();
-    if(codeOptions.margin() != null ) {
+    if (codeOptions.margin() != null ) {
       hints.put(EncodeHintType.MARGIN, codeOptions.margin());
     }
 
-    if(codeOptions.dataMatrixShape() != null) {
+    if (codeOptions.dataMatrixShape() != null) {
       hints.put(EncodeHintType.DATA_MATRIX_SHAPE, switch (codeOptions.dataMatrixShape()) {
         case "square" -> SymbolShapeHint.FORCE_SQUARE;
         case "rectangle" -> SymbolShapeHint.FORCE_RECTANGLE;
@@ -59,7 +59,7 @@ public class BarcodeGenerator {
       });
     }
 
-    if(codeOptions.qrcodeVersion() != null ) {
+    if (codeOptions.qrcodeVersion() != null ) {
       hints.put(EncodeHintType.QR_VERSION, codeOptions.qrcodeVersion());
     }
 

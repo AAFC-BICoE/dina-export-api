@@ -32,7 +32,7 @@ public class StartupChecks {
     log.info("Template Folder exists?:" + templateFolderExists);
 
     // make sure the destination folder exists
-    if(!templateFolderExists) {
+    if (!templateFolderExists) {
       log.info("Trying to create " + reportTemplateConfig.getTemplateFolder());
       try {
         Files.createDirectories(path);

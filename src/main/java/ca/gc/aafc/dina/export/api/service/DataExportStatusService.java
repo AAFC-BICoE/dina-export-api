@@ -39,7 +39,7 @@ public class DataExportStatusService {
   )
   public DataExport.ExportStatus findStatus(UUID uuid) {
     DataExport da = baseDAO.findOneByNaturalId(uuid, DataExport.class);
-    if(da == null) {
+    if (da == null) {
       throw new NoResultException();
     }
     return da.getStatus();

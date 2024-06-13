@@ -76,9 +76,9 @@ public class ReportRequestService {
     Path tmpDirectory = Files.createDirectories(workingFolder.resolve(uuid.toString()));
 
     // Generate barcodes (if required by the template)
-    if(template.getIncludesBarcode()) {
+    if (template.getIncludesBarcode()) {
       BarcodeGenerator.CodeGenerationOption cgo = BarcodeGenerator.buildDefaultQrConfig();
-      for(BarcodeSpecs currBarcodeSpecs : extractBarcodeSpecs(reportRequest.getPayload())) {
+      for (BarcodeSpecs currBarcodeSpecs : extractBarcodeSpecs(reportRequest.getPayload())) {
         File tempBarcodeFile =
           tmpDirectory.resolve(currBarcodeSpecs.id + "." + BarcodeGenerator.CODE_OUTPUT_FORMAT)
             .toFile();
@@ -95,7 +95,7 @@ public class ReportRequestService {
     // Generate a report based on template
     File templateOutputFile = null;
     String extension = FileController.getExtensionForMediaType(template.getTemplateOutputMediaType());
-    if(StringUtils.isNotBlank(extension)) {
+    if (StringUtils.isNotBlank(extension)) {
       templateOutputFile = tmpDirectory.resolve(DataExportConfig.REPORT_FILENAME + "." + extension).toFile();
       try (FileWriter fw = new FileWriter(templateOutputFile, StandardCharsets.UTF_8)) {
         reportGenerator.generateReport(template.getTemplateFilename(), reportRequest.getPayload(), fw);
@@ -105,18 +105,18 @@ public class ReportRequestService {
     }
 
     // sanity check
-    if(!templateOutputFile.exists()) {
+    if (!templateOutputFile.exists()) {
       throw new IOException("Report output not found.");
     }
 
     // If we need a PDF, transform the HTML to PDF
-    if(MediaType.APPLICATION_PDF_VALUE.equals(template.getOutputMediaType())) {
-      if(!MediaType.TEXT_HTML_VALUE.equals(template.getTemplateOutputMediaType())) {
+    if (MediaType.APPLICATION_PDF_VALUE.equals(template.getOutputMediaType())) {
+      if (!MediaType.TEXT_HTML_VALUE.equals(template.getTemplateOutputMediaType())) {
         throw new IOException("No intermediate html file found");
       }
       generatePDF(tmpDirectory, templateOutputFile);
     } else if (DataExportConfig.TEXT_CSV_VALUE.equals(template.getOutputMediaType())) {
-      if(!MediaType.APPLICATION_JSON_VALUE.equals(template.getTemplateOutputMediaType())) {
+      if (!MediaType.APPLICATION_JSON_VALUE.equals(template.getTemplateOutputMediaType())) {
         throw new IOException("No intermediate json file found");
       }
       generateCSV(tmpDirectory, templateOutputFile);
