@@ -73,7 +73,7 @@ public class ElasticSearchDataSource {
     SearchRequest sr = buildSearchRequestWithPIT(opitResponse.id(), query, false);
 
     //We need a sort so if the query doesn't include one, use the default one
-    if(CollectionUtils.isEmpty(sr.sort())) {
+    if (CollectionUtils.isEmpty(sr.sort())) {
       sr = buildSearchRequestWithPIT(opitResponse.id(), query, true);
     }
 
@@ -91,7 +91,7 @@ public class ElasticSearchDataSource {
 
     SearchRequest sr = buildSearchRequestWithPIT(pitId, query, false, sortFieldValues);
     //We need a sort so if the query doesn't include one, use the default one
-    if(CollectionUtils.isEmpty(sr.sort())) {
+    if (CollectionUtils.isEmpty(sr.sort())) {
       sr = buildSearchRequestWithPIT(pitId, query, true, sortFieldValues);
     }
     return client.search(sr, JsonNode.class);
@@ -120,11 +120,11 @@ public class ElasticSearchDataSource {
       .size(esPageSize)
       .pit(pit -> pit.id(pitId).keepAlive(KEEP_ALIVE));
 
-    if(CollectionUtils.isNotEmpty(searchAfter)) {
+    if (CollectionUtils.isNotEmpty(searchAfter)) {
       builder.searchAfter(searchAfter);
     }
 
-    if(setDefaultSort) {
+    if (setDefaultSort) {
       builder.sort(DEFAULT_SORT);
     }
 

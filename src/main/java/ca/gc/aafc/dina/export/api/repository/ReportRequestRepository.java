@@ -72,7 +72,7 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
     UUID reportTemplateUUID = s.getReportTemplateUUID();
     ReportTemplate reportTemplateEntity = reportService.findOne(reportTemplateUUID, ReportTemplate.class);
 
-    if(reportTemplateEntity == null) {
+    if (reportTemplateEntity == null) {
       throw new ResourceNotFoundException("ReportTemplate with ID " + reportTemplateUUID + " Not Found.");
     }
 

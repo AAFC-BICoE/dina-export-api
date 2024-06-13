@@ -38,10 +38,10 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
     DataExport.ExportStatus currStatus = waitForRecord(dinaExport.getUuid());
 
-    if(currStatus == DataExport.ExportStatus.NEW) {
+    if (currStatus == DataExport.ExportStatus.NEW) {
 
       Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
-      if(exportPath == null) {
+      if (exportPath == null) {
         log.error("Null export path");
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
         return CompletableFuture.completedFuture(dinaExport.getUuid());
@@ -72,7 +72,7 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
   @Override
   public void deleteExport(DataExport dinaExport) throws IOException {
-    if(dinaExport.getExportType() != DataExport.ExportType.OBJECT_ARCHIVE) {
+    if (dinaExport.getExportType() != DataExport.ExportType.OBJECT_ARCHIVE) {
       throw new IllegalArgumentException("Should only be used for ExportType OBJECT_ARCHIVE");
     }
 

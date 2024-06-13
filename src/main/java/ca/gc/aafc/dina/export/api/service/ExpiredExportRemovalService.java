@@ -55,10 +55,10 @@ public class ExpiredExportRemovalService {
       sql, 0, MAX_QUERY_LIMIT,
       List.of(Pair.of("status", DataExport.ExportStatus.COMPLETED)));
 
-    for(DataExport de : completedExport) {
+    for (DataExport de : completedExport) {
       if (isExpired(de)) {
         Optional<Path> exportFile = fileController.getExportFileLocation(de.getUuid());
-        if(exportFile.isPresent()) {
+        if (exportFile.isPresent()) {
           try {
             Files.delete(exportFile.get());
             log.info(" {} deleted ", exportFile.get());

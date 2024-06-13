@@ -48,7 +48,7 @@ public class DataExportService extends DefaultDinaService<DataExport> {
   @Override
   public void preCreate(DataExport dinaExport) {
 
-    if(dinaExport.getUuid() == null) {
+    if (dinaExport.getUuid() == null) {
       dinaExport.setUuid(UUID.randomUUID());
     }
     dinaExport.setStatus(DataExport.ExportStatus.NEW);
