@@ -4,10 +4,12 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -198,6 +200,13 @@ public class TabularDataExportGenerator extends DataExportGenerator {
           objectMapper.valueToTree(entry.getValue()));
         replaceNestedByDotNotation(attributeObjNode);
       }
+
+      // Add the id into the attributes so it can be accessed for exporting.
+      Optional<JsonNode> id = atJsonPtr(record, JsonPointer.valueOf("/" + JSONApiDocumentStructure.DATA + "/" + JSONApiDocumentStructure.ID));
+      if (id.isPresent() && id.get() instanceof TextNode idTextNode) {
+        attributeObjNode.set(JSONApiDocumentStructure.ID, idTextNode);
+      }
+
       output.addRecord(attributeObjNode);
     }
   }
