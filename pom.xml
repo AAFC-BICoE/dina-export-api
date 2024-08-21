@@ -32,7 +32,7 @@
     <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
     <checkstyle.version>10.17.0</checkstyle.version>
 
-    <dina-base-api.version>0.124</dina-base-api.version>
+    <dina-base-api.version>0.128</dina-base-api.version>
     <spring-boot-maven-plugin.fork>false</spring-boot-maven-plugin.fork>
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>
@@ -43,18 +43,6 @@
     <!-- test-related properties-->
     <mockserver.version>5.15.0</mockserver.version>
   </properties>
-
-  <!--  temporary until we can migrate to a newer version of Crnk-->
-  <repositories>
-    <repository>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>jcenter central</id>
-      <name>bintray</name>
-      <url>https://jcenter.bintray.com</url>
-    </repository>
-  </repositories>
 
   <dependencies>
     <dependency>
