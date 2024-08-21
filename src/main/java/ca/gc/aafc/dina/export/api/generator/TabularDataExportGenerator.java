@@ -151,7 +151,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     boolean pageAvailable = response.hits().hits().size() != 0;
     while (pageAvailable) {
       for (Hit<JsonNode> hit : response.hits().hits()) {
-        processRecord(hit.source(), output);
+        processRecord(hit.id(), hit.source(), output);
       }
       pageAvailable = false;
 
@@ -174,13 +174,15 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    * @param output
    * @throws IOException
    */
-  private void processRecord(JsonNode record, DataOutput<JsonNode> output) throws IOException {
+  private void processRecord(String documentId, JsonNode record, DataOutput<JsonNode> output) throws IOException {
     if (record == null) {
       return;
     }
 
     Optional<JsonNode> attributes = atJsonPtr(record, JSONApiDocumentStructure.ATTRIBUTES_PTR);
     if (attributes.isPresent() && attributes.get() instanceof ObjectNode attributeObjNode) {
+
+      attributeObjNode.put(JSONApiDocumentStructure.ID, documentId);
 
       // handle nested maps (e.g. managed attributes)
       replaceNestedByDotNotation(attributeObjNode);
