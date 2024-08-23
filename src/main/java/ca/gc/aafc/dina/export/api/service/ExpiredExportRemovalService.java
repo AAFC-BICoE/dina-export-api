@@ -50,10 +50,10 @@ public class ExpiredExportRemovalService {
         "FROM " + DataExport.class.getCanonicalName() + " de " +
         "WHERE status= :status";
 
-    List<DataExport> completedExport = baseDAO.resultListFromQuery(
-      DataExport.class,
-      sql, 0, MAX_QUERY_LIMIT,
-      List.of(Pair.of("status", DataExport.ExportStatus.COMPLETED)));
+    List<DataExport> completedExport = baseDAO.findAllByQuery(
+      DataExport.class, sql,
+      List.of(Pair.of("status", DataExport.ExportStatus.COMPLETED)),
+      MAX_QUERY_LIMIT, 0);
 
     for (DataExport de : completedExport) {
       if (isExpired(de)) {

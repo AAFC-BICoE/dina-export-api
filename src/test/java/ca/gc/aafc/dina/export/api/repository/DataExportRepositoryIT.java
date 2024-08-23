@@ -61,7 +61,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     UUID docId = UUID.randomUUID();
     ElasticSearchTestUtils.indexDocument(esClient, MAT_SAMPLE_INDEX, docId.toString(), JsonApiDocuments.getMaterialSampleDocument(docId));
     UUID docId2 = UUID.randomUUID();
-    ElasticSearchTestUtils.indexDocument(esClient, MAT_SAMPLE_INDEX, docId.toString(), JsonApiDocuments.getMaterialSampleDocument(docId2));
+    ElasticSearchTestUtils.indexDocument(esClient, MAT_SAMPLE_INDEX, docId2.toString(), JsonApiDocuments.getMaterialSampleDocument(docId2));
 
     // Do a query with no sort to ensure a default sort will be added for paging
     String query = "{\"query\": {\"match_all\": {}}}";
@@ -71,7 +71,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
         .source(MAT_SAMPLE_INDEX)
         .name("my export")
         .query(query)
-        .columns(List.of("materialSampleName", "collectingEvent.dwcVerbatimLocality",
+        .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
           "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
           "collectingEvent.managedAttributes.attribute_ce_1"))
         .build());
@@ -96,6 +96,10 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     assertNotNull(response.getBody());
     String text = new String(response.getBody().getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     List<String> lines = text.lines().toList();
+
+    // make sure id is exported, skip the header line and check if it's in 1 of the 2 exported line (order is undefined)
+    assertTrue(lines.get(1).contains(docId.toString()) || lines.get(2).contains(docId.toString()));
+
     // make sure managedAttributes are extracted to specific column(s)
     assertTrue(lines.get(0).contains("managedAttributes.attribute_1"));
 
