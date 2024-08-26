@@ -279,12 +279,12 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     Map<String, Object> flatToManyRelationships = new HashMap<>();
 
     for (Map<String, Object> doc : toMerge) {
-      for (String attribute : doc.keySet()) {
-        if (flatToManyRelationships.containsKey(attribute)) {
-          flatToManyRelationships.computeIfPresent(attribute,
-            (k, v) -> v + ";" + doc.get(attribute));
+      for (var entry : doc.entrySet()) {
+        if (flatToManyRelationships.containsKey(entry.getKey())) {
+          flatToManyRelationships.computeIfPresent(entry.getKey(),
+            (k, v) -> v + ";" + entry.getValue());
         } else {
-          flatToManyRelationships.put(attribute, doc.get(attribute));
+          flatToManyRelationships.put(entry.getKey(), entry.getValue());
         }
       }
     }
