@@ -1,7 +1,6 @@
 package ca.gc.aafc.dina.export.api.generator;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
