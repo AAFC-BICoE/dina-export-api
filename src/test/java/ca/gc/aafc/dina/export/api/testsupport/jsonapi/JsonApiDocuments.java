@@ -63,6 +63,18 @@ public class JsonApiDocuments {
                  "type": "collecting-event"
                }
             },
+            "projects": {
+               "data": [
+                 {
+                   "id": "8f68a05f-937d-4d40-88b4-ed92720d9c3f",
+                    "type": "project"
+                 },
+                 {
+                   "id": "01918fc7-e355-703c-b9ef-56ec794cbbd6",
+                    "type": "project"
+                 }
+               ]
+            },
             "storageUnit" : {
               "data" : null
             }
@@ -78,6 +90,20 @@ public class JsonApiDocuments {
                   "dwcVerbatimLocality" : "Montreal",
                   "managedAttributes" : { "attribute_ce_1":"value ce 1"}
                 }
+              },
+              {
+                "id": "8f68a05f-937d-4d40-88b4-ed92720d9c3f",
+                "type": "project",
+                "attributes": {
+                  "name": "project 1"
+                }
+              },
+              {
+                "id": "01918fc7-e355-703c-b9ef-56ec794cbbd6",
+                "type": "project",
+                "attributes": {
+                  "name": "project 2"
+                }
               }
          ],
         "meta" : {
@@ -90,6 +116,7 @@ public class JsonApiDocuments {
   public static String getMaterialSampleDocument() {
     return String.format(MAT_SAMPLE_DOCUMENT, UUID.randomUUID());
   }
+
   public static String getMaterialSampleDocument(UUID documentId) {
     return String.format(MAT_SAMPLE_DOCUMENT, documentId);
   }
