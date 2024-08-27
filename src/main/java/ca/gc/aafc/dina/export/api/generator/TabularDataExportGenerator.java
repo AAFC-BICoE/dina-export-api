@@ -253,7 +253,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
         // pull the nested-document from the included section
         flatRelationships.put(relName,
           extractById(idValue, includedDoc).get(JSONApiDocumentStructure.ATTRIBUTES));
-      } else if (currRelNode.get(JSONApiDocumentStructure.DATA).isArray()) {
+      } else if (jsonNodeHasFieldAndIsArray(currRelNode, JSONApiDocumentStructure.DATA)) {
         // if "data" is an array (to-many)
         List<Map<String, Object>> toMerge = new ArrayList<>();
         currRelNode.get(JSONApiDocumentStructure.DATA).elements().forEachRemaining(el -> {
@@ -268,6 +268,17 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     }
 
     return flatRelationships;
+  }
+
+  /**
+   * Checks if a JSON node has a specific field and if that field's value is an array.
+   *
+   * @param node The JSON node to check.
+   * @param fieldName The name of the field to check.
+   * @return True if the node has the field and its value is an array, false otherwise.
+   */
+  private static boolean jsonNodeHasFieldAndIsArray(JsonNode node, String fieldName) {
+    return node.has(fieldName) && node.get(fieldName).isArray();
   }
 
   /**
