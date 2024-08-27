@@ -57,6 +57,12 @@ public class JsonApiDocuments {
             "allowDuplicateName" : false
           },
           "relationships" : {
+            "parentMaterialSample": {
+              "links": {
+                "self": "/api/v1/material-sample/01918f22-1687-7634-bcd3-cd56d493bf27/relationships/parentMaterialSample",
+                "related": "/api/v1/material-sample/01918f22-1687-7634-bcd3-cd56d493bf27/parentMaterialSample"
+              }
+            },
             "collectingEvent" : {
                "data": {
                  "id": "01900d5a-dc89-7adc-b1cd-bc99ef3d910d",
@@ -75,7 +81,7 @@ public class JsonApiDocuments {
                  }
                ]
             },
-            "storageUnitUsage" : {
+            "collection" : {
               "data" : null
             }
           }

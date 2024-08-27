@@ -73,8 +73,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
         .query(query)
         .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
           "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
-          "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", 
-          "storageUnitUsage.storageUnitName"))
+          "collectingEvent.managedAttributes.attribute_ce_1", "projects.name"))
         .build());
     assertNotNull(dto.getUuid());
 
