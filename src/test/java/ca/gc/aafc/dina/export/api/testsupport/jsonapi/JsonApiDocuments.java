@@ -75,7 +75,7 @@ public class JsonApiDocuments {
                  }
                ]
             },
-            "storageUnit" : {
+            "storageUnitUsage" : {
               "data" : null
             }
           }
