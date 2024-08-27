@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -134,7 +135,6 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       DataExportConfig.isDataExportDirectory(exportPath.getParent(), dinaExport)) {
       deleteIfExists(exportPath.getParent());
     }
-
   }
 
   /**
@@ -253,10 +253,53 @@ public class TabularDataExportGenerator extends DataExportGenerator {
         // pull the nested-document from the included section
         flatRelationships.put(relName,
           extractById(idValue, includedDoc).get(JSONApiDocumentStructure.ATTRIBUTES));
+      } else if (jsonNodeHasFieldAndIsArray(currRelNode, JSONApiDocumentStructure.DATA)) {
+        // if "data" is an array (to-many)
+        List<Map<String, Object>> toMerge = new ArrayList<>();
+        currRelNode.get(JSONApiDocumentStructure.DATA).elements().forEachRemaining(el -> {
+          String idValue = el.findValue(JSONApiDocumentStructure.ID).asText();
+          // pull the nested-document from the included section
+          toMerge.add(
+            (Map<String, Object>) extractById(idValue, includedDoc).get(
+              JSONApiDocumentStructure.ATTRIBUTES));
+        });
+        flatRelationships.put(relName, flatToMany(toMerge));
       }
     }
 
     return flatRelationships;
+  }
+
+  /**
+   * Checks if a JSON node has a specific field and if that field's value is an array.
+   *
+   * @param node The JSON node to check.
+   * @param fieldName The name of the field to check.
+   * @return True if the node has the field and its value is an array, false otherwise.
+   */
+  private static boolean jsonNodeHasFieldAndIsArray(JsonNode node, String fieldName) {
+    return node.has(fieldName) && node.get(fieldName).isArray();
+  }
+
+  /**
+   * Creates a special document that represents all the values concatenated (by ; like the array elements) per attributes
+   * @param toMerge
+   * @return
+   */
+  public static Map<String, Object> flatToMany(List<Map<String, Object>> toMerge) {
+    Map<String, Object> flatToManyRelationships = new HashMap<>();
+
+    for (Map<String, Object> doc : toMerge) {
+      for (var entry : doc.entrySet()) {
+        if (flatToManyRelationships.containsKey(entry.getKey())) {
+          flatToManyRelationships.computeIfPresent(entry.getKey(),
+            (k, v) -> v + ";" + entry.getValue());
+        } else {
+          flatToManyRelationships.put(entry.getKey(), entry.getValue());
+        }
+      }
+    }
+    return flatToManyRelationships;
   }
 
   /**

@@ -73,7 +73,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
         .query(query)
         .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
           "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
-          "collectingEvent.managedAttributes.attribute_ce_1"))
+          "collectingEvent.managedAttributes.attribute_ce_1", "projects.name"))
         .build());
     assertNotNull(dto.getUuid());
 
@@ -111,6 +111,9 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     // check that arrays are exported using ; as element separator
     assertTrue(lines.get(1).contains("cn1;cn1-1"));
+
+    // check that to-many relationships are exported in a similar way of arrays
+    assertTrue(lines.get(1).contains("project 1;project 2"));
 
     // delete the export
     dataExportRepository.delete(dto.getUuid());

@@ -57,13 +57,31 @@ public class JsonApiDocuments {
             "allowDuplicateName" : false
           },
           "relationships" : {
+            "parentMaterialSample": {
+              "links": {
+                "self": "/api/v1/material-sample/01918f22-1687-7634-bcd3-cd56d493bf27/relationships/parentMaterialSample",
+                "related": "/api/v1/material-sample/01918f22-1687-7634-bcd3-cd56d493bf27/parentMaterialSample"
+              }
+            },
             "collectingEvent" : {
                "data": {
                  "id": "01900d5a-dc89-7adc-b1cd-bc99ef3d910d",
                  "type": "collecting-event"
                }
             },
-            "storageUnit" : {
+            "projects": {
+               "data": [
+                 {
+                   "id": "8f68a05f-937d-4d40-88b4-ed92720d9c3f",
+                    "type": "project"
+                 },
+                 {
+                   "id": "01918fc7-e355-703c-b9ef-56ec794cbbd6",
+                    "type": "project"
+                 }
+               ]
+            },
+            "collection" : {
               "data" : null
             }
           }
@@ -78,6 +96,20 @@ public class JsonApiDocuments {
                   "dwcVerbatimLocality" : "Montreal",
                   "managedAttributes" : { "attribute_ce_1":"value ce 1"}
                 }
+              },
+              {
+                "id": "8f68a05f-937d-4d40-88b4-ed92720d9c3f",
+                "type": "project",
+                "attributes": {
+                  "name": "project 1"
+                }
+              },
+              {
+                "id": "01918fc7-e355-703c-b9ef-56ec794cbbd6",
+                "type": "project",
+                "attributes": {
+                  "name": "project 2"
+                }
               }
          ],
         "meta" : {
@@ -90,6 +122,7 @@ public class JsonApiDocuments {
   public static String getMaterialSampleDocument() {
     return String.format(MAT_SAMPLE_DOCUMENT, UUID.randomUUID());
   }
+
   public static String getMaterialSampleDocument(UUID documentId) {
     return String.format(MAT_SAMPLE_DOCUMENT, documentId);
   }
