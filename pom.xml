@@ -38,6 +38,8 @@
     <openhtml.version>1.0.10</openhtml.version>
     <tika.version>2.6.0</tika.version>
 
+    <!-- versions override-->
+    <spring-framework.version>5.3.38</spring-framework.version>
     <postgresql.version>42.4.4</postgresql.version>
 
     <!-- test-related properties-->
