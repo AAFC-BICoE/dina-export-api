@@ -83,6 +83,9 @@ public class JsonApiDocuments {
             },
             "collection" : {
               "data" : null
+            },
+            "attachment": {
+              "data": []
             }
           }
         },
