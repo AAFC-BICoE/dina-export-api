@@ -258,10 +258,13 @@ public class TabularDataExportGenerator extends DataExportGenerator {
         List<Map<String, Object>> toMerge = new ArrayList<>();
         currRelNode.get(JSONApiDocumentStructure.DATA).elements().forEachRemaining(el -> {
           String idValue = el.findValue(JSONApiDocumentStructure.ID).asText();
-          // pull the nested-document from the included section
-          toMerge.add(
-            (Map<String, Object>) extractById(idValue, includedDoc).get(
-              JSONApiDocumentStructure.ATTRIBUTES));
+          // pull the included-document from the included section
+          var doc = extractById(idValue, includedDoc).get(JSONApiDocumentStructure.ATTRIBUTES);
+          if (doc != null) {
+            toMerge.add((Map<String, Object>) doc);
+          } else {
+            log.warn("Can't find included document {}", idValue);
+          }
         });
         flatRelationships.put(relName, flatToMany(toMerge));
       }
