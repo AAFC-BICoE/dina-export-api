@@ -1,0 +1,32 @@
+<#ftl output_format="JSON">
+
+<#assign pcrPrimers = {}>
+<#list included["pcr-primer"] as item>
+    <#assign pcrPrimers = pcrPrimers + { (item.data.id): item }>
+</#list>
+
+<#assign pcrBatchItems = {}>
+<#list included["pcr-batch-item"] as item>
+    <#assign pcrBatchItems = pcrBatchItems + { (item.data.id): item }>
+</#list>
+
+<#assign materialSamples = {}>
+<#list included["material-sample"] as item>
+    <#assign materialSamples = materialSamples + { (item.data.id): item }>
+</#list>
+
+{
+"payload":[
+<#list seqReaction>
+  <#items as seqReactionItem>
+  {
+    <#assign matSampleName = materialSamples[pcrBatchItems[seqReactionItem.data.relationships.pcrBatchItem.data.id].data.relationships.materialSample.data.id].data.attributes.materialSampleName>
+    "lineId":${seqReactionItem?index+1},
+    <#assign generatedName = "${matSampleName}_${pcrPrimers[seqReactionItem.data.relationships.seqPrimer.data.id].data.attributes.name}_">
+    "generatedName":${generatedName?c}
+  }
+  <#sep>,</#sep>
+  </#items>
+</#list>
+]
+}
