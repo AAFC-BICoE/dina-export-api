@@ -15,14 +15,29 @@
     <#assign materialSamples = materialSamples + { (item.data.id): item }>
 </#list>
 
+<#assign storageUnitUsages = {}>
+<#list included["storage-unit-usage"] as item>
+    <#assign storageUnitUsages = storageUnitUsages + { (item.data.id): item }>
+</#list>
+
+<#assign regions = {}>
+<#list included["region"] as item>
+    <#assign regions = regions + { (item.data.id): item }>
+</#list>
+
+<#assign seqBatchName = .data_model["seq-batch"].data.attributes.name>
+<#assign seqBatchRegionSymbol = regions[.data_model["seq-batch"].data.relationships.region.data.id].data.attributes.symbol>
+
 {
 "payload":[
-<#list seqReaction>
+<#list .data_model["seq-reaction"]>
   <#items as seqReactionItem>
   {
     <#assign matSampleName = materialSamples[pcrBatchItems[seqReactionItem.data.relationships.pcrBatchItem.data.id].data.relationships.materialSample.data.id].data.attributes.materialSampleName>
+    <#assign storageUnitUsage = storageUnitUsages[seqReactionItem.data.relationships.storageUnitUsage.data.id]>
+    <#assign wellCoordinates = storageUnitUsage.data.attributes.wellRow + storageUnitUsage.data.attributes.wellColumn>
     "lineId":${seqReactionItem?index+1},
-    <#assign generatedName = "${matSampleName}_${pcrPrimers[seqReactionItem.data.relationships.seqPrimer.data.id].data.attributes.name}_">
+    <#assign generatedName = "${matSampleName}_${seqBatchName}_${wellCoordinates}_${pcrPrimers[seqReactionItem.data.relationships.seqPrimer.data.id].data.attributes.name}_${seqBatchRegionSymbol}">
     "generatedName":${generatedName?c}
   }
   <#sep>,</#sep>
