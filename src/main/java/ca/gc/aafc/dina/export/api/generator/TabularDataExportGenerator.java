@@ -100,12 +100,16 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       try {
         //Create the directory
         ensureDirectoryExists(exportPath.getParent());
+
+        List<String> headerAliases = dinaExport.getColumnAliases() != null ?
+          Arrays.asList(dinaExport.getColumnAliases()) : null;
+
         // csv output
-        try (Writer w = new FileWriter(exportPath.toFile(),
-          StandardCharsets.UTF_8);
+        try (Writer w = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
              CsvOutput<JsonNode> output =
-               CsvOutput.create(Arrays.asList(dinaExport.getColumns()), new TypeReference<>() {
-               }, w)) {
+               CsvOutput.create(Arrays.asList(dinaExport.getColumns()), headerAliases,
+                 new TypeReference<>() {
+                 }, w)) {
           export(dinaExport.getSource(), objectMapper.writeValueAsString(dinaExport.getQuery()),
             output);
         }

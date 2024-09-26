@@ -78,6 +78,10 @@ public class DataExport implements DinaEntity {
   @Column
   private String[] columns;
 
+  @Type(type = "string-array")
+  @Column
+  private String[] columnAliases;
+
   @Enumerated(EnumType.STRING)
   @NotNull
   @Column

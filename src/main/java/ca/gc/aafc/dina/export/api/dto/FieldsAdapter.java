@@ -113,6 +113,41 @@ public final class FieldsAdapter {
     public Supplier<List<String>> dtoSupplyMethod(DataExportDto dtoRef) {
       return dtoRef::getColumns;
     }
+  }
+
+  @NoArgsConstructor
+  public static final class DataExportColumnAliasesFieldAdapter
+    implements DinaFieldAdapter<DataExportDto, DataExport, List<String>, String[]> {
+
+    @Override
+    public List<String> toDTO(String[] columnAliases) {
+      return columnAliases == null ? null : Arrays.asList(columnAliases);
+    }
+
+    @Override
+    public String[] toEntity(List<String> columnAliases) {
+      return columnAliases == null ? null : columnAliases.toArray(String[]::new);
+    }
+
+    @Override
+    public Consumer<String[]> entityApplyMethod(DataExport entityRef) {
+      return entityRef::setColumnAliases;
+    }
+
+    @Override
+    public Consumer<List<String>> dtoApplyMethod(DataExportDto dtoRef) {
+      return dtoRef::setColumnAliases;
+    }
+
+    @Override
+    public Supplier<String[]> entitySupplyMethod(DataExport entityRef) {
+      return entityRef::getColumnAliases;
+    }
+
+    @Override
+    public Supplier<List<String>> dtoSupplyMethod(DataExportDto dtoRef) {
+      return dtoRef::getColumnAliases;
+    }
 
   }
 }
