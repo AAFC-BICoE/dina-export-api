@@ -2,9 +2,11 @@ package ca.gc.aafc.dina.export.api.output;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -43,21 +45,29 @@ public final class CsvOutput<T> implements DataOutput<T> {
   /**
    * Same as {@link #create(List, TypeReference, Writer)} but using aliases for headers.
    * @param headers should match the properties available in the type.
-   * @param headersAliases aliases for headers. Matched by the order in the list.
+   * @param _headersAliases aliases for headers. Matched by the order in the list.
    * @param typeRef the type
    * @param writer won't be closed. Responsibility of the caller.
    * @return
    */
-  public static <T> CsvOutput<T> create(List<String> headers, List<String> headersAliases,
+  public static <T> CsvOutput<T> create(List<String> headers, List<String> _headersAliases,
                                         TypeReference<T> typeRef, Writer writer) throws IOException {
 
-    if (CollectionUtils.isEmpty(headersAliases)) {
+    if (CollectionUtils.isEmpty(_headersAliases)) {
       return create(headers, typeRef, writer);
     }
 
-    if (headers == null || headers.size() != headersAliases.size()) {
+    if (headers == null || headers.size() != _headersAliases.size()) {
       throw new IllegalArgumentException(
         "headersAliases should match headers size and not be null");
+    }
+
+    //Replace empty aliases by header names. Copy the list since we will change it.
+    List<String> headersAliases = new ArrayList<>(_headersAliases);
+    for (int i = 0; i < headersAliases.size(); i++) {
+      if (StringUtils.isEmpty(headersAliases.get(i))) {
+        headersAliases.set(i, headers.get(i));
+      }
     }
 
     // Write all the header aliases first
