@@ -19,7 +19,8 @@ import lombok.Setter;
 @RelatedEntity(DataExport.class)
 @CustomFieldAdapter(adapters = {
   FieldsAdapter.DataExportQueryFieldAdapter.class,
-  FieldsAdapter.DataExportColumnsFieldAdapter.class
+  FieldsAdapter.DataExportColumnsFieldAdapter.class,
+  FieldsAdapter.DataExportColumnAliasesFieldAdapter.class
 })
 @Getter
 @Setter
@@ -48,5 +49,8 @@ public class DataExportDto {
 
   @IgnoreDinaMapping(reason = "handled by DataExportColumnsFieldAdapter")
   private List<String> columns;
+
+  @IgnoreDinaMapping(reason = "handled by DataExportColumnsFieldAdapter")
+  private List<String> columnAliases;
 
 }
