@@ -45,25 +45,26 @@ public final class CsvOutput<T> implements DataOutput<T> {
   /**
    * Same as {@link #create(List, TypeReference, Writer)} but using aliases for headers.
    * @param headers should match the properties available in the type.
-   * @param _headersAliases aliases for headers. Matched by the order in the list.
+   * @param receivedHeadersAliases aliases for headers. Matched by the order in the list. If an entry is empty string,
+   *                               it will be replaced by the header value
    * @param typeRef the type
    * @param writer won't be closed. Responsibility of the caller.
    * @return
    */
-  public static <T> CsvOutput<T> create(List<String> headers, List<String> _headersAliases,
+  public static <T> CsvOutput<T> create(List<String> headers, List<String> receivedHeadersAliases,
                                         TypeReference<T> typeRef, Writer writer) throws IOException {
 
-    if (CollectionUtils.isEmpty(_headersAliases)) {
+    if (CollectionUtils.isEmpty(receivedHeadersAliases)) {
       return create(headers, typeRef, writer);
     }
 
-    if (headers == null || headers.size() != _headersAliases.size()) {
+    if (headers == null || headers.size() != receivedHeadersAliases.size()) {
       throw new IllegalArgumentException(
         "headersAliases should match headers size and not be null");
     }
 
     //Replace empty aliases by header names. Copy the list since we will change it.
-    List<String> headersAliases = new ArrayList<>(_headersAliases);
+    List<String> headersAliases = new ArrayList<>(receivedHeadersAliases);
     for (int i = 0; i < headersAliases.size(); i++) {
       if (StringUtils.isEmpty(headersAliases.get(i))) {
         headersAliases.set(i, headers.get(i));
