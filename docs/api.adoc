@@ -52,7 +52,9 @@ The file represented by `templateFilename` must exist in the template folder of 
 == Data Export Request
 
 Data Exports are running asynchronously. Upon creation using a POST, an export UUID will be returned. The UUID can
-be used to query the state using the same (`data-export`) with a GET.
+be used to query the state using the same (`data-export`) with a GET. An optional `columnAliases` attribute can also be submitted
+as long as the length of the array is the same as `columns`. If aliases are only required for some column the others should have an empty string so the real
+header name will be used.
 
 POST /data-export
 [source, json]
