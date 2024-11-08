@@ -26,6 +26,7 @@ import io.crnk.core.queryspec.QuerySpec;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -73,12 +74,13 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
         .query(query)
         .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
           "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
-          "collectingEvent.managedAttributes.attribute_ce_1", "projects.name"))
+          "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong"))
+          .columnFunctions(Map.of("latLong", new DataExport.FunctionDef(DataExport.FunctionType.CONVERT_COORDINATES_DD, List.of("collectingEvent.eventGeom"))))
         .build());
     assertNotNull(dto.getUuid());
 
     try {
-      asyncConsumer.getAccepted().get(0).get();
+      asyncConsumer.getAccepted().getFirst().get();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }

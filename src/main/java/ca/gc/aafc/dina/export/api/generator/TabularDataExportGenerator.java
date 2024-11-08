@@ -1,6 +1,9 @@
 package ca.gc.aafc.dina.export.api.generator;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.IteratorUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -111,7 +114,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
                  new TypeReference<>() {
                  }, w)) {
           export(dinaExport.getSource(), objectMapper.writeValueAsString(dinaExport.getQuery()),
-            output);
+            dinaExport.getColumnFunctions(), output);
         }
       } catch (IOException ioEx) {
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
@@ -148,14 +151,16 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    * @param output
    * @throws IOException
    */
-  private void export(String sourceIndex, String query, DataOutput<JsonNode> output) throws IOException {
+  private void export(String sourceIndex, String query,
+                      Map<String, DataExport.FunctionDef> columnFunctions,
+                      DataOutput<JsonNode> output) throws IOException {
     SearchResponse<JsonNode>
       response = elasticSearchDataSource.searchWithPIT(sourceIndex, query);
 
     boolean pageAvailable = response.hits().hits().size() != 0;
     while (pageAvailable) {
       for (Hit<JsonNode> hit : response.hits().hits()) {
-        processRecord(hit.id(), hit.source(), output);
+        processRecord(hit.id(), hit.source(), columnFunctions, output);
       }
       pageAvailable = false;
 
@@ -178,7 +183,9 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    * @param output
    * @throws IOException
    */
-  private void processRecord(String documentId, JsonNode record, DataOutput<JsonNode> output) throws IOException {
+  private void processRecord(String documentId, JsonNode record,
+                             Map<String, DataExport.FunctionDef> columnFunctions,
+                             DataOutput<JsonNode> output) throws IOException {
     if (record == null) {
       return;
     }
@@ -204,6 +211,19 @@ public class TabularDataExportGenerator extends DataExportGenerator {
           objectMapper.valueToTree(entry.getValue()));
         replaceNestedByDotNotation(attributeObjNode);
       }
+
+      // Check if we have functions to apply
+      if(MapUtils.isNotEmpty(columnFunctions)) {
+        for (var functionDef : columnFunctions.entrySet()) {
+          switch (functionDef.getValue().type()) {
+            case CONCAT -> attributeObjNode.put(functionDef.getKey(),
+              handleConcatFunction(attributeObjNode, functionDef.getValue().params()));
+            case CONVERT_COORDINATES_DD -> attributeObjNode.put(functionDef.getKey(),
+              handleConvertCoordinatesDecimalDegrees(attributeObjNode,
+                functionDef.getValue().params()));
+          }
+        }
+      }
       output.addRecord(attributeObjNode);
     }
   }
@@ -212,7 +232,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     DocumentContext dc = JsonPath.using(jsonPathConfiguration).parse(document);
     try {
       List<Map<String, Object>> includedObj = JsonPathHelper.extractById(dc, id, JSON_PATH_TYPE_REF);
-      return CollectionUtils.isEmpty(includedObj) ? Map.of() : includedObj.get(0);
+      return CollectionUtils.isEmpty(includedObj) ? Map.of() : includedObj.getFirst();
     } catch (PathNotFoundException pnf) {
       return Map.of();
     }
@@ -286,6 +306,33 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    */
   private static boolean jsonNodeHasFieldAndIsArray(JsonNode node, String fieldName) {
     return node.has(fieldName) && node.get(fieldName).isArray();
+  }
+
+  private static String handleConcatFunction(ObjectNode attributeObjNod, List<String> columns) {
+    List<String> toConcat = new ArrayList<>();
+    for(String col : columns) {
+      toConcat.add(attributeObjNod.get(col).asText());
+    }
+    return String.join(",", toConcat);
+  }
+
+  private static String handleConvertCoordinatesDecimalDegrees(ObjectNode attributeObjNod,
+                                                               List<String> columns) {
+    String decimalDegreeCoordinates = null;
+    if (columns.size() == 1) {
+      JsonNode coordinates = attributeObjNod.get(columns.getFirst());
+      if (coordinates.isArray()) {
+        List<JsonNode> longLatNode = IteratorUtils.toList(coordinates.iterator());
+        if (longLatNode.size() == 2) {
+          decimalDegreeCoordinates =
+            longLatNode.get(1).asText() + "," + longLatNode.get(0).asText();
+        }
+      }
+    }
+    if (StringUtils.isBlank(decimalDegreeCoordinates)) {
+      log.debug("Invalid Coordinates format. Array of doubles in form of [lon,lat] expected");
+    }
+    return null;
   }
 
   /**

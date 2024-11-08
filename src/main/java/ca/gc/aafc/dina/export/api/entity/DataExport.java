@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.entity;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.persistence.Column;
@@ -40,6 +41,7 @@ public class DataExport implements DinaEntity {
 
   public enum ExportStatus { NEW, RUNNING, COMPLETED, EXPIRED, ERROR }
   public enum ExportType { TABULAR_DATA, OBJECT_ARCHIVE }
+  public enum FunctionType { CONCAT, CONVERT_COORDINATES_DD }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -82,6 +84,9 @@ public class DataExport implements DinaEntity {
   @Column
   private String[] columnAliases;
 
+  @Transient
+  private Map<String, FunctionDef> columnFunctions;
+
   @Enumerated(EnumType.STRING)
   @NotNull
   @Column
@@ -90,4 +95,6 @@ public class DataExport implements DinaEntity {
   @Transient
   private Map<String, String> transitiveData;
 
+  public record FunctionDef(FunctionType type, List<String> params) {
+  }
 }

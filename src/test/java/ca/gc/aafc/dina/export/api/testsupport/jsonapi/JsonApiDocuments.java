@@ -97,7 +97,8 @@ public class JsonApiDocuments {
                 "attributes": {
                   "group": "cnc",
                   "dwcVerbatimLocality" : "Montreal",
-                  "managedAttributes" : { "attribute_ce_1":"value ce 1"}
+                  "managedAttributes" : { "attribute_ce_1":"value ce 1"},
+                  "eventGeom": [-75.695000, 45.424721]
                 }
               },
               {
