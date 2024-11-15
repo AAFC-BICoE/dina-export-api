@@ -57,6 +57,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
   private static final TypeRef<List<Map<String, Object>>> JSON_PATH_TYPE_REF = new TypeRef<>() {
   };
+  private static final String COORDINATES_DD_FORMAT = "%f,%f";
 
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
@@ -324,15 +325,15 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       if (coordinates.isArray()) {
         List<JsonNode> longLatNode = IteratorUtils.toList(coordinates.iterator());
         if (longLatNode.size() == 2) {
-          decimalDegreeCoordinates =
-            longLatNode.get(1).asText() + "," + longLatNode.get(0).asText();
+          decimalDegreeCoordinates = String.format(COORDINATES_DD_FORMAT,
+            longLatNode.get(1).asDouble(), longLatNode.get(0).asDouble());
         }
       }
     }
     if (StringUtils.isBlank(decimalDegreeCoordinates)) {
       log.debug("Invalid Coordinates format. Array of doubles in form of [lon,lat] expected");
     }
-    return null;
+    return decimalDegreeCoordinates;
   }
 
   /**
