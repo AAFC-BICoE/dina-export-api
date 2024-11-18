@@ -71,6 +71,16 @@ POST /data-export
 }
 ----
 
+Optionally, some functions can be used on columns to create new calculated columns that can then be added to the `columns`.
+
+[source, json]
+----
+{
+  "columnFunctions":{"latLong":{"type":"CONVERT_COORDINATES_DD","params":["collectingEvent.eventGeom"]}}
+}
+----
+
+
 == Download File
 
 For data exports, the `fileId` is the UUID returned by the export request.

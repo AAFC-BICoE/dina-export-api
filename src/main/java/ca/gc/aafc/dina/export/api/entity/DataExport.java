@@ -84,7 +84,8 @@ public class DataExport implements DinaEntity {
   @Column
   private String[] columnAliases;
 
-  @Transient
+  @Type(type = "jsonb")
+  @Column
   private Map<String, FunctionDef> columnFunctions;
 
   @Enumerated(EnumType.STRING)

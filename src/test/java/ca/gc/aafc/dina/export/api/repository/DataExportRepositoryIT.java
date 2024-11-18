@@ -14,6 +14,7 @@ import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileController;
 import ca.gc.aafc.dina.export.api.testsupport.jsonapi.JsonApiDocuments;
 import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchTestUtils;
+import ca.gc.aafc.dina.testsupport.jsonapi.JsonAPITestHelper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -31,6 +32,12 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @ContextConfiguration(initializers = { ElasticSearchTestContainerInitializer.class })
 public class DataExportRepositoryIT extends BaseIntegrationTest {
@@ -90,6 +97,15 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     assertEquals(DataExport.ExportType.TABULAR_DATA, savedDataExportDto.getExportType());
     assertEquals("my export", savedDataExportDto.getName());
 
+
+   ObjectMapper IT_OBJECT_MAPPER = new ObjectMapper();
+
+      IT_OBJECT_MAPPER.registerModule(new JavaTimeModule());
+      IT_OBJECT_MAPPER.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+      IT_OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+    System.out.println(IT_OBJECT_MAPPER.writeValueAsString(savedDataExportDto));
+
     ResponseEntity<InputStreamResource>
       response = fileController.downloadFile(dto.getUuid(), FileController.DownloadType.DATA_EXPORT);
 
@@ -116,6 +132,9 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     // check that to-many relationships are exported in a similar way of arrays
     assertTrue(lines.get(1).contains("project 1;project 2"));
+
+    // check that the function is working as expected
+    assertTrue(lines.get(1).contains("45.424721,-75.695000"));
 
     // delete the export
     dataExportRepository.delete(dto.getUuid());
