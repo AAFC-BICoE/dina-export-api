@@ -58,6 +58,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   private static final TypeRef<List<Map<String, Object>>> JSON_PATH_TYPE_REF = new TypeRef<>() {
   };
   private static final String COORDINATES_DD_FORMAT = "%f,%f";
+  private static final String DEFAULT_CONCAT_SEP = ",";
 
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
@@ -214,7 +215,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       }
 
       // Check if we have functions to apply
-      if(MapUtils.isNotEmpty(columnFunctions)) {
+      if (MapUtils.isNotEmpty(columnFunctions)) {
         for (var functionDef : columnFunctions.entrySet()) {
           switch (functionDef.getValue().type()) {
             case CONCAT -> attributeObjNode.put(functionDef.getKey(),
@@ -222,6 +223,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
             case CONVERT_COORDINATES_DD -> attributeObjNode.put(functionDef.getKey(),
               handleConvertCoordinatesDecimalDegrees(attributeObjNode,
                 functionDef.getValue().params()));
+            default -> log.warn("Unknown function. Ignoring");
           }
         }
       }
@@ -309,14 +311,28 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     return node.has(fieldName) && node.get(fieldName).isArray();
   }
 
+  /**
+   * Gets all the text for the "attributes" specified by the columns and concatenate them using
+   * the default separator.
+   * @param attributeObjNod
+   * @param columns
+   * @return
+   */
   private static String handleConcatFunction(ObjectNode attributeObjNod, List<String> columns) {
     List<String> toConcat = new ArrayList<>();
-    for(String col : columns) {
+    for (String col : columns) {
       toConcat.add(attributeObjNod.get(col).asText());
     }
-    return String.join(",", toConcat);
+    return String.join(DEFAULT_CONCAT_SEP, toConcat);
   }
 
+  /**
+   * Gets the coordinates from a geo_point column stored as [longitude,latitude] and return them as
+   * decimal lat,long
+   * @param attributeObjNod
+   * @param columns
+   * @return
+   */
   private static String handleConvertCoordinatesDecimalDegrees(ObjectNode attributeObjNod,
                                                                List<String> columns) {
     String decimalDegreeCoordinates = null;
