@@ -82,7 +82,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
         .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
           "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
           "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong"))
-          .columnFunctions(Map.of("latLong", new DataExport.FunctionDef(DataExport.FunctionType.CONVERT_COORDINATES_DD, List.of("collectingEvent.eventGeom"))))
+          .columnFunctions(Map.of("latLong", new DataExport.FunctionDef(DataExport.FunctionName.CONVERT_COORDINATES_DD, List.of("collectingEvent.eventGeom"))))
         .build());
     assertNotNull(dto.getUuid());
 

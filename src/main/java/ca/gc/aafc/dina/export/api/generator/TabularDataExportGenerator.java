@@ -217,7 +217,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       // Check if we have functions to apply
       if (MapUtils.isNotEmpty(columnFunctions)) {
         for (var functionDef : columnFunctions.entrySet()) {
-          switch (functionDef.getValue().type()) {
+          switch (functionDef.getValue().functionName()) {
             case CONCAT -> attributeObjNode.put(functionDef.getKey(),
               handleConcatFunction(attributeObjNode, functionDef.getValue().params()));
             case CONVERT_COORDINATES_DD -> attributeObjNode.put(functionDef.getKey(),

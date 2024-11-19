@@ -41,7 +41,7 @@ public class DataExport implements DinaEntity {
 
   public enum ExportStatus { NEW, RUNNING, COMPLETED, EXPIRED, ERROR }
   public enum ExportType { TABULAR_DATA, OBJECT_ARCHIVE }
-  public enum FunctionType { CONCAT, CONVERT_COORDINATES_DD }
+  public enum FunctionName { CONCAT, CONVERT_COORDINATES_DD }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -96,6 +96,6 @@ public class DataExport implements DinaEntity {
   @Transient
   private Map<String, String> transitiveData;
 
-  public record FunctionDef(FunctionType type, List<String> params) {
+  public record FunctionDef(FunctionName functionName, List<String> params) {
   }
 }

@@ -76,7 +76,7 @@ Optionally, some functions can be used on columns to create new calculated colum
 [source, json]
 ----
 {
-  "columnFunctions":{"latLong":{"type":"CONVERT_COORDINATES_DD","params":["collectingEvent.eventGeom"]}}
+  "columnFunctions":{"latLong":{"functionName":"CONVERT_COORDINATES_DD","params":["collectingEvent.eventGeom"]}}
 }
 ----
 
