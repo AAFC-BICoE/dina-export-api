@@ -312,6 +312,17 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   }
 
   /**
+   * Replace with dina-base function when 0.132 is available.
+   *
+   * @param objNode
+   * @param fieldName
+   * @return
+   */
+  private static String safeAsText(ObjectNode objNode, String fieldName) {
+    return objNode.has(fieldName) ? objNode.get(fieldName).asText() : "";
+  }
+
+  /**
    * Gets all the text for the "attributes" specified by the columns and concatenate them using
    * the default separator.
    * @param attributeObjNod
@@ -321,7 +332,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   private static String handleConcatFunction(ObjectNode attributeObjNod, List<String> columns) {
     List<String> toConcat = new ArrayList<>();
     for (String col : columns) {
-      toConcat.add(attributeObjNod.get(col).asText());
+      toConcat.add(safeAsText(attributeObjNod, col));
     }
     return String.join(DEFAULT_CONCAT_SEP, toConcat);
   }
@@ -338,7 +349,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     String decimalDegreeCoordinates = null;
     if (columns.size() == 1) {
       JsonNode coordinates = attributeObjNod.get(columns.getFirst());
-      if (coordinates.isArray()) {
+      if (coordinates != null && coordinates.isArray()) {
         List<JsonNode> longLatNode = IteratorUtils.toList(coordinates.iterator());
         if (longLatNode.size() == 2) {
           decimalDegreeCoordinates = String.format(COORDINATES_DD_FORMAT,
