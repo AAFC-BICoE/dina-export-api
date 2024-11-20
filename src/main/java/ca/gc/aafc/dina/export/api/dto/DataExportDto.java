@@ -9,6 +9,7 @@ import io.crnk.core.resource.annotations.JsonApiId;
 import io.crnk.core.resource.annotations.JsonApiResource;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,5 +53,7 @@ public class DataExportDto {
 
   @IgnoreDinaMapping(reason = "handled by DataExportColumnsFieldAdapter")
   private List<String> columnAliases;
+
+  private Map<String, DataExport.FunctionDef> columnFunctions;
 
 }
