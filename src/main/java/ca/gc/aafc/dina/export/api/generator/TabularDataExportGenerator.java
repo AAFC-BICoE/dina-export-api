@@ -23,12 +23,12 @@ import ca.gc.aafc.dina.export.api.output.CsvOutput;
 import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
+import ca.gc.aafc.dina.json.JsonHelper;
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
 import ca.gc.aafc.dina.jsonapi.JsonPathHelper;
 
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.LIST_MAP_TYPEREF;
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPEREF;
-import static ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure.atJsonPtr;
 
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -60,6 +60,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   private static final String COORDINATES_DD_FORMAT = "%f,%f";
   private static final String DEFAULT_CONCAT_SEP = ",";
 
+
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
   private final Configuration jsonPathConfiguration;
@@ -87,7 +88,6 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    */
   @Async(DataExportConfig.DINA_THREAD_POOL_BEAN_NAME)
   public CompletableFuture<UUID> export(DataExport dinaExport) throws IOException {
-
     DataExport.ExportStatus currStatus = waitForRecord(dinaExport.getUuid());
 
     // Should only work for NEW record at this point
@@ -192,7 +192,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       return;
     }
 
-    Optional<JsonNode> attributes = atJsonPtr(record, JSONApiDocumentStructure.ATTRIBUTES_PTR);
+    Optional<JsonNode> attributes = JsonHelper.atJsonPtr(record, JSONApiDocumentStructure.ATTRIBUTES_PTR);
     if (attributes.isPresent() && attributes.get() instanceof ObjectNode attributeObjNode) {
 
       attributeObjNode.put(JSONApiDocumentStructure.ID, documentId);
@@ -251,9 +251,9 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   private Map<String, Object> flatRelationships(JsonNode jsonApiDocumentRecord) {
 
     Optional<JsonNode> relNodeOpt =
-      atJsonPtr(jsonApiDocumentRecord, JSONApiDocumentStructure.RELATIONSHIP_PTR);
+      JsonHelper.atJsonPtr(jsonApiDocumentRecord, JSONApiDocumentStructure.RELATIONSHIP_PTR);
     Optional<JsonNode> includedNodeOpt =
-      atJsonPtr(jsonApiDocumentRecord, JSONApiDocumentStructure.INCLUDED_PTR);
+      JsonHelper.atJsonPtr(jsonApiDocumentRecord, JSONApiDocumentStructure.INCLUDED_PTR);
 
     if (relNodeOpt.isEmpty() || includedNodeOpt.isEmpty()) {
       return Map.of();
@@ -280,7 +280,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
         // pull the nested-document from the included section
         flatRelationships.put(relName,
           extractById(idValue, includedDoc).get(JSONApiDocumentStructure.ATTRIBUTES));
-      } else if (jsonNodeHasFieldAndIsArray(currRelNode, JSONApiDocumentStructure.DATA)) {
+      } else if (JsonHelper.hasFieldAndIsArray(currRelNode, JSONApiDocumentStructure.DATA)) {
         // if "data" is an array (to-many)
         List<Map<String, Object>> toMerge = new ArrayList<>();
         currRelNode.get(JSONApiDocumentStructure.DATA).elements().forEachRemaining(el -> {
@@ -301,28 +301,6 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   }
 
   /**
-   * Checks if a JSON node has a specific field and if that field's value is an array.
-   *
-   * @param node The JSON node to check.
-   * @param fieldName The name of the field to check.
-   * @return True if the node has the field and its value is an array, false otherwise.
-   */
-  private static boolean jsonNodeHasFieldAndIsArray(JsonNode node, String fieldName) {
-    return node.has(fieldName) && node.get(fieldName).isArray();
-  }
-
-  /**
-   * Replace with dina-base function when 0.132 is available.
-   *
-   * @param objNode
-   * @param fieldName
-   * @return
-   */
-  private static String safeAsText(ObjectNode objNode, String fieldName) {
-    return objNode.has(fieldName) ? objNode.get(fieldName).asText() : "";
-  }
-
-  /**
    * Gets all the text for the "attributes" specified by the columns and concatenate them using
    * the default separator.
    * @param attributeObjNod
@@ -332,7 +310,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   private static String handleConcatFunction(ObjectNode attributeObjNod, List<String> columns) {
     List<String> toConcat = new ArrayList<>();
     for (String col : columns) {
-      toConcat.add(safeAsText(attributeObjNod, col));
+      toConcat.add(JsonHelper.safeAsText(attributeObjNod, col));
     }
     return String.join(DEFAULT_CONCAT_SEP, toConcat);
   }
