@@ -21,7 +21,7 @@ import ca.gc.aafc.dina.export.api.generator.FreemarkerReportGenerator;
 import ca.gc.aafc.dina.export.api.generator.OpenhtmltopdfGenerator;
 import ca.gc.aafc.dina.export.api.generator.PDFGenerator;
 import ca.gc.aafc.dina.export.api.generator.ReportGenerator;
-import ca.gc.aafc.dina.export.api.output.CsvOutput;
+import ca.gc.aafc.dina.export.api.output.TabularOutput;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -164,10 +164,10 @@ public class ReportRequestService {
     List<Map<String, Object>> payload = (List<Map<String, Object>>) jsonAsMap.get(DataExportConfig.PAYLOAD_KEY);
 
     // Base the headers on the first record
-    List<String> headers = payload.isEmpty() ? List.of() : List.copyOf(payload.get(0).keySet());
+    List<String> headers = payload.isEmpty() ? List.of() : List.copyOf(payload.getFirst().keySet());
     try (Writer w = new FileWriter(csvFile, StandardCharsets.UTF_8);
-         CsvOutput<Map<String, Object>> output =
-           CsvOutput.create(headers, MAP_TYPEREF, w)) {
+         TabularOutput<Map<String, Object>> output =
+           TabularOutput.create(TabularOutput.TabularOutputArgs.builder().headers(headers).build(), MAP_TYPEREF, w)) {
       for (Map<String, Object> line : payload) {
         output.addRecord(line);
       }

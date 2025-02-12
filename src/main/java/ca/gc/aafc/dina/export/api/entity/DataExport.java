@@ -68,6 +68,13 @@ public class DataExport implements DinaEntity {
   @Column
   private ExportType exportType;
 
+  /**
+   * Options specific to the type
+   */
+  @Column
+  @Type(type = "jsonb")
+  private Map<String, String> exportOptions;
+
   @NotBlank
   @Size(max = 100)
   private String source;

@@ -17,16 +17,46 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CsvOutputIT {
+public class TabularOutputIT {
 
   @Test
-  void csvOutput_onHeaderAliases_rightContentWritten() throws IOException {
+  void tabularOutput_onTabSeparator_rightContentWritten() throws IOException {
+
+    Path tmpFile = Files.createTempFile(null, null);
+    try (Writer w = new FileWriter(tmpFile.toFile(),
+      StandardCharsets.UTF_8);
+         TabularOutput<JsonNode> output =
+           TabularOutput.create(TabularOutput.TabularOutputArgs.builder()
+             .headers(List.of("col1", "col2"))
+             .columnSeparator(TabularOutput.ColumnSeparator.TAB).build(), new TypeReference<>() {
+           }, w)) {
+
+      ObjectMapper om = new ObjectMapper();
+      ObjectNode jNode = om.createObjectNode();
+      jNode.put("col1", "a");
+      jNode.put("col2", "b");
+      output.addRecord(jNode);
+      jNode = om.createObjectNode();
+      jNode.put("col1", "y");
+      jNode.put("col2", "z");
+      output.addRecord(jNode);
+    }
+    List<String> fileContent = Files.readAllLines(tmpFile);
+    assertTrue(fileContent.getFirst().startsWith("col1"));
+    assertTrue(fileContent.get(1).startsWith("a\t"));
+  }
+
+
+  @Test
+  void tabularOutput_onHeaderAliases_rightContentWritten() throws IOException {
 
     Path tmpFile = Files.createTempFile(null, null);
     try (Writer w = new FileWriter(tmpFile.toFile(),
          StandardCharsets.UTF_8);
-         CsvOutput<JsonNode> output =
-           CsvOutput.create(List.of("col1", "col2"), List.of("c1", "c2"),new TypeReference<>() {
+         TabularOutput<JsonNode> output =
+           TabularOutput.create(TabularOutput.TabularOutputArgs.builder()
+             .headers(List.of("col1", "col2"))
+             .receivedHeadersAliases(List.of("c1", "c2")).build(), new TypeReference<>() {
            }, w)) {
 
       ObjectMapper om = new ObjectMapper();
@@ -44,13 +74,15 @@ public class CsvOutputIT {
   }
 
   @Test
-  void csvOutput_onHeaderPartialAliases_rightContentWritten() throws IOException {
+  void tabularOutput_onHeaderPartialAliases_rightContentWritten() throws IOException {
 
     Path tmpFile = Files.createTempFile(null, null);
     try (Writer w = new FileWriter(tmpFile.toFile(),
       StandardCharsets.UTF_8);
-         CsvOutput<JsonNode> output =
-           CsvOutput.create(List.of("col1", "col2"), List.of("", "c2"),new TypeReference<>() {
+         TabularOutput<JsonNode> output =
+           TabularOutput.create(TabularOutput.TabularOutputArgs.builder()
+             .headers(List.of("col1", "col2"))
+             .receivedHeadersAliases(List.of("", "c2")).build(), new TypeReference<>() {
            }, w)) {
 
       ObjectMapper om = new ObjectMapper();

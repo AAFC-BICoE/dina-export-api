@@ -42,6 +42,7 @@ public class DataExportDto {
 
   private String name;
   private DataExport.ExportType exportType;
+  private Map<String, String> exportOptions;
 
   private String source;
 
