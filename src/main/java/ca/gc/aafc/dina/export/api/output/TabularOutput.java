@@ -69,8 +69,9 @@ public final class TabularOutput<T> implements DataOutput<T> {
 
     CsvSchema csvSchema = builder.build().withHeader();
 
-    if(tabularOutputArgs.getColumnSeparator() != null) {
-      csvSchema = csvSchema.withColumnSeparator(tabularOutputArgs.getColumnSeparator().getSeparatorChar());
+    if (tabularOutputArgs.getColumnSeparator() != null) {
+      csvSchema =
+        csvSchema.withColumnSeparator(tabularOutputArgs.getColumnSeparator().getSeparatorChar());
     }
 
     CsvMapper csvMapper = new CsvMapper();
@@ -113,8 +114,9 @@ public final class TabularOutput<T> implements DataOutput<T> {
     CsvSchema.Builder builder = CsvSchema.builder()
       .addColumns(headersAliases, CsvSchema.ColumnType.STRING);
     CsvSchema csvSchema = builder.build().withHeader();
-    if(tabularOutputArgs.getColumnSeparator() != null) {
-      csvSchema = csvSchema.withColumnSeparator(tabularOutputArgs.getColumnSeparator().getSeparatorChar());
+    if (tabularOutputArgs.getColumnSeparator() != null) {
+      csvSchema =
+        csvSchema.withColumnSeparator(tabularOutputArgs.getColumnSeparator().getSeparatorChar());
     }
 
     CsvMapper csvMapper = new CsvMapper();
