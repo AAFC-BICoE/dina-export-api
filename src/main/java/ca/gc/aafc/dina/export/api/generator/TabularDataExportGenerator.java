@@ -19,7 +19,7 @@ import com.jayway.jsonpath.TypeRef;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
-import ca.gc.aafc.dina.export.api.output.CsvOutput;
+import ca.gc.aafc.dina.export.api.output.TabularOutput;
 import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
@@ -81,6 +81,17 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     this.dataExportConfig = dataExportConfig;
   }
 
+  @Override
+  public String generateFilename(DataExport dinaExport) {
+    TabularOutput.TabularOutputArgs args = createTabularOutputArgsFrom(dinaExport);
+
+    return DataExportConfig.DATA_EXPORT_TABULAR_FILENAME + switch (args.getColumnSeparator()) {
+      case TAB -> ".tsv";
+      case COMMA -> ".csv";
+      case null -> ".csv";
+    };
+  }
+
   /**
    * main export method.
    * @param dinaExport
@@ -106,13 +117,10 @@ public class TabularDataExportGenerator extends DataExportGenerator {
         //Create the directory
         ensureDirectoryExists(exportPath.getParent());
 
-        List<String> headerAliases = dinaExport.getColumnAliases() != null ?
-          Arrays.asList(dinaExport.getColumnAliases()) : null;
-
         // csv output
         try (Writer w = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
-             CsvOutput<JsonNode> output =
-               CsvOutput.create(Arrays.asList(dinaExport.getColumns()), headerAliases,
+             TabularOutput<JsonNode> output =
+               TabularOutput.create(createTabularOutputArgsFrom(dinaExport),
                  new TypeReference<>() {
                  }, w)) {
           export(dinaExport.getSource(), objectMapper.writeValueAsString(dinaExport.getQuery()),
@@ -128,6 +136,35 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     }
 
     return CompletableFuture.completedFuture(dinaExport.getUuid());
+  }
+
+  /**
+   * Creates a {@link TabularOutput.TabularOutputArgs} from {@link DataExport}
+   * @param dinaExport
+   * @return
+   */
+  private static TabularOutput.TabularOutputArgs createTabularOutputArgsFrom(DataExport dinaExport) {
+
+    List<String> headerAliases = dinaExport.getColumnAliases() != null ?
+      Arrays.asList(dinaExport.getColumnAliases()) : null;
+
+    var builder = TabularOutput.TabularOutputArgs.builder()
+      .headers(Arrays.asList(dinaExport.getColumns()))
+      .receivedHeadersAliases(headerAliases);
+
+    if (MapUtils.isNotEmpty(dinaExport.getExportOptions())) {
+      String columnSeparator = dinaExport.getExportOptions().get(TabularOutput.OPTION_COLUMN_SEPARATOR);
+      if (columnSeparator != null) {
+        Optional<TabularOutput.ColumnSeparator> sep = TabularOutput.ColumnSeparator.fromString(columnSeparator);
+        sep.ifPresent(s -> {
+          // if it's the default one don't set it
+          if (s != TabularOutput.ColumnSeparator.COMMA) {
+            builder.columnSeparator(s);
+          }
+        });
+      }
+    }
+    return builder.build();
   }
 
   @Override

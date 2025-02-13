@@ -32,6 +32,11 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
     this.dataExportConfig = dataExportConfig;
   }
 
+  @Override
+  public String generateFilename(DataExport dataExport) {
+    return dataExport.getUuid().toString() + ".zip";
+  }
+
   @Async(DataExportConfig.DINA_THREAD_POOL_BEAN_NAME)
   @Override
   public CompletableFuture<UUID> export(DataExport dinaExport) throws IOException {

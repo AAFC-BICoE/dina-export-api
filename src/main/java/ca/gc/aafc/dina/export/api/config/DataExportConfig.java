@@ -11,6 +11,7 @@ import ca.gc.aafc.dina.export.api.entity.DataExport;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.UUID;
 import javax.inject.Named;
 import javax.validation.constraints.NotBlank;
@@ -39,9 +40,8 @@ public class DataExportConfig {
   public static final String PAYLOAD_KEY = "payload";
 
   public static final String TEXT_CSV_VALUE = MediaType.parseMediaType("text/csv").toString();
-  public static final String DATA_EXPORT_CSV_FILENAME = "export.csv";
 
-  public static final String ZIP_EXT = "zip";
+  public static final String DATA_EXPORT_TABULAR_FILENAME = "export";
 
   public static final String PDF_REPORT_FILENAME = "report.pdf";
   public static final String CSV_REPORT_FILENAME = "report.csv";
@@ -74,14 +74,13 @@ public class DataExportConfig {
 
   public Path getPathForDataExport(DataExport dataExport) {
 
+    Objects.requireNonNull(dataExport.getFilename());
+
     Path path = isExportTypeUsesDirectory(dataExport.getExportType()) ?
       getGeneratedDataExportsPath().resolve(dataExport.getUuid().toString()) :
       getGeneratedDataExportsPath();
 
-    return switch (dataExport.getExportType()) {
-      case TABULAR_DATA -> path.resolve(DATA_EXPORT_CSV_FILENAME);
-      case OBJECT_ARCHIVE -> path.resolve(dataExport.getUuid().toString() + "." + ZIP_EXT);
-    };
+    return path.resolve(dataExport.getFilename());
   }
 
   /**

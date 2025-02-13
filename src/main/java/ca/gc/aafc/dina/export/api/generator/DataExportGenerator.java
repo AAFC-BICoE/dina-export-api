@@ -30,6 +30,13 @@ public abstract class DataExportGenerator {
   }
 
   /**
+   * Generates a filename (including extension) based on the dataExport
+   * @param dataExport
+   * @return
+   */
+  public abstract String generateFilename(DataExport dataExport);
+
+  /**
    * The implementation should use Async annotation
    * @param dinaExport
    * @return

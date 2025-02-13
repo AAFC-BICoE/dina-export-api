@@ -11,4 +11,5 @@
   <include file="db/changelog/migrations/6-Add_type_variables_to_report_template_table.xml"/>
   <include file="db/changelog/migrations/7-Add_column_aliases_to_data_export_table.xml"/>
   <include file="db/changelog/migrations/8-Add_column_functions_to_data_export_table.xml"/>
+  <include file="db/changelog/migrations/9-Add_export_options_to_data_export_table.xml"/>
 </databaseChangeLog>

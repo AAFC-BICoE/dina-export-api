@@ -57,7 +57,7 @@ public class ExpiredExportRemovalService {
 
     for (DataExport de : completedExport) {
       if (isExpired(de)) {
-        Optional<Path> exportFile = fileController.getExportFileLocation(de.getUuid());
+        Optional<Path> exportFile = fileController.getExportFileLocation(de.getUuid(), de.getFilename());
         if (exportFile.isPresent()) {
           try {
             Files.delete(exportFile.get());

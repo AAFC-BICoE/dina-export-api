@@ -32,9 +32,8 @@ public class ExpiredExportRemovalServiceIT extends BaseIntegrationTest {
   @Inject
   protected DatabaseSupportService dbSupportService;
 
-
   @Test
-  public void a() throws IOException, InterruptedException {
+  public void onRecordExpired_recordRemoved() throws IOException, InterruptedException {
 
     UUID testUUID = UUID.randomUUID();
 
@@ -52,6 +51,7 @@ public class ExpiredExportRemovalServiceIT extends BaseIntegrationTest {
         .source("unit test")
         .exportType(DataExport.ExportType.TABULAR_DATA)
         .status(DataExport.ExportStatus.COMPLETED)
+        .filename(p.getFileName().toString())
         .build();
 
       em.persist(upload);
