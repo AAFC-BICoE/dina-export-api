@@ -81,6 +81,17 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     this.dataExportConfig = dataExportConfig;
   }
 
+  @Override
+  public String generateFilename(DataExport dinaExport) {
+    TabularOutput.TabularOutputArgs args = createTabularOutputArgsFrom(dinaExport);
+
+    return DataExportConfig.DATA_EXPORT_TABULAR_FILENAME + switch (args.getColumnSeparator()) {
+      case TAB -> ".tsv";
+      case COMMA -> ".csv";
+      case null -> ".csv";
+    };
+  }
+
   /**
    * main export method.
    * @param dinaExport

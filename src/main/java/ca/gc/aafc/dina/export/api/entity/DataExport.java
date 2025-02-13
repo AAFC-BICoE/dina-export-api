@@ -69,6 +69,14 @@ public class DataExport implements DinaEntity {
   private ExportType exportType;
 
   /**
+   * Filename including extension
+   */
+  @NotNull
+  @Size(max = 100)
+  @Column
+  private String filename;
+
+  /**
    * Options specific to the type
    */
   @Column

@@ -6,6 +6,9 @@
 
     <changeSet id="9-Add_export_options_to_data_export_table" context="schema-change" author="cgendreau">
         <addColumn tableName="data_export">
+            <column name="filename" type="VARCHAR(50)"/>
+        </addColumn>
+        <addColumn tableName="data_export">
             <column name="export_options" type="jsonb"/>
         </addColumn>
     </changeSet>

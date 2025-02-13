@@ -52,6 +52,7 @@ public class DataExportService extends DefaultDinaService<DataExport> {
       dinaExport.setUuid(UUID.randomUUID());
     }
     dinaExport.setStatus(DataExport.ExportStatus.NEW);
+    dinaExport.setFilename(generatorByExportType(dinaExport.getExportType()).generateFilename(dinaExport));
   }
 
   @Override

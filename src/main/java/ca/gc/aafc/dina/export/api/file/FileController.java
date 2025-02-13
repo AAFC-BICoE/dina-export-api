@@ -36,8 +36,6 @@ import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.service.DataExportService;
 import ca.gc.aafc.dina.export.api.service.TransactionWrapper;
 
-import static ca.gc.aafc.dina.export.api.config.DataExportConfig.DATA_EXPORT_CSV_FILENAME;
-
 @RestController
 @RequestMapping("/api/v1")
 @Log4j2
@@ -83,7 +81,7 @@ public class FileController {
       try {
         if (DataExport.ExportStatus.COMPLETED == exportEntity.getStatus()) {
           customFilename = exportEntity.getName();
-          filePath = getExportFileLocation(fileId);
+          filePath = getExportFileLocation(fileId, exportEntity.getFilename());
         }
       } catch (NoResultException ignored) {
         // nothing to do since filePath will remain empty
@@ -101,12 +99,11 @@ public class FileController {
    * @param fileId
    * @return Optional with the Path if found or empty if not
    */
-  public Optional<Path> getExportFileLocation(UUID fileId) {
+  public Optional<Path> getExportFileLocation(UUID fileId, String filename) {
 
-    Path csvPath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME);
-    if (csvPath.toFile().exists()) {
-      return Optional.of(
-        dataExportWorkingFolder.resolve(fileId.toString()).resolve(DATA_EXPORT_CSV_FILENAME));
+    Path tabularFilePath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(filename);
+    if (tabularFilePath.toFile().exists()) {
+      return Optional.of(tabularFilePath);
     } else {
       // try to find a file matching that uuid
       try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataExportWorkingFolder,
