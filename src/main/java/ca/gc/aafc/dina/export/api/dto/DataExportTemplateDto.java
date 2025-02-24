@@ -30,7 +30,6 @@ public class DataExportTemplateDto {
   @JsonApiId
   private UUID uuid;
 
-  private DataExport.ExportStatus status;
   private OffsetDateTime createdOn;
   private String createdBy;
   private String group;
@@ -41,7 +40,6 @@ public class DataExportTemplateDto {
   private String name;
   private DataExport.ExportType exportType;
   private Map<String, String> exportOptions;
-
 
   private String[] columns;
   private String[] columnAliases;

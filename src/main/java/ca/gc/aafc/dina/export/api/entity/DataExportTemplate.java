@@ -65,6 +65,7 @@ public class DataExportTemplate implements DinaEntity {
    * publiclyReleasable must be false
    */
   @NotNull
+  @Builder.Default
   private Boolean restrictToCreatedBy = false;
 
   /**
@@ -72,6 +73,7 @@ public class DataExportTemplate implements DinaEntity {
    * restrictToCreatedBy must be false
    */
   @NotNull
+  @Builder.Default
   private Boolean publiclyReleasable = false;
 
   @Enumerated(EnumType.STRING)

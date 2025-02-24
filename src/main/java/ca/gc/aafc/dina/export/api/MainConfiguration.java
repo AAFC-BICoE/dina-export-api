@@ -10,6 +10,10 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.toedter.spring.hateoas.jsonapi.JsonApiConfiguration;
+
 import ca.gc.aafc.dina.DinaBaseApiAutoConfiguration;
 import ca.gc.aafc.dina.service.JaversDataService;
 
@@ -35,6 +39,17 @@ public class MainConfiguration {
     executor.setThreadNamePrefix("AsyncExecutor-");
     executor.initialize();
     return executor;
+  }
+
+  @Bean
+  public JsonApiConfiguration jsonApiConfiguration() {
+    return new JsonApiConfiguration()
+      .withPluralizedTypeRendered(false)
+      .withPageMetaAutomaticallyCreated(false)
+      .withObjectMapperCustomizer(objectMapper -> {
+        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        objectMapper.registerModule(new JavaTimeModule());
+      });
   }
 
 }
