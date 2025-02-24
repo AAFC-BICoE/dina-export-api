@@ -33,7 +33,7 @@ import ca.gc.aafc.dina.repository.DinaRepositoryV2;
 import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
 
 import ca.gc.aafc.dina.export.api.dto.DataExportTemplateDto;
-import ca.gc.aafc.dina.security.auth.DinaAuthorizationService;
+import ca.gc.aafc.dina.security.auth.ObjectOwnerAuthorizationService;
 import ca.gc.aafc.dina.service.AuditService;
 import ca.gc.aafc.dina.service.DinaService;
 
@@ -50,7 +50,7 @@ public class DataExportTemplateRepository extends DinaRepositoryV2<DataExportTem
 
   public DataExportTemplateRepository(
     @NonNull DinaService<DataExportTemplate> dinaService,
-    @NonNull DinaAuthorizationService authorizationService,
+    @NonNull ObjectOwnerAuthorizationService authorizationService,
     Optional<DinaAuthenticatedUser> authenticatedUser,
     @NonNull Optional<AuditService> auditService,
     @NonNull BuildProperties buildProperties,

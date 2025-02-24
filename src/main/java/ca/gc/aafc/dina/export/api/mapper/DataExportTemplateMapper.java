@@ -1,9 +1,15 @@
 package ca.gc.aafc.dina.export.api.mapper;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.mapstruct.BeanMapping;
+import org.mapstruct.Context;
 import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 
@@ -17,11 +23,16 @@ public interface DataExportTemplateMapper extends DinaMapperV2<DataExportTemplat
   DataExportTemplateMapper INSTANCE = Mappers.getMapper(DataExportTemplateMapper.class);
 
   @Override
-  DataExportTemplateDto toDto(DataExportTemplate entity, Set<String> provided, String scope);
+  DataExportTemplateDto toDto(DataExportTemplate entity,  @Context Set<String> provided,  @Context String scope);
+
   @Override
-  DataExportTemplate toEntity(DataExportTemplateDto dto, Set<String> provided, String scope);
+  DataExportTemplate toEntity(DataExportTemplateDto dto,  @Context Set<String> provided,  @Context String scope);
 
   @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-  void patchEntity(DataExportTemplate entity, DataExportTemplateDto dto,
-                          Set<String> provided, String scope);
+  void patchEntity(@MappingTarget DataExportTemplate entity, DataExportTemplateDto dto,
+                   @Context Set<String> provided, @Context String scope);
+
+  default <K, V> Map<K, V> nullSafeMap(Map<K, V> map) {
+    return map == null ? null : new LinkedHashMap<>(map);
+  }
 }
