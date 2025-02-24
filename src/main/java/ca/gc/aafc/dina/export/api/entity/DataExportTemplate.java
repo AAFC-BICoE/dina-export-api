@@ -1,8 +1,8 @@
 package ca.gc.aafc.dina.export.api.entity;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -29,7 +29,7 @@ import org.hibernate.annotations.Type;
 import ca.gc.aafc.dina.entity.DinaEntity;
 
 /**
- * Data export represents a single file export. The file can be a package.
+ * DataExportTemplate represents a template to create {@link DataExport}.
  */
 @Entity
 @AllArgsConstructor
@@ -37,11 +37,7 @@ import ca.gc.aafc.dina.entity.DinaEntity;
 @Getter
 @Builder
 @RequiredArgsConstructor
-public class DataExport implements DinaEntity {
-
-  public enum ExportStatus { NEW, RUNNING, COMPLETED, EXPIRED, ERROR }
-  public enum ExportType { TABULAR_DATA, OBJECT_ARCHIVE }
-  public enum FunctionName { CONCAT, CONVERT_COORDINATES_DD }
+public class DataExportTemplate implements DinaEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,10 +48,6 @@ public class DataExport implements DinaEntity {
   @Column(name = "uuid", unique = true)
   private UUID uuid;
 
-  @Column(name = "created_on", insertable = false, updatable = false)
-  @Generated(value = GenerationTime.INSERT)
-  private OffsetDateTime createdOn;
-
   @NotBlank
   @Column(name = "created_by", updatable = false)
   private String createdBy;
@@ -63,18 +55,29 @@ public class DataExport implements DinaEntity {
   @Size(max = 100)
   private String name;
 
+  @NotBlank
+  @Size(max = 50)
+  @Column(name = "_group")
+  private String group;
+
+  /**
+   * Template can only be used (read) by the user defined by the createdBy attribute.
+   * publiclyReleasable must be false
+   */
+  @NotNull
+  private Boolean restrictToCreatedBy = false;
+
+  /**
+   * Can the template be used (read) by users that are not in the group ?
+   * restrictToCreatedBy must be false
+   */
+  @NotNull
+  private Boolean publiclyReleasable = false;
+
   @Enumerated(EnumType.STRING)
   @NotNull
   @Column
-  private ExportType exportType;
-
-  /**
-   * Filename including extension
-   */
-  @NotNull
-  @Size(max = 100)
-  @Column
-  private String filename;
+  private DataExport.ExportType exportType;
 
   /**
    * Options specific to the type
@@ -82,17 +85,6 @@ public class DataExport implements DinaEntity {
   @Column
   @Type(type = "jsonb")
   private Map<String, String> exportOptions;
-
-  /**
-   * Source of the query (e.g. the ElasticSearch index)
-   */
-  @NotBlank
-  @Size(max = 100)
-  private String source;
-
-  @Type(type = "jsonb")
-  @Column
-  private Map<String, Object> query;
 
   @Type(type = "string-array")
   @Column
@@ -104,16 +96,22 @@ public class DataExport implements DinaEntity {
 
   @Type(type = "jsonb")
   @Column
-  private Map<String, FunctionDef> columnFunctions;
+  private Map<String, DataExport.FunctionDef> columnFunctions;
 
-  @Enumerated(EnumType.STRING)
-  @NotNull
-  @Column
-  private ExportStatus status;
+  @Column(name = "created_on", insertable = false, updatable = false)
+  @Generated(value = GenerationTime.INSERT)
+  private OffsetDateTime createdOn;
 
+  /**
+   * Return publiclyReleasable as Optional as defined by
+   * {@link ca.gc.aafc.dina.entity.DinaEntity}.
+   *
+   * @return
+   */
+  @Override
   @Transient
-  private Map<String, String> transitiveData;
-
-  public record FunctionDef(FunctionName functionName, List<String> params) {
+  public Optional<Boolean> isPubliclyReleasable() {
+    return Optional.ofNullable(publiclyReleasable);
   }
+
 }
