@@ -64,16 +64,8 @@ public final class TabularOutput<T> implements DataOutput<T> {
    */
   private static <T> TabularOutput<T> createTabularFileNoAlias(TabularOutputArgs tabularOutputArgs, TypeReference<T> typeRef,
                                                                Writer writer) throws IOException {
-    CsvSchema.Builder builder = CsvSchema.builder()
-      .addColumns(tabularOutputArgs.getHeaders(), CsvSchema.ColumnType.STRING);
 
-    CsvSchema csvSchema = builder.build().withHeader();
-
-    if (tabularOutputArgs.getColumnSeparator() != null) {
-      csvSchema =
-        csvSchema.withColumnSeparator(tabularOutputArgs.getColumnSeparator().getSeparatorChar());
-    }
-
+    CsvSchema csvSchema = buildCsvSchema(tabularOutputArgs.getHeaders(), true, tabularOutputArgs);
     CsvMapper csvMapper = new CsvMapper();
     csvMapper.configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true);
     return new TabularOutput<>(csvMapper.writerFor(typeRef)
@@ -111,27 +103,37 @@ public final class TabularOutput<T> implements DataOutput<T> {
     }
 
     // Write all the header aliases first
-    CsvSchema.Builder builder = CsvSchema.builder()
-      .addColumns(headersAliases, CsvSchema.ColumnType.STRING);
-    CsvSchema csvSchema = builder.build().withHeader();
-    if (tabularOutputArgs.getColumnSeparator() != null) {
-      csvSchema =
-        csvSchema.withColumnSeparator(tabularOutputArgs.getColumnSeparator().getSeparatorChar());
-    }
-
+    CsvSchema csvHeaderSchema = buildCsvSchema(headersAliases, true, tabularOutputArgs);
     CsvMapper csvMapper = new CsvMapper();
-    SequenceWriter ow = csvMapper.writer().with(csvSchema).writeValues(writer);
+    SequenceWriter ow = csvMapper.writer().with(csvHeaderSchema).writeValues(writer);
     ow.write(null);
     ow.flush();
 
     //Use the real headers but configure the builder to not write them (since we have the aliases)
-    builder = CsvSchema.builder()
-      .addColumns(tabularOutputArgs.getHeaders(), CsvSchema.ColumnType.STRING);
-    csvSchema = builder.build().withoutHeader();
+    CsvSchema csvSchema = buildCsvSchema(tabularOutputArgs.getHeaders(), false, tabularOutputArgs);
     csvMapper = new CsvMapper();
     csvMapper.configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true);
     return new TabularOutput<>(csvMapper.writerFor(typeRef)
       .with(csvSchema).writeValues(writer));
+  }
+
+  /**
+   * Internal function to build the {@link CsvSchema} based on specific settings
+   * @param headers list of headers to use for the schema
+   * @param useHeader should the header be used (for output)
+   * @param tabularOutputArgs used to find the separator
+   * @return
+   */
+  private static CsvSchema buildCsvSchema(List<String> headers, boolean useHeader, TabularOutputArgs tabularOutputArgs) {
+    CsvSchema.Builder builder = CsvSchema.builder()
+      .addColumns(headers, CsvSchema.ColumnType.STRING);
+
+    builder.setUseHeader(useHeader);
+
+    if (tabularOutputArgs.getColumnSeparator() != null) {
+      builder.setColumnSeparator(tabularOutputArgs.getColumnSeparator().getSeparatorChar());
+    }
+    return builder.build();
   }
 
   private TabularOutput(SequenceWriter sw) {
