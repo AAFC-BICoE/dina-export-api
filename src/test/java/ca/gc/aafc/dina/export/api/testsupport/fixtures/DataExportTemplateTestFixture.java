@@ -11,13 +11,12 @@ public class DataExportTemplateTestFixture {
     // utility class
   }
 
-  public static DataExportTemplateDto newDataExportTemplate() {
+  public static DataExportTemplateDto.DataExportTemplateDtoBuilder newDataExportTemplate() {
     return DataExportTemplateDto.builder()
       .exportType(DataExport.ExportType.TABULAR_DATA)
       .publiclyReleasable(false)
       .restrictToCreatedBy(false)
-      .group(GROUP)
-      .build();
+      .group(GROUP);
   }
 
 }
