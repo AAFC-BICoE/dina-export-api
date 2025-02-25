@@ -49,23 +49,23 @@ public class DataExportTemplateRepository extends DinaRepositoryV2<DataExportTem
   private final DinaAuthenticatedUser authenticatedUser;
 
   public DataExportTemplateRepository(
-    @NonNull DinaService<DataExportTemplate> dinaService,
-    @NonNull ObjectOwnerAuthorizationService authorizationService,
-    Optional<DinaAuthenticatedUser> authenticatedUser,
-    @NonNull Optional<AuditService> auditService,
-    @NonNull BuildProperties buildProperties,
-    ObjectMapper objMapper) {
+      @NonNull DinaService<DataExportTemplate> dinaService,
+      @NonNull ObjectOwnerAuthorizationService authorizationService,
+      Optional<DinaAuthenticatedUser> authenticatedUser,
+      @NonNull Optional<AuditService> auditService,
+      @NonNull BuildProperties buildProperties,
+      ObjectMapper objMapper) {
     super(dinaService, authorizationService, auditService,
-      DataExportTemplateMapper.INSTANCE,
-      DataExportTemplateDto.class, DataExportTemplate.class,
-      buildProperties, objMapper);
+        DataExportTemplateMapper.INSTANCE,
+        DataExportTemplateDto.class, DataExportTemplate.class,
+        buildProperties, objMapper);
 
     this.authenticatedUser = authenticatedUser.orElse(null);
   }
 
   @GetMapping(DataExportTemplateDto.TYPENAME + "/{id}")
   public ResponseEntity<RepresentationModel<?>> handleFindOne(@PathVariable UUID id, HttpServletRequest req)
-    throws ResourceNotFoundException {
+      throws ResourceNotFoundException {
 
     String queryString = decodeQueryString(req);
 
@@ -97,9 +97,8 @@ public class DataExportTemplateRepository extends DinaRepositoryV2<DataExportTem
 
   @PostMapping(DataExportTemplateDto.TYPENAME)
   @Transactional
-  public ResponseEntity<RepresentationModel<?>> handleCreate(@RequestBody
-                                                             JsonApiDocument postedDocument)
-    throws ResourceNotFoundException {
+  public ResponseEntity<RepresentationModel<?>> handleCreate(@RequestBody JsonApiDocument postedDocument)
+      throws ResourceNotFoundException {
 
     if (postedDocument == null) {
       return ResponseEntity.badRequest().build();
@@ -118,7 +117,8 @@ public class DataExportTemplateRepository extends DinaRepositoryV2<DataExportTem
     }
     JsonApiModelBuilder builder = createJsonApiModelBuilder(jsonApiDto);
 
-    builder.link(linkTo(methodOn(DataExportTemplateRepository.class).handleFindOne(jsonApiDto.getDto().getUuid(), null)).withSelfRel());
+    builder.link(linkTo(methodOn(DataExportTemplateRepository.class).handleFindOne(jsonApiDto.getDto().getUuid(), null))
+        .withSelfRel());
     RepresentationModel<?> model = builder.build();
 
     URI uri = model.getRequiredLink(IanaLinkRelations.SELF).toUri();
@@ -128,9 +128,8 @@ public class DataExportTemplateRepository extends DinaRepositoryV2<DataExportTem
 
   @PatchMapping(DataExportTemplateDto.TYPENAME + "/{id}")
   @Transactional
-  public ResponseEntity<RepresentationModel<?>> handleUpdate(@RequestBody
-                                                             JsonApiDocument partialPatchDto,
-                                                             @PathVariable UUID id) throws ResourceNotFoundException {
+  public ResponseEntity<RepresentationModel<?>> handleUpdate(@RequestBody JsonApiDocument partialPatchDto,
+      @PathVariable UUID id) throws ResourceNotFoundException {
 
     // Sanity check
     if (!Objects.equals(id, partialPatchDto.getId())) {
