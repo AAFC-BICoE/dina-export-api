@@ -71,7 +71,7 @@ public class DataExportTemplateRepository extends DinaRepositoryV2<DataExportTem
 
   @GetMapping(DataExportTemplateDto.TYPENAME + "/{id}")
   public ResponseEntity<RepresentationModel<?>> onFindOne(@PathVariable UUID id, HttpServletRequest req)
-    throws ResourceNotFoundException, ResourceGoneException {
+      throws ResourceNotFoundException, ResourceGoneException {
     return handleFindOne(id, req);
   }
 
