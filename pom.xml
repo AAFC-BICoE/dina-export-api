@@ -32,7 +32,7 @@
     <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
     <checkstyle.version>10.17.0</checkstyle.version>
 
-    <dina-base-api.version>0.137</dina-base-api.version>
+    <dina-base-api.version>0.139</dina-base-api.version>
     <spring-boot-maven-plugin.fork>false</spring-boot-maven-plugin.fork>
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>

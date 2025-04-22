@@ -1,8 +1,10 @@
 package ca.gc.aafc.dina.export.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.toedter.spring.hateoas.jsonapi.JsonApiId;
 import com.toedter.spring.hateoas.jsonapi.JsonApiTypeForClass;
 
+import ca.gc.aafc.dina.dto.JsonApiResource;
 import ca.gc.aafc.dina.dto.RelatedEntity;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.entity.DataExportTemplate;
@@ -23,7 +25,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonApiTypeForClass(DataExportTemplateDto.TYPENAME)
-public class DataExportTemplateDto {
+public class DataExportTemplateDto implements JsonApiResource {
 
   public static final String TYPENAME = "data-export-template";
 
@@ -45,4 +47,15 @@ public class DataExportTemplateDto {
   private String[] columnAliases;
   private Map<String, DataExport.FunctionDef> columnFunctions;
 
+  @Override
+  @JsonIgnore
+  public String getJsonApiType() {
+    return TYPENAME;
+  }
+
+  @Override
+  @JsonIgnore
+  public UUID getJsonApiId() {
+    return uuid;
+  }
 }

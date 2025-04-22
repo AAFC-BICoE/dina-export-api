@@ -97,9 +97,14 @@ public class FileController {
   /**
    * Get location, on disk, of an export file.
    * @param fileId
+   * @param filename
    * @return Optional with the Path if found or empty if not
    */
   public Optional<Path> getExportFileLocation(UUID fileId, String filename) {
+
+    if (fileId == null || StringUtils.isBlank(filename)) {
+      return Optional.empty();
+    }
 
     Path tabularFilePath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(filename);
     if (tabularFilePath.toFile().exists()) {
