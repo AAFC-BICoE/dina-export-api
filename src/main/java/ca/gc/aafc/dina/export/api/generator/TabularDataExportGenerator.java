@@ -103,8 +103,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
     // Should only work for NEW record at this point
     if (DataExport.ExportStatus.NEW == currStatus) {
-
-      Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
+      Path exportPath = dataExportConfig.getPathForDataExport(dinaExport).orElse(null);
       if (exportPath == null) {
         log.error("Null export path");
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
@@ -174,10 +173,11 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       throw new IllegalArgumentException("Should only be used for ExportType TABULAR_DATA");
     }
 
-    Path exportPath = dataExportConfig.getPathForDataExport(dinaExport);
+    Path exportPath = dataExportConfig.getPathForDataExport(dinaExport).orElse(null);
     deleteIfExists(exportPath);
 
-    if (DataExportConfig.isExportTypeUsesDirectory(DataExport.ExportType.TABULAR_DATA) &&
+    if (exportPath != null &&
+      DataExportConfig.isExportTypeUsesDirectory(DataExport.ExportType.TABULAR_DATA) &&
       DataExportConfig.isDataExportDirectory(exportPath.getParent(), dinaExport)) {
       deleteIfExists(exportPath.getParent());
     }
