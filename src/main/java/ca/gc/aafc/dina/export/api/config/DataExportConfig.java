@@ -1,5 +1,6 @@
 package ca.gc.aafc.dina.export.api.config;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 import org.springframework.http.MediaType;
@@ -11,7 +12,7 @@ import ca.gc.aafc.dina.export.api.entity.DataExport;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import javax.inject.Named;
 import javax.validation.constraints.NotBlank;
@@ -72,15 +73,18 @@ public class DataExportConfig {
     return Path.of(workingFolder).resolve(GENERATED_DATA_EXPORTS);
   }
 
-  public Path getPathForDataExport(DataExport dataExport) {
 
-    Objects.requireNonNull(dataExport.getFilename());
+  public Optional<Path> getPathForDataExport(DataExport dataExport) {
+
+    if (StringUtils.isBlank(dataExport.getFilename())) {
+      return Optional.empty();
+    }
 
     Path path = isExportTypeUsesDirectory(dataExport.getExportType()) ?
       getGeneratedDataExportsPath().resolve(dataExport.getUuid().toString()) :
       getGeneratedDataExportsPath();
 
-    return path.resolve(dataExport.getFilename());
+    return Optional.of(path.resolve(dataExport.getFilename()));
   }
 
   /**

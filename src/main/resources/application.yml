@@ -70,6 +70,7 @@ http-client:
   password: cnc-cm
 
 dina:
+  apiPrefix: /api/v1
   auditing.enabled: true
   export:
     workingFolder: /tmp/dina-data-export

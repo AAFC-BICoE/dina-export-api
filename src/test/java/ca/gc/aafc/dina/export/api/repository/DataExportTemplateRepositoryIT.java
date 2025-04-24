@@ -46,7 +46,7 @@ public class DataExportTemplateRepositoryIT extends BaseIntegrationTest {
       JsonAPITestHelper.toAttributeMap(deTemplate)
     );
 
-    var created = dataExportTemplateRepository.handleCreate(docToCreate);
+    var created = dataExportTemplateRepository.onCreate(docToCreate);
 
     UUID uuid = UUID.fromString(StringUtils.substringAfterLast(created.getBody().getLink(
       IanaLinkRelations.SELF).get().getHref(), "/"));
@@ -72,7 +72,7 @@ public class DataExportTemplateRepositoryIT extends BaseIntegrationTest {
 
     ValidationException exception = assertThrows(
       ValidationException.class, 
-      () -> dataExportTemplateRepository.handleCreate(docToCreate));
+      () -> dataExportTemplateRepository.onCreate(docToCreate));
     assertEquals("DataExportTemplate can be publiclyReleasable or restricted to createdBy but not both", exception.getMessage());
   }
 }
