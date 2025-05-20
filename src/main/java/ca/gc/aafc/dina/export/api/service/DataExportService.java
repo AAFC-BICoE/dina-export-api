@@ -82,11 +82,17 @@ public class DataExportService extends DefaultDinaService<DataExport> {
 
   @Override
   public void delete(DataExport dinaExport) {
-    DataExportGenerator exportGenerator = generatorByExportType(dinaExport.getExportType());
-    try {
-      exportGenerator.deleteExport(dinaExport);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    delete(dinaExport, true);
+  }
+
+  public void delete(DataExport dinaExport, boolean callExportGenerator) {
+    if (callExportGenerator) {
+      DataExportGenerator exportGenerator = generatorByExportType(dinaExport.getExportType());
+      try {
+        exportGenerator.deleteExport(dinaExport);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
     super.delete(dinaExport);
   }
