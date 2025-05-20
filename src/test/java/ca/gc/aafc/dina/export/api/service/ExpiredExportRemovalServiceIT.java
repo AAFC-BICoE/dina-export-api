@@ -9,6 +9,8 @@ import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.testsupport.DatabaseSupportService;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -16,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import javax.inject.Inject;
+import javax.persistence.NoResultException;
 
 @SpringBootTest(classes = DinaExportModuleApiLauncher.class,
   properties = {
@@ -25,6 +28,7 @@ import javax.inject.Inject;
 public class ExpiredExportRemovalServiceIT extends BaseIntegrationTest {
 
   public static final String INTERVAL_2_WEEKS = "UPDATE data_export SET created_on = created_on - interval '2 weeks'";
+  public static final String INTERVAL_3_WEEKS = "UPDATE data_export SET created_on = created_on - interval '3 weeks'";
 
   @Inject
   protected DataExportConfig dataExportConfig;
@@ -67,8 +71,20 @@ public class ExpiredExportRemovalServiceIT extends BaseIntegrationTest {
       fileDeleted = !p.toFile().exists();
       numberRetry++;
     }
-
     assertTrue(fileDeleted);
-  }
 
+    DataExport dataExportFromDB = dbSupportService.findUnique(DataExport.class, "uuid", testUUID);
+    assertEquals(DataExport.ExportStatus.EXPIRED, dataExportFromDB.getStatus());
+
+    // make sure the removal will be trigger (12 days + 1 week)
+    dbSupportService.runInNewTransaction(em -> {
+      em.createNativeQuery(INTERVAL_3_WEEKS).executeUpdate(); // Mock record created in the past
+    });
+
+    // wait for the Scheduled job to run another time
+    Thread.sleep(1000);
+    assertThrows(NoResultException.class,
+      () -> dbSupportService.findUnique(DataExport.class, "uuid", testUUID));
+
+  }
 }
