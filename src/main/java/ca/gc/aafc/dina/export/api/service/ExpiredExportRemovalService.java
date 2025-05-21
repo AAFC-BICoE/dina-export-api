@@ -48,8 +48,6 @@ public class ExpiredExportRemovalService {
   @Transactional
   public void onCron() {
 
-    System.out.println("cron run");
-
     // handle expired exports that should be removed
     handleRemoval();
 
