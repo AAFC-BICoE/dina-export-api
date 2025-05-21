@@ -1,7 +1,5 @@
 package ca.gc.aafc.dina.export.api.mapper;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 
 import org.mapstruct.BeanMapping;
@@ -30,7 +28,4 @@ public interface DataExportTemplateMapper extends DinaMapperV2<DataExportTemplat
   void patchEntity(@MappingTarget DataExportTemplate entity, DataExportTemplateDto dto,
                    @Context Set<String> provided, @Context String scope);
 
-  default <K, V> Map<K, V> nullSafeMap(Map<K, V> map) {
-    return map == null ? null : new LinkedHashMap<>(map);
-  }
 }
