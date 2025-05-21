@@ -5,7 +5,7 @@
 
   <groupId>ca.gc.aafc</groupId>
   <artifactId>dina-export-api</artifactId>
-  <version>0.16-SNAPSHOT</version>
+  <version>0.16</version>
   <packaging>jar</packaging>
 
   <name>DINA export API</name>
@@ -43,6 +43,7 @@
 
     <!-- versions override-->
     <spring-framework.version>5.3.38</spring-framework.version>
+    <tomcat.version>9.0.104</tomcat.version>
     <postgresql.version>42.4.4</postgresql.version>
 
     <!-- test-related properties-->
