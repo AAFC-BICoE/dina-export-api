@@ -1,52 +1,97 @@
 package ca.gc.aafc.dina.export.api.repository;
 
-import java.util.Optional;
-
 import org.springframework.boot.info.BuildProperties;
-import org.springframework.stereotype.Repository;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import ca.gc.aafc.dina.export.api.entity.ReportTemplate;
-import ca.gc.aafc.dina.export.api.service.ReportTemplateService;
-import ca.gc.aafc.dina.mapper.DinaMapper;
-import ca.gc.aafc.dina.repository.DinaRepository;
-import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
-import ca.gc.aafc.dina.security.auth.DinaAuthorizationService;
-import ca.gc.aafc.dina.service.AuditService;
+import ca.gc.aafc.dina.exception.ResourceGoneException;
+import ca.gc.aafc.dina.exception.ResourceNotFoundException;
 import ca.gc.aafc.dina.export.api.dto.ReportTemplateDto;
+import ca.gc.aafc.dina.export.api.entity.ReportTemplate;
+import ca.gc.aafc.dina.export.api.mapper.ReportTemplateMapper;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
+import ca.gc.aafc.dina.repository.DinaRepositoryV2;
+import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
+import ca.gc.aafc.dina.security.auth.ObjectOwnerAuthorizationService;
+import ca.gc.aafc.dina.service.AuditService;
+import ca.gc.aafc.dina.service.DinaService;
 
-@Repository
-public class ReportTemplateRepository extends DinaRepository<ReportTemplateDto, ReportTemplate> {
+import static com.toedter.spring.hateoas.jsonapi.MediaTypes.JSON_API_VALUE;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-  private final DinaAuthenticatedUser dinaAuthenticatedUser;
+import java.util.Optional;
+import java.util.UUID;
+import javax.servlet.http.HttpServletRequest;
+import lombok.NonNull;
+
+@RestController
+@RequestMapping(value = "${dina.apiPrefix:}", produces = JSON_API_VALUE)
+public class ReportTemplateRepository extends DinaRepositoryV2<ReportTemplateDto, ReportTemplate> {
+
+  private final DinaAuthenticatedUser authenticatedUser;
 
   public ReportTemplateRepository(
-    ReportTemplateService dinaService,
-    DinaAuthorizationService groupAuthorizationService,
-    AuditService auditService,
-    BuildProperties buildProperties,
-    Optional<DinaAuthenticatedUser> dinaAuthenticatedUser,
-    ObjectMapper objectMapper
-  ) {
-    super(
-      dinaService,
-      groupAuthorizationService,
-      Optional.of(auditService),
-      new DinaMapper<>(ReportTemplateDto.class),
-      ReportTemplateDto.class,
-      ReportTemplate.class,
-      null,
-      null,
-      buildProperties, objectMapper);
-    this.dinaAuthenticatedUser = dinaAuthenticatedUser.orElse(null);
+    @NonNull DinaService<ReportTemplate> dinaService,
+    @NonNull ObjectOwnerAuthorizationService authorizationService,
+    Optional<DinaAuthenticatedUser> authenticatedUser,
+    @NonNull Optional<AuditService> auditService,
+    @NonNull BuildProperties buildProperties,
+    ObjectMapper objMapper) {
+      super(dinaService, authorizationService, auditService,
+        ReportTemplateMapper.INSTANCE,
+        ReportTemplateDto.class, ReportTemplate.class,
+        buildProperties, objMapper);
+    this.authenticatedUser = authenticatedUser.orElse(null);
   }
 
   @Override
-  public <S extends ReportTemplateDto> S create(S resource) {
-    if (dinaAuthenticatedUser != null) {
-      resource.setCreatedBy(dinaAuthenticatedUser.getUsername());
+  protected Link generateLinkToResource(ReportTemplateDto dto) {
+    try {
+      return linkTo(
+        methodOn(DataExportRepository.class).onFindOne(dto.getUuid(), null)).withSelfRel();
+    } catch (ResourceNotFoundException | ResourceGoneException e) {
+      throw new RuntimeException(e);
     }
-    return super.create(resource);
+  }
+
+  @GetMapping(ReportTemplateDto.TYPENAME + "/{id}")
+  public ResponseEntity<RepresentationModel<?>> onFindOne(@PathVariable UUID id, HttpServletRequest req)
+    throws ResourceNotFoundException, ResourceGoneException {
+    return handleFindOne(id, req);
+  }
+
+  @GetMapping(ReportTemplateDto.TYPENAME)
+  public ResponseEntity<RepresentationModel<?>> onFindAll(HttpServletRequest req) {
+    return handleFindAll(req);
+  }
+
+  @PostMapping(ReportTemplateDto.TYPENAME)
+  @Transactional
+  public ResponseEntity<RepresentationModel<?>> onCreate(@RequestBody JsonApiDocument postedDocument) {
+    return handleCreate(postedDocument, dto -> {
+      if (authenticatedUser != null) {
+        dto.setCreatedBy(authenticatedUser.getUsername());
+      }
+    });
+  }
+
+  @DeleteMapping(ReportTemplateDto.TYPENAME + "/{id}")
+  @Transactional
+  public ResponseEntity<RepresentationModel<?>> onDelete(@PathVariable UUID id)
+    throws ResourceNotFoundException, ResourceGoneException {
+    return handleDelete(id);
   }
 }
+

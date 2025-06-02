@@ -4,8 +4,6 @@ import ca.gc.aafc.dina.dto.RelatedEntity;
 import ca.gc.aafc.dina.export.api.entity.ReportTemplate;
 import ca.gc.aafc.dina.i18n.MultilingualDescription;
 
-import io.crnk.core.resource.annotations.JsonApiId;
-import io.crnk.core.resource.annotations.JsonApiResource;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -18,6 +16,10 @@ import org.javers.core.metamodel.annotation.Id;
 import org.javers.core.metamodel.annotation.PropertyName;
 import org.javers.core.metamodel.annotation.TypeName;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.toedter.spring.hateoas.jsonapi.JsonApiId;
+import com.toedter.spring.hateoas.jsonapi.JsonApiTypeForClass;
+
 @RelatedEntity(ReportTemplate.class)
 @Getter
 @Setter
@@ -25,8 +27,8 @@ import org.javers.core.metamodel.annotation.TypeName;
 @NoArgsConstructor
 @AllArgsConstructor
 @TypeName(ReportTemplateDto.TYPENAME)
-@JsonApiResource(type = ReportTemplateDto.TYPENAME)
-public class ReportTemplateDto {
+@JsonApiTypeForClass(ReportTemplateDto.TYPENAME)
+public class ReportTemplateDto implements ca.gc.aafc.dina.dto.JsonApiResource {
 
   public static final String TYPENAME = "report-template";
 
@@ -54,4 +56,15 @@ public class ReportTemplateDto {
   @Builder.Default
   private Boolean includesBarcode = false;
 
+  @Override
+  @JsonIgnore
+  public String getJsonApiType() {
+    return TYPENAME;
+  }
+
+  @Override
+  @JsonIgnore
+  public UUID getJsonApiId() {
+    return uuid;
+  }
 }

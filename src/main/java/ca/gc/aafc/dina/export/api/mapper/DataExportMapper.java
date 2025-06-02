@@ -50,7 +50,7 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
                    @Context Set<String> provided, @Context String scope);
 
   @Named("mapToJson")
-  static String toDTO(Map<String, Object> query) {
+  static String mapToJsonString(Map<String, Object> query) {
     try {
       return query == null ? null : OBJ_MAPPER.writeValueAsString(query);
     } catch (JsonProcessingException e) {
@@ -59,7 +59,7 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
   }
 
   @Named("jsonToMap")
-  static Map<String, Object> toEntity(String query) {
+  static Map<String, Object> jsonStringToMap(String query) {
     if (StringUtils.isBlank(query)) {
       return null;
     }

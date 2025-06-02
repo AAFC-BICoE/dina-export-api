@@ -5,6 +5,8 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 
+import ca.gc.aafc.dina.exception.ResourceGoneException;
+import ca.gc.aafc.dina.exception.ResourceNotFoundException;
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.ElasticSearchTestContainerInitializer;
 import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
@@ -13,6 +15,8 @@ import ca.gc.aafc.dina.export.api.dto.DataExportDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileController;
 import ca.gc.aafc.dina.export.api.testsupport.jsonapi.JsonApiDocuments;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
+import ca.gc.aafc.dina.repository.JsonApiModelAssistant;
 import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchTestUtils;
 import ca.gc.aafc.dina.testsupport.jsonapi.JsonAPITestHelper;
 
@@ -22,8 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.crnk.core.exception.ResourceNotFoundException;
-import io.crnk.core.queryspec.QuerySpec;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -60,7 +62,8 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
   private AsyncConsumer<Future<UUID>> asyncConsumer;
 
   @Test
-  public void testESDatasource() throws IOException {
+  public void testESDatasource()
+    throws IOException, ResourceGoneException, ca.gc.aafc.dina.exception.ResourceNotFoundException {
 
     ElasticSearchTestUtils.createIndex(esClient, MAT_SAMPLE_INDEX, "elasticsearch/material_sample_index_settings.json");
 
@@ -74,17 +77,26 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     // Do a query with no sort to ensure a default sort will be added for paging
     String query = "{\"query\": {\"match_all\": {}}}";
 
-    DataExportDto dto =
-      dataExportRepository.create(DataExportDto.builder()
-        .source(MAT_SAMPLE_INDEX)
-        .name("my export")
-        .query(query)
-        .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
-          "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
-          "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong"))
-          .columnFunctions(Map.of("latLong", new DataExport.FunctionDef(DataExport.FunctionName.CONVERT_COORDINATES_DD, List.of("collectingEvent.eventGeom"))))
-        .build());
-    assertNotNull(dto.getUuid());
+    DataExportDto dto = DataExportDto.builder()
+      .source(MAT_SAMPLE_INDEX)
+      .name("my export")
+      .query(query)
+      .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
+        "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
+        "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong"))
+      .columnFunctions(Map.of("latLong",
+        new DataExport.FunctionDef(DataExport.FunctionName.CONVERT_COORDINATES_DD,
+          List.of("collectingEvent.eventGeom"))))
+      .build();
+
+    JsonApiDocument docToCreate = ca.gc.aafc.dina.jsonapi.JsonApiDocuments.createJsonApiDocument(
+      null, DataExportDto.TYPENAME,
+      JsonAPITestHelper.toAttributeMap(dto)
+    );
+
+    var created = dataExportRepository.onCreate(docToCreate);
+    UUID uuid =  JsonApiModelAssistant.extractUUIDFromRepresentationModelLink(created);
+    assertNotNull(uuid);
 
     try {
       asyncConsumer.getAccepted().getFirst().get();
@@ -92,22 +104,13 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       throw new RuntimeException(e);
     }
 
-    DataExportDto savedDataExportDto = dataExportRepository.findOne(dto.getUuid(), new QuerySpec(DataExportDto.class));
+    DataExportDto savedDataExportDto = dataExportRepository.getOne(uuid, null).getDto();
     assertEquals(DataExport.ExportStatus.COMPLETED, savedDataExportDto.getStatus());
     assertEquals(DataExport.ExportType.TABULAR_DATA, savedDataExportDto.getExportType());
     assertEquals("my export", savedDataExportDto.getName());
 
-
-   ObjectMapper IT_OBJECT_MAPPER = new ObjectMapper();
-
-      IT_OBJECT_MAPPER.registerModule(new JavaTimeModule());
-      IT_OBJECT_MAPPER.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-      IT_OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
-    System.out.println(IT_OBJECT_MAPPER.writeValueAsString(savedDataExportDto));
-
     ResponseEntity<InputStreamResource>
-      response = fileController.downloadFile(dto.getUuid(), FileController.DownloadType.DATA_EXPORT);
+      response = fileController.downloadFile(uuid, FileController.DownloadType.DATA_EXPORT);
 
     assertEquals("my_export.csv", response.getHeaders().getContentDisposition().getFilename());
 
@@ -137,9 +140,9 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     assertTrue(lines.get(1).contains("45.424721,-75.695000"));
 
     // delete the export
-    dataExportRepository.delete(dto.getUuid());
+    dataExportRepository.onDelete(uuid);
     assertThrows(
-      ResourceNotFoundException.class, () -> dataExportRepository.findOne(dto.getUuid(), new QuerySpec(DataExportDto.class)));
+      ResourceNotFoundException.class, () -> dataExportRepository.onFindOne(uuid, null));
   }
 
 }
