@@ -47,12 +47,11 @@ public class ReportTemplateRepository extends DinaRepositoryV2<ReportTemplateDto
     @NonNull ObjectOwnerAuthorizationService authorizationService,
     Optional<DinaAuthenticatedUser> authenticatedUser,
     @NonNull Optional<AuditService> auditService,
-    @NonNull BuildProperties buildProperties,
-    ObjectMapper objMapper) {
-      super(dinaService, authorizationService, auditService,
-        ReportTemplateMapper.INSTANCE,
-        ReportTemplateDto.class, ReportTemplate.class,
-        buildProperties, objMapper);
+    @NonNull BuildProperties buildProperties, ObjectMapper objMapper) {
+    super(dinaService, authorizationService, auditService,
+      ReportTemplateMapper.INSTANCE,
+      ReportTemplateDto.class, ReportTemplate.class,
+      buildProperties, objMapper);
     this.authenticatedUser = authenticatedUser.orElse(null);
   }
 
@@ -68,7 +67,7 @@ public class ReportTemplateRepository extends DinaRepositoryV2<ReportTemplateDto
 
   @GetMapping(ReportTemplateDto.TYPENAME + "/{id}")
   public ResponseEntity<RepresentationModel<?>> onFindOne(@PathVariable UUID id, HttpServletRequest req)
-    throws ResourceNotFoundException, ResourceGoneException {
+      throws ResourceNotFoundException, ResourceGoneException {
     return handleFindOne(id, req);
   }
 
@@ -90,8 +89,7 @@ public class ReportTemplateRepository extends DinaRepositoryV2<ReportTemplateDto
   @DeleteMapping(ReportTemplateDto.TYPENAME + "/{id}")
   @Transactional
   public ResponseEntity<RepresentationModel<?>> onDelete(@PathVariable UUID id)
-    throws ResourceNotFoundException, ResourceGoneException {
+      throws ResourceNotFoundException, ResourceGoneException {
     return handleDelete(id);
   }
 }
-

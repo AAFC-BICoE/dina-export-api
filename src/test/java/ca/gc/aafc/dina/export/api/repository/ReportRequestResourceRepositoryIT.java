@@ -54,7 +54,6 @@ public class ReportRequestResourceRepositoryIT extends BaseIntegrationTest {
     var created = reportRepository.onCreate(reportTemplateToCreate);
     UUID reportTemplateUuid =  JsonApiModelAssistant.extractUUIDFromRepresentationModelLink(created);
 
-
     ReportRequestDto dto = ReportRequestTestFixture.newReportRequest()
       .reportTemplateUUID(reportTemplateUuid)
       .payload(Map.of("testname", "create_onReportRequest_requestAccepted",

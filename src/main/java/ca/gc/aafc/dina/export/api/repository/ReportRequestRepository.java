@@ -80,7 +80,7 @@ public class ReportRequestRepository {
   @PostMapping(ReportRequestDto.TYPENAME)
   @Transactional
   public ResponseEntity<RepresentationModel<?>> onCreate(@RequestBody JsonApiDocument postedDocument)
-    throws ResourceNotFoundException {
+      throws ResourceNotFoundException {
 
     ReportRequestDto dto = objMapper.convertValue(postedDocument.getAttributes(), ReportRequestDto.class);
     checkSubmittedData(dto);

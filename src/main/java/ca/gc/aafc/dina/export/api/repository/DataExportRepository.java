@@ -70,7 +70,7 @@ public class DataExportRepository extends DinaRepositoryV2<DataExportDto, DataEx
 
   @GetMapping(DataExportDto.TYPENAME + "/{id}")
   public ResponseEntity<RepresentationModel<?>> onFindOne(@PathVariable UUID id, HttpServletRequest req)
-    throws ResourceNotFoundException, ResourceGoneException {
+      throws ResourceNotFoundException, ResourceGoneException {
     return handleFindOne(id, req);
   }
 
@@ -97,7 +97,7 @@ public class DataExportRepository extends DinaRepositoryV2<DataExportDto, DataEx
   @DeleteMapping(DataExportDto.TYPENAME + "/{id}")
   @Transactional
   public ResponseEntity<RepresentationModel<?>> onDelete(@PathVariable UUID id)
-    throws ResourceNotFoundException, ResourceGoneException {
+      throws ResourceNotFoundException, ResourceGoneException {
     return handleDelete(id);
   }
 }
