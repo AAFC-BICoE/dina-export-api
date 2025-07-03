@@ -35,12 +35,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.inject.Inject;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
 @ContextConfiguration(initializers = { ElasticSearchTestContainerInitializer.class })
 public class DataExportRepositoryIT extends BaseIntegrationTest {
 
