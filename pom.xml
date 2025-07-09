@@ -5,7 +5,7 @@
 
   <groupId>ca.gc.aafc</groupId>
   <artifactId>dina-export-api</artifactId>
-  <version>0.17-SNAPSHOT</version>
+  <version>0.17</version>
   <packaging>jar</packaging>
 
   <name>DINA export API</name>
@@ -32,7 +32,7 @@
     <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
     <checkstyle.version>10.17.0</checkstyle.version>
 
-    <dina-base-api.version>0.144</dina-base-api.version>
+    <dina-base-api.version>0.146</dina-base-api.version>
     <spring-boot-maven-plugin.fork>false</spring-boot-maven-plugin.fork>
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>
@@ -43,7 +43,9 @@
 
     <!-- versions override-->
     <spring-framework.version>5.3.38</spring-framework.version>
-    <tomcat.version>9.0.104</tomcat.version>
+    <jackson-bom.version>2.15.4</jackson-bom.version>
+    <tomcat.version>9.0.106</tomcat.version>
+    <snakeyaml.version>1.33</snakeyaml.version>
     <postgresql.version>42.4.4</postgresql.version>
 
     <!-- test-related properties-->
