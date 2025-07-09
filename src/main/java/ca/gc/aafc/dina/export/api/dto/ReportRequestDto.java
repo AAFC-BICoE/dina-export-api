@@ -1,7 +1,6 @@
 package ca.gc.aafc.dina.export.api.dto;
 
-import io.crnk.core.resource.annotations.JsonApiId;
-import io.crnk.core.resource.annotations.JsonApiResource;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,13 +10,17 @@ import lombok.Setter;
 import java.util.Map;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.toedter.spring.hateoas.jsonapi.JsonApiId;
+import com.toedter.spring.hateoas.jsonapi.JsonApiTypeForClass;
+
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonApiResource(type = ReportRequestDto.TYPENAME)
-public class ReportRequestDto {
+@JsonApiTypeForClass(DataExportDto.TYPENAME)
+public class ReportRequestDto implements ca.gc.aafc.dina.dto.JsonApiResource {
 
   public static final String TYPENAME = "report-request";
 
@@ -29,4 +32,15 @@ public class ReportRequestDto {
 
   private Map<String, Object> payload;
 
+  @Override
+  @JsonIgnore
+  public String getJsonApiType() {
+    return TYPENAME;
+  }
+
+  @Override
+  @JsonIgnore
+  public UUID getJsonApiId() {
+    return uuid;
+  }
 }

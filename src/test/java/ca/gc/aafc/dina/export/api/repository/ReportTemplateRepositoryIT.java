@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocuments;
+import ca.gc.aafc.dina.testsupport.jsonapi.JsonAPITestHelper;
 import ca.gc.aafc.dina.testsupport.security.WithMockKeycloakUser;
 import ca.gc.aafc.dina.export.api.DinaExportModuleApiLauncher;
 import ca.gc.aafc.dina.export.api.dto.ReportTemplateDto;
@@ -21,7 +24,13 @@ public class ReportTemplateRepositoryIT extends BaseIntegrationTest {
   @Test
   void create_WithAuthUser() {
     ReportTemplateDto reportDto = ReportTemplateTestFixture.newReportTemplate().build();
-    reportRepository.create(reportDto);
+
+    JsonApiDocument docToCreate = JsonApiDocuments.createJsonApiDocument(
+      null, ReportTemplateDto.TYPENAME,
+      JsonAPITestHelper.toAttributeMap(reportDto)
+    );
+
+    reportRepository.onCreate(docToCreate);
   }
   
 }

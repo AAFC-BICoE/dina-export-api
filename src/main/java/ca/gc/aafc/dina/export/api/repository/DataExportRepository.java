@@ -1,58 +1,103 @@
 package ca.gc.aafc.dina.export.api.repository;
 
 import org.springframework.boot.info.BuildProperties;
-import org.springframework.stereotype.Repository;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import ca.gc.aafc.dina.exception.ResourceGoneException;
+import ca.gc.aafc.dina.exception.ResourceNotFoundException;
 import ca.gc.aafc.dina.export.api.dto.DataExportDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
-import ca.gc.aafc.dina.export.api.service.DataExportService;
-import ca.gc.aafc.dina.mapper.DinaMapper;
-import ca.gc.aafc.dina.repository.DinaRepository;
+import ca.gc.aafc.dina.export.api.mapper.DataExportMapper;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
+import ca.gc.aafc.dina.mapper.DinaMappingRegistry;
+import ca.gc.aafc.dina.repository.DinaRepositoryV2;
 import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
 import ca.gc.aafc.dina.security.auth.ObjectOwnerAuthorizationService;
 import ca.gc.aafc.dina.service.AuditService;
+import ca.gc.aafc.dina.service.DinaService;
 
-import io.crnk.core.exception.MethodNotAllowedException;
+import static com.toedter.spring.hateoas.jsonapi.MediaTypes.JSON_API_VALUE;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 import java.util.Optional;
+import java.util.UUID;
+import javax.servlet.http.HttpServletRequest;
+import lombok.NonNull;
 
-@Repository
-public class DataExportRepository extends DinaRepository<DataExportDto, DataExport> {
+@RestController
+@RequestMapping(value = "${dina.apiPrefix:}", produces = JSON_API_VALUE)
+public class DataExportRepository extends DinaRepositoryV2<DataExportDto, DataExport> {
 
-  private final Optional<DinaAuthenticatedUser> dinaAuthenticatedUser;
+  private final DinaAuthenticatedUser authenticatedUser;
 
   public DataExportRepository(
-    DataExportService dinaService,
-    ObjectOwnerAuthorizationService authorizationService,
-    Optional<DinaAuthenticatedUser> dinaAuthenticatedUser,
-    Optional<AuditService> auditService,
-    BuildProperties buildProperties, ObjectMapper objMapper) {
-
+    @NonNull DinaService<DataExport> dinaService,
+    @NonNull ObjectOwnerAuthorizationService authorizationService,
+    Optional<DinaAuthenticatedUser> authenticatedUser,
+    @NonNull Optional<AuditService> auditService,
+    @NonNull BuildProperties buildProperties,
+    ObjectMapper objMapper) {
     super(dinaService, authorizationService, auditService,
-      new DinaMapper<>(DataExportDto.class),
-      DataExportDto.class,
-      DataExport.class,
-      null, null, buildProperties, objMapper);
-    this.dinaAuthenticatedUser = dinaAuthenticatedUser;
+      DataExportMapper.INSTANCE,
+      DataExportDto.class, DataExport.class,
+      buildProperties, objMapper, new DinaMappingRegistry(DataExportDto.class, true));
+
+    this.authenticatedUser = authenticatedUser.orElse(null);
   }
 
   @Override
-  public <S extends DataExportDto> S create(S resource) {
-    dinaAuthenticatedUser.ifPresent( user -> resource.setCreatedBy(user.getUsername()));
-
-    // make sure uuid will be auto-generated
-    resource.setUuid(null);
-
-    // for now the repository can only create csv
-    resource.setExportType(DataExport.ExportType.TABULAR_DATA);
-
-    return super.create(resource);
+  protected Link generateLinkToResource(DataExportDto dto) {
+    try {
+      return linkTo(
+        methodOn(DataExportRepository.class).onFindOne(dto.getUuid(), null)).withSelfRel();
+    } catch (ResourceNotFoundException | ResourceGoneException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  @Override
-  public <S extends DataExportDto> S save(S s) {
-    throw new MethodNotAllowedException("PUT/PATCH");
+  @GetMapping(DataExportDto.TYPENAME + "/{id}")
+  public ResponseEntity<RepresentationModel<?>> onFindOne(@PathVariable UUID id, HttpServletRequest req)
+      throws ResourceNotFoundException, ResourceGoneException {
+    return handleFindOne(id, req);
   }
 
+  @GetMapping(DataExportDto.TYPENAME)
+  public ResponseEntity<RepresentationModel<?>> onFindAll(HttpServletRequest req) {
+    return handleFindAll(req);
+  }
+
+  @PostMapping(DataExportDto.TYPENAME)
+  @Transactional
+  public ResponseEntity<RepresentationModel<?>> onCreate(@RequestBody JsonApiDocument postedDocument) {
+    return handleCreate(postedDocument, dto -> {
+      if (authenticatedUser != null) {
+        dto.setCreatedBy(authenticatedUser.getUsername());
+        // make sure uuid will be auto-generated
+        dto.setUuid(null);
+
+        // for now the repository can only create csv
+        dto.setExportType(DataExport.ExportType.TABULAR_DATA);
+      }
+    });
+  }
+
+  @DeleteMapping(DataExportDto.TYPENAME + "/{id}")
+  @Transactional
+  public ResponseEntity<RepresentationModel<?>> onDelete(@PathVariable UUID id)
+      throws ResourceNotFoundException, ResourceGoneException {
+    return handleDelete(id);
+  }
 }

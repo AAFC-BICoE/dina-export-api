@@ -1,44 +1,51 @@
 package ca.gc.aafc.dina.export.api.repository;
 
-import ca.gc.aafc.dina.entity.DinaEntity;
-import ca.gc.aafc.dina.export.api.entity.ReportTemplate;
-import ca.gc.aafc.dina.export.api.service.ReportRequestService;
-import ca.gc.aafc.dina.export.api.service.ReportTemplateService;
-import ca.gc.aafc.dina.json.JsonDocumentInspector;
-import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
-import ca.gc.aafc.dina.security.auth.GroupAuthorizationService;
-import ca.gc.aafc.dina.security.TextHtmlSanitizer;
-import ca.gc.aafc.dina.export.api.dto.ReportRequestDto;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.crnk.core.exception.MethodNotAllowedException;
-import io.crnk.core.exception.ResourceNotFoundException;
-import io.crnk.core.queryspec.QuerySpec;
-import io.crnk.core.repository.ResourceRepository;
-import io.crnk.core.resource.list.ResourceList;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Predicate;
-import javax.transaction.Transactional;
-
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import org.springframework.boot.info.BuildProperties;
-import org.springframework.stereotype.Repository;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.io.Serializable;
-import java.time.OffsetDateTime;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.toedter.spring.hateoas.jsonapi.JsonApiModelBuilder;
+
+import ca.gc.aafc.dina.dto.JsonApiDto;
+import ca.gc.aafc.dina.exception.ResourceNotFoundException;
+import ca.gc.aafc.dina.export.api.dto.ReportRequestDto;
+import ca.gc.aafc.dina.export.api.dto.ReportTemplateDto;
+import ca.gc.aafc.dina.export.api.entity.ReportTemplate;
+import ca.gc.aafc.dina.export.api.service.ReportRequestService;
+import ca.gc.aafc.dina.export.api.service.ReportTemplateService;
+import ca.gc.aafc.dina.json.JsonDocumentInspector;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
+import ca.gc.aafc.dina.repository.JsonApiModelAssistant;
+import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
+import ca.gc.aafc.dina.security.TextHtmlSanitizer;
+import ca.gc.aafc.dina.security.auth.GroupAuth;
+import ca.gc.aafc.dina.security.auth.GroupAuthorizationService;
 
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPEREF;
+import static com.toedter.spring.hateoas.jsonapi.MediaTypes.JSON_API_VALUE;
 
-@Repository
-@Transactional
-public class ReportRequestRepository implements ResourceRepository<ReportRequestDto, Serializable> {
+import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Predicate;
+
+@RestController
+@RequestMapping(value = "${dina.apiPrefix:}", produces = JSON_API_VALUE)
+public class ReportRequestRepository {
 
   private static final Safelist SIMPLE_TEXT = Safelist.simpleText();
 
@@ -47,68 +54,65 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
   private final ReportRequestService reportRequestService;
   private final ReportTemplateService reportService;
   private final ObjectMapper objMapper;
+  private final JsonApiModelAssistant<ReportRequestDto> jsonApiModelAssistant;
 
   public ReportRequestRepository(
     GroupAuthorizationService authorizationService,
     Optional<DinaAuthenticatedUser> dinaAuthenticatedUser,
     ReportRequestService reportRequestService,
     ReportTemplateService reportService,
-    BuildProperties props,
+    BuildProperties buildProperties,
     ObjectMapper objMapper
   ) {
     this.authorizationService = authorizationService;
     this.reportRequestService = reportRequestService;
     this.reportService = reportService;
     this.objMapper = objMapper;
+
+    this.jsonApiModelAssistant = new JsonApiModelAssistant<>(buildProperties.getVersion());
   }
 
-  @Override
-  public <S extends ReportRequestDto> S create(S s) {
+  protected Link generateLinkToResource(ReportRequestDto dto) {
+    return Link.of(
+      Objects.toString(dto.getJsonApiType(), "") + "/" + Objects.toString(dto.getJsonApiId(), ""));
+  }
 
-    checkSubmittedData(s);
+  @PostMapping(ReportRequestDto.TYPENAME)
+  @Transactional
+  public ResponseEntity<RepresentationModel<?>> onCreate(@RequestBody JsonApiDocument postedDocument)
+      throws ResourceNotFoundException {
 
-    authorizationService.authorizeCreate(new GroupOnlyEntity(s.getGroup()));
+    ReportRequestDto dto = objMapper.convertValue(postedDocument.getAttributes(), ReportRequestDto.class);
+    checkSubmittedData(dto);
 
-    UUID reportTemplateUUID = s.getReportTemplateUUID();
+    authorizationService.authorizeCreate(GroupAuth.of(dto.getGroup()));
+
+    UUID reportTemplateUUID = dto.getReportTemplateUUID();
     ReportTemplate reportTemplateEntity = reportService.findOne(reportTemplateUUID, ReportTemplate.class);
 
     if (reportTemplateEntity == null) {
-      throw new ResourceNotFoundException("ReportTemplate with ID " + reportTemplateUUID + " Not Found.");
+      throw ResourceNotFoundException.create(ReportTemplateDto.TYPENAME, reportTemplateUUID);
     }
 
     try {
-      ReportRequestService.ReportGenerationResult result = reportRequestService.generateReport(reportTemplateEntity, s);
+      ReportRequestService.ReportGenerationResult result = reportRequestService.generateReport(reportTemplateEntity, dto);
       // return the identifier assigned by the service
-      s.setUuid(result.resultIdentifier());
+      dto.setUuid(result.resultIdentifier());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    return s;
-  }
 
-  @Override
-  public Class<ReportRequestDto> getResourceClass() {
-    return ReportRequestDto.class;
-  }
+    JsonApiDto.JsonApiDtoBuilder<ReportRequestDto> jsonApiDtoBuilder = JsonApiDto.builder();
+    jsonApiDtoBuilder.dto(dto);
 
-  @Override
-  public ReportRequestDto findOne(Serializable serializable, QuerySpec querySpec) {
-    return null;
-  }
+    JsonApiModelBuilder builder = jsonApiModelAssistant.createJsonApiModelBuilder(jsonApiDtoBuilder.build());
+    builder.link(generateLinkToResource(dto));
 
-  @Override
-  public ResourceList<ReportRequestDto> findAll(QuerySpec querySpec) {
-    throw new MethodNotAllowedException("GET");
-  }
+    RepresentationModel<?> model = builder.build();
+    URI uri = model.getRequiredLink(IanaLinkRelations.SELF).toUri();
 
-  @Override
-  public ResourceList<ReportRequestDto> findAll(Collection<Serializable> collection, QuerySpec querySpec) {
-    throw new MethodNotAllowedException("GET");
-  }
+    return ResponseEntity.created(uri).body(model);
 
-  @Override
-  public <S extends ReportRequestDto> S save(S s) {
-    throw new MethodNotAllowedException("PUT/PATCH");
   }
 
   protected <S extends ReportRequestDto> void checkSubmittedData(S resource) {
@@ -125,44 +129,6 @@ public class ReportRequestRepository implements ResourceRepository<ReportRequest
 
   private static boolean isSafeSimpleText(String txt) {
     return StringUtils.isBlank(txt) || Jsoup.isValid(txt, SIMPLE_TEXT);
-  }
-
-  @Override
-  public void delete(Serializable serializable) {
-    throw new MethodNotAllowedException("DELETE");
-  }
-
-  static class GroupOnlyEntity implements DinaEntity {
-    private final String group;
-
-    GroupOnlyEntity(String group) {
-      this.group = group;
-    }
-
-    @Override
-    public String getGroup() {
-      return group;
-    }
-
-    @Override
-    public Integer getId() {
-      return null;
-    }
-
-    @Override
-    public UUID getUuid() {
-      return null;
-    }
-
-    @Override
-    public String getCreatedBy() {
-      return null;
-    }
-
-    @Override
-    public OffsetDateTime getCreatedOn() {
-      return null;
-    }
   }
 
 }

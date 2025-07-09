@@ -1,18 +1,7 @@
 package ca.gc.aafc.dina.export.api.repository;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import java.util.UUID;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.validation.ValidationException;
-
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.hateoas.IanaLinkRelations;
 
 import ca.gc.aafc.dina.exception.ResourceNotFoundException;
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
@@ -22,8 +11,18 @@ import ca.gc.aafc.dina.export.api.service.DataExportTemplateService;
 import ca.gc.aafc.dina.export.api.testsupport.fixtures.DataExportTemplateTestFixture;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocuments;
+import ca.gc.aafc.dina.repository.JsonApiModelAssistant;
 import ca.gc.aafc.dina.testsupport.jsonapi.JsonAPITestHelper;
 import ca.gc.aafc.dina.testsupport.security.WithMockKeycloakUser;
+
+import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.UUID;
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.validation.ValidationException;
 
 @SpringBootTest(properties = "keycloak.enabled: true")
 @Transactional
@@ -47,9 +46,7 @@ public class DataExportTemplateRepositoryIT extends BaseIntegrationTest {
     );
 
     var created = dataExportTemplateRepository.onCreate(docToCreate);
-
-    UUID uuid = UUID.fromString(StringUtils.substringAfterLast(created.getBody().getLink(
-      IanaLinkRelations.SELF).get().getHref(), "/"));
+    UUID uuid = JsonApiModelAssistant.extractUUIDFromRepresentationModelLink(created);
 
     DataExportTemplate result = dataExportTemplateService.findOne(uuid, DataExportTemplate.class);
     assertNotNull(result.getCreatedBy());

@@ -2,11 +2,7 @@ package ca.gc.aafc.dina.export.api.dto;
 
 import ca.gc.aafc.dina.dto.RelatedEntity;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
-import ca.gc.aafc.dina.mapper.CustomFieldAdapter;
-import ca.gc.aafc.dina.mapper.IgnoreDinaMapping;
 
-import io.crnk.core.resource.annotations.JsonApiId;
-import io.crnk.core.resource.annotations.JsonApiResource;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -17,19 +13,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.toedter.spring.hateoas.jsonapi.JsonApiId;
+import com.toedter.spring.hateoas.jsonapi.JsonApiTypeForClass;
+
 @RelatedEntity(DataExport.class)
-@CustomFieldAdapter(adapters = {
-  FieldsAdapter.DataExportQueryFieldAdapter.class,
-  FieldsAdapter.DataExportColumnsFieldAdapter.class,
-  FieldsAdapter.DataExportColumnAliasesFieldAdapter.class
-})
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonApiResource(type = DataExportDto.TYPENAME)
-public class DataExportDto {
+@JsonApiTypeForClass(DataExportDto.TYPENAME)
+public class DataExportDto implements ca.gc.aafc.dina.dto.JsonApiResource {
 
   public static final String TYPENAME = "data-export";
 
@@ -46,15 +41,21 @@ public class DataExportDto {
 
   private String source;
 
-  @IgnoreDinaMapping(reason = "handled by DataExportQueryFieldAdapter")
   private String query;
-
-  @IgnoreDinaMapping(reason = "handled by DataExportColumnsFieldAdapter")
   private List<String> columns;
-
-  @IgnoreDinaMapping(reason = "handled by DataExportColumnsFieldAdapter")
   private List<String> columnAliases;
 
   private Map<String, DataExport.FunctionDef> columnFunctions;
 
+  @Override
+  @JsonIgnore
+  public String getJsonApiType() {
+    return TYPENAME;
+  }
+
+  @Override
+  @JsonIgnore
+  public UUID getJsonApiId() {
+    return uuid;
+  }
 }
