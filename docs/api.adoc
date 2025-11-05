@@ -49,6 +49,23 @@ The file represented by `templateFilename` must exist in the template folder of 
 }
 ----
 
+Where the report template would be
+
+[source, html]
+----
+<html>
+  <head>
+    <title>Test QR Code</title>
+  </head>
+  <body>
+    <div>
+      <img src="${elements[0].barcode.id}.png" width="100" height="100" />
+    </div>
+    <div>${elements[0].data.attributes.materialSampleName}</div>
+  </body>
+</html>
+----
+
 == Data Export Request
 
 Data Exports are running asynchronously. Upon creation using a POST, an export UUID will be returned. The UUID can
