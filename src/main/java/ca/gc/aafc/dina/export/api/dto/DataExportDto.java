@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.dto;
 
 import ca.gc.aafc.dina.dto.RelatedEntity;
+import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 
 import java.time.OffsetDateTime;
@@ -45,6 +46,7 @@ public class DataExportDto implements ca.gc.aafc.dina.dto.JsonApiResource {
   private List<String> columns;
   private List<String> columnAliases;
 
+  private Map<String, DataExportFunction> functions;
   private Map<String, DataExport.FunctionDef> columnFunctions;
 
   @Override

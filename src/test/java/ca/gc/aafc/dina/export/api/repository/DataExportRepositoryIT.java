@@ -11,6 +11,7 @@ import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.ElasticSearchTestContainerInitializer;
 import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
+import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.dto.DataExportDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileController;
@@ -77,10 +78,16 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       .query(query)
       .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
         "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
-        "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong"))
-      .columnFunctions(Map.of("latLong",
-        new DataExport.FunctionDef(DataExport.FunctionName.CONVERT_COORDINATES_DD,
-          List.of("collectingEvent.eventGeom"))))
+        "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong", "concatResult"))
+      .functions(Map.of("latLong",
+        new DataExportFunction(DataExportFunction.FunctionDef.CONVERT_COORDINATES_DD,
+          Map.of( DataExportFunction.CONVERT_COORDINATES_DD_PARAM, "collectingEvent.eventGeom")),
+        "concatResult",
+        new DataExportFunction(DataExportFunction.FunctionDef.CONCAT,
+          Map.of( DataExportFunction.CONCAT_PARAM_ITEMS, List.of("materialSampleName", "const1"),
+            DataExportFunction.CONCAT_PARAM_CONSTANTS, Map.of("const1", "!!!"),
+            DataExportFunction.CONCAT_PARAM_SEPARATOR, "-")))
+      )
       .build();
 
     JsonApiDocument docToCreate = ca.gc.aafc.dina.jsonapi.JsonApiDocuments.createJsonApiDocument(

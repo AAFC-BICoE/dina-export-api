@@ -13,4 +13,5 @@
   <include file="db/changelog/migrations/8-Add_column_functions_to_data_export_table.xml"/>
   <include file="db/changelog/migrations/9-Add_export_options_to_data_export_table.xml"/>
   <include file="db/changelog/migrations/10-Add_data_export_template_table.xml"/>
+  <include file="db/changelog/migrations/11-Add_functions_to_data_export_table.xml"/>
 </databaseChangeLog>
