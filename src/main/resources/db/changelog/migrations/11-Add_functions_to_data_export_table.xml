@@ -8,5 +8,8 @@
         <addColumn tableName="data_export">
             <column name="functions" type="jsonb"/>
         </addColumn>
+        <addColumn tableName="data_export_template">
+            <column name="functions" type="jsonb"/>
+        </addColumn>
     </changeSet>
 </databaseChangeLog>

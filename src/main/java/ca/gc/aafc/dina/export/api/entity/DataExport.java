@@ -105,7 +105,7 @@ public class DataExport implements DinaEntity {
   @Column
   private String[] columnAliases;
 
-  // to be replaced by functions
+  // to be removed in 0.18
   @Type(type = "jsonb")
   @Column
   private Map<String, FunctionDef> columnFunctions;

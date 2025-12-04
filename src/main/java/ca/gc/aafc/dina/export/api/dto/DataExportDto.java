@@ -47,6 +47,8 @@ public class DataExportDto implements ca.gc.aafc.dina.dto.JsonApiResource {
   private List<String> columnAliases;
 
   private Map<String, DataExportFunction> functions;
+
+  // will be removed in 0.18
   private Map<String, DataExport.FunctionDef> columnFunctions;
 
   @Override

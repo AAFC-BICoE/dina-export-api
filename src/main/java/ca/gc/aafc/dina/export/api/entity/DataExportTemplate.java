@@ -27,6 +27,7 @@ import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.Type;
 
 import ca.gc.aafc.dina.entity.DinaEntity;
+import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 
 /**
  * DataExportTemplate represents a template to create {@link DataExport}.
@@ -96,6 +97,12 @@ public class DataExportTemplate implements DinaEntity {
   @Column
   private String[] columnAliases;
 
+  // functions by column
+  @Type(type = "jsonb")
+  @Column
+  private Map<String, DataExportFunction> functions;
+
+  // to be removed in 0.18
   @Type(type = "jsonb")
   @Column
   private Map<String, DataExport.FunctionDef> columnFunctions;
