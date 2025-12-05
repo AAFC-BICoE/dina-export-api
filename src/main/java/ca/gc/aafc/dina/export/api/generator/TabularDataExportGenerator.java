@@ -336,8 +336,8 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   }
 
   /**
-   * Gets all the text for the "attributes" specified by the columns and concatenate them using
-   * the default separator.
+   * Gets all the text for the "attributes" specified by the columns (or constants) and concatenate
+   * them using a separator.
    * @param attributeObjNod
    * @param function
    * @return
@@ -345,10 +345,6 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   private static String handleConcatFunction(ObjectNode attributeObjNod, DataExportFunction function) {
 
     List<String> toConcat = new ArrayList<>();
-    if (!function.areParamsValid()) {
-      throw new IllegalArgumentException("Invalid CONCAT params");
-    }
-
     List<String> items = function.getParamAsList(DataExportFunction.CONCAT_PARAM_ITEMS);
     Map<String, String> constants = function.getParamAsMap(DataExportFunction.CONCAT_PARAM_CONSTANTS);
     String separator = function.params().getOrDefault(DataExportFunction.CONCAT_PARAM_SEPARATOR, DataExportFunction.CONCAT_DEFAULT_SEP).toString();
@@ -372,9 +368,6 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    */
   private static String handleConvertCoordinatesDecimalDegrees(ObjectNode attributeObjNod,
                                                                DataExportFunction function) {
-    if (!function.areParamsValid()) {
-      throw new IllegalArgumentException("Invalid CONVERT_COORDINATES_DD params");
-    }
     String column = function.getParamAsString(DataExportFunction.CONVERT_COORDINATES_DD_PARAM);
     String decimalDegreeCoordinates = null;
 

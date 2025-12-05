@@ -126,19 +126,24 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     assertTrue(lines.get(0).contains("managedAttributes.attribute_1"));
 
     // Check that values are exported
-    // from relationship/included
-    assertTrue(lines.get(1).contains("Montreal"));
+    var line1 = lines.get(1);
 
-    assertTrue(lines.get(1).contains("value ce 1"));
+    // from relationship/included
+    assertTrue(line1.contains("Montreal"));
+
+    assertTrue(line1.contains("value ce 1"));
 
     // check that arrays are exported using ; as element separator
-    assertTrue(lines.get(1).contains("cn1;cn1-1"));
+    assertTrue(line1.contains("cn1;cn1-1"));
 
     // check that to-many relationships are exported in a similar way of arrays
-    assertTrue(lines.get(1).contains("project 1;project 2"));
+    assertTrue(line1.contains("project 1;project 2"));
 
-    // check that the function is working as expected
-    assertTrue(lines.get(1).contains("45.424721,-75.695000"));
+    // Check convert dd function result
+    assertTrue(line1.contains("45.424721,-75.695000"));
+
+    // Check concat function result
+    assertTrue(line1.contains("Yves-!!!"));
 
     // delete the export
     dataExportRepository.onDelete(uuid);
