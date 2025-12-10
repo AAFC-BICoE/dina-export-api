@@ -27,6 +27,7 @@ import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.Type;
 
 import ca.gc.aafc.dina.entity.DinaEntity;
+import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 
 /**
  * Data export represents a single file export. The file can be a package.
@@ -41,6 +42,8 @@ public class DataExport implements DinaEntity {
 
   public enum ExportStatus { NEW, RUNNING, COMPLETED, EXPIRED, ERROR }
   public enum ExportType { TABULAR_DATA, OBJECT_ARCHIVE }
+
+  // to be replaced by DataExportFunction
   public enum FunctionName { CONCAT, CONVERT_COORDINATES_DD }
 
   @Id
@@ -102,9 +105,15 @@ public class DataExport implements DinaEntity {
   @Column
   private String[] columnAliases;
 
+  // to be removed in 0.18
   @Type(type = "jsonb")
   @Column
   private Map<String, FunctionDef> columnFunctions;
+
+  // functions by column
+  @Type(type = "jsonb")
+  @Column
+  private Map<String, DataExportFunction> functions;
 
   @Enumerated(EnumType.STRING)
   @NotNull

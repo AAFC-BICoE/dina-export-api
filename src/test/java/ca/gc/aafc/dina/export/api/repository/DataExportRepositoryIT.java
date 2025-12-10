@@ -11,6 +11,7 @@ import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.ElasticSearchTestContainerInitializer;
 import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
+import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.dto.DataExportDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileController;
@@ -77,10 +78,16 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       .query(query)
       .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
         "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
-        "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong"))
-      .columnFunctions(Map.of("latLong",
-        new DataExport.FunctionDef(DataExport.FunctionName.CONVERT_COORDINATES_DD,
-          List.of("collectingEvent.eventGeom"))))
+        "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong", "concatResult"))
+      .functions(Map.of("latLong",
+        new DataExportFunction(DataExportFunction.FunctionDef.CONVERT_COORDINATES_DD,
+          Map.of( DataExportFunction.CONVERT_COORDINATES_DD_PARAM, "collectingEvent.eventGeom")),
+        "concatResult",
+        new DataExportFunction(DataExportFunction.FunctionDef.CONCAT,
+          Map.of( DataExportFunction.CONCAT_PARAM_ITEMS, List.of("materialSampleName", "const1"),
+            DataExportFunction.CONCAT_PARAM_CONSTANTS, Map.of("const1", "!!!"),
+            DataExportFunction.CONCAT_PARAM_SEPARATOR, "-")))
+      )
       .build();
 
     JsonApiDocument docToCreate = ca.gc.aafc.dina.jsonapi.JsonApiDocuments.createJsonApiDocument(
@@ -119,19 +126,24 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     assertTrue(lines.get(0).contains("managedAttributes.attribute_1"));
 
     // Check that values are exported
-    // from relationship/included
-    assertTrue(lines.get(1).contains("Montreal"));
+    var line1 = lines.get(1);
 
-    assertTrue(lines.get(1).contains("value ce 1"));
+    // from relationship/included
+    assertTrue(line1.contains("Montreal"));
+
+    assertTrue(line1.contains("value ce 1"));
 
     // check that arrays are exported using ; as element separator
-    assertTrue(lines.get(1).contains("cn1;cn1-1"));
+    assertTrue(line1.contains("cn1;cn1-1"));
 
     // check that to-many relationships are exported in a similar way of arrays
-    assertTrue(lines.get(1).contains("project 1;project 2"));
+    assertTrue(line1.contains("project 1;project 2"));
 
-    // check that the function is working as expected
-    assertTrue(lines.get(1).contains("45.424721,-75.695000"));
+    // Check convert dd function result
+    assertTrue(line1.contains("45.424721,-75.695000"));
+
+    // Check concat function result
+    assertTrue(line1.contains("Yves-!!!"));
 
     // delete the export
     dataExportRepository.onDelete(uuid);

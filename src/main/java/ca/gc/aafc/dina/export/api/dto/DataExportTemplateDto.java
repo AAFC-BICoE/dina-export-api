@@ -6,6 +6,7 @@ import com.toedter.spring.hateoas.jsonapi.JsonApiTypeForClass;
 
 import ca.gc.aafc.dina.dto.JsonApiResource;
 import ca.gc.aafc.dina.dto.RelatedEntity;
+import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.entity.DataExportTemplate;
 
@@ -45,6 +46,10 @@ public class DataExportTemplateDto implements JsonApiResource {
 
   private String[] columns;
   private String[] columnAliases;
+
+  private Map<String, DataExportFunction> functions;
+
+  // will be removed in 0.18
   private Map<String, DataExport.FunctionDef> columnFunctions;
 
   @Override
