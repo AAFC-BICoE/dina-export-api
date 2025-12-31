@@ -33,20 +33,27 @@ import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPERE
 
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import lombok.extern.log4j.Log4j2;
 
 /**
@@ -56,23 +63,23 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class TabularDataExportGenerator extends DataExportGenerator {
 
-  private static final TypeRef<List<Map<String, Object>>> JSON_PATH_TYPE_REF = new TypeRef<>() {
-  };
+  private static final TypeRef<List<Map<String, Object>>> JSON_PATH_TYPE_REF = new TypeRef<>() {};
+
+  public static final String NORMALIZE_RELATIONSHIPS_OPTION = "normalizeRelationships";
+  private static final Set<String> PROJECT_PREFIXES = Set.of("projects.");
 
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
   private final Configuration jsonPathConfiguration;
-
   private final DataExportConfig dataExportConfig;
 
   public TabularDataExportGenerator(
-    DataExportStatusService dataExportStatusService,
-    DataExportConfig dataExportConfig,
-    Configuration jsonPathConfiguration, ElasticSearchDataSource elasticSearchDataSource,
-    ObjectMapper objectMapper) {
-
+      DataExportStatusService dataExportStatusService,
+      DataExportConfig dataExportConfig,
+      Configuration jsonPathConfiguration, 
+      ElasticSearchDataSource elasticSearchDataSource,
+      ObjectMapper objectMapper) {
     super(dataExportStatusService);
-
     this.jsonPathConfiguration = jsonPathConfiguration;
     this.elasticSearchDataSource = elasticSearchDataSource;
     this.objectMapper = objectMapper;
@@ -81,8 +88,16 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
   @Override
   public String generateFilename(DataExport dinaExport) {
+    // If normalizing relationships, output will be a ZIP file
+    boolean normalizeRelationships = "true".equalsIgnoreCase(
+        dinaExport.getExportOptions() != null ? 
+        dinaExport.getExportOptions().get(NORMALIZE_RELATIONSHIPS_OPTION) : null);
+    
+    if (normalizeRelationships) {
+      return dinaExport.getUuid() + ".zip";
+    }
+    
     TabularOutput.TabularOutputArgs args = createTabularOutputArgsFrom(dinaExport);
-
     return DataExportConfig.DATA_EXPORT_TABULAR_FILENAME + switch (args.getColumnSeparator()) {
       case TAB -> ".tsv";
       case COMMA -> ".csv";
@@ -91,82 +106,485 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   }
 
   /**
-   * main export method.
-   * @param dinaExport
-   * @return CompletableFuture that will
+   * Main export method.
    */
   @Async(DataExportConfig.DINA_THREAD_POOL_BEAN_NAME)
   public CompletableFuture<UUID> export(DataExport dinaExport) throws IOException {
     DataExport.ExportStatus currStatus = waitForRecord(dinaExport.getUuid());
 
-    // Should only work for NEW record at this point
-    if (DataExport.ExportStatus.NEW == currStatus) {
-      Path exportPath = dataExportConfig.getPathForDataExport(dinaExport).orElse(null);
-      if (exportPath == null) {
-        log.error("Null export path");
-        updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
-        return CompletableFuture.completedFuture(dinaExport.getUuid());
-      }
-
-      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
-
-      try {
-        //Create the directory
-        ensureDirectoryExists(exportPath.getParent());
-
-        // csv output
-        try (Writer w = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
-             TabularOutput<JsonNode> output =
-               TabularOutput.create(createTabularOutputArgsFrom(dinaExport),
-                 new TypeReference<>() {
-                 }, w)) {
-          export(dinaExport.getSource(), objectMapper.writeValueAsString(dinaExport.getQuery()),
-            dinaExport.getFunctions(), output);
-        }
-      } catch (IOException ioEx) {
-        updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
-        throw ioEx;
-      }
-      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
-    } else {
+    if (DataExport.ExportStatus.NEW != currStatus) {
       log.error("Unexpected DataExport status: {}", currStatus);
+      return CompletableFuture.completedFuture(dinaExport.getUuid());
+    }
+
+    Path exportPath = dataExportConfig.getPathForDataExport(dinaExport).orElse(null);
+    if (exportPath == null) {
+      log.error("Null export path");
+      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
+      return CompletableFuture.completedFuture(dinaExport.getUuid());
+    }
+
+    updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
+
+    try {
+      ensureDirectoryExists(exportPath.getParent());
+
+      List<String> expandedColumns = new ArrayList<>(Arrays.asList(dinaExport.getColumns()));
+      List<String> expandedAliases = dinaExport.getColumnAliases() != null ?
+          new ArrayList<>(Arrays.asList(dinaExport.getColumnAliases())) : null;
+
+      expandWildcardsIfNeeded(dinaExport, expandedColumns, expandedAliases);
+
+      boolean normalizeRelationships = "true".equalsIgnoreCase(
+          dinaExport.getExportOptions() != null ? 
+          dinaExport.getExportOptions().get(NORMALIZE_RELATIONSHIPS_OPTION) : null);
+
+      if (normalizeRelationships) {
+        exportWithNormalization(dinaExport, exportPath.getParent(), expandedColumns, expandedAliases);
+        createZipFromCsvFiles(exportPath.getParent(), dinaExport.getUuid());
+      } else {
+        exportStandard(dinaExport, exportPath, expandedColumns, expandedAliases);
+      }
+
+      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
+    } catch (IOException ioEx) {
+      updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
+      throw ioEx;
     }
 
     return CompletableFuture.completedFuture(dinaExport.getUuid());
   }
 
   /**
-   * Creates a {@link TabularOutput.TabularOutputArgs} from {@link DataExport}
-   * @param dinaExport
-   * @return
+   * Expands wildcard columns if any are present.
    */
-  private static TabularOutput.TabularOutputArgs createTabularOutputArgsFrom(DataExport dinaExport) {
+  private void expandWildcardsIfNeeded(DataExport dinaExport, List<String> columns, 
+                                        List<String> aliases) throws IOException {
+    boolean hasWildcards = columns.stream().anyMatch(col -> col.endsWith(".*"));
+    if (hasWildcards) {
+      WildcardColumnExpander expander = new WildcardColumnExpander(
+          dinaExport.getSource(),
+          objectMapper.writeValueAsString(dinaExport.getQuery()),
+          columns,
+          aliases,
+          elasticSearchDataSource,
+          objectMapper,
+          this::flattenRecordRelationships);
+      expander.expandWildcards();
+    }
+  }
 
+  /**
+   * Standard single CSV export.
+   */
+  private void exportStandard(DataExport dinaExport, Path exportPath,
+                               List<String> expandedColumns, List<String> expandedAliases) throws IOException {
+    DataExport expandedExport = DataExport.builder()
+        .uuid(dinaExport.getUuid())
+        .columns(expandedColumns.toArray(new String[0]))
+        .columnAliases(expandedAliases != null ? expandedAliases.toArray(new String[0]) : null)
+        .exportOptions(dinaExport.getExportOptions())
+        .build();
+
+    try (Writer w = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
+         TabularOutput<JsonNode> output = TabularOutput.create(
+             createTabularOutputArgsFrom(expandedExport), new TypeReference<>() {}, w)) {
+      
+      paginateThroughResults(dinaExport.getSource(), 
+          objectMapper.writeValueAsString(dinaExport.getQuery()),
+          hit -> processRecord(hit.id(), hit.source(), dinaExport.getFunctions(), output));
+    }
+  }
+
+  /**
+   * Export with relationship normalization - creates separate samples.csv and projects.csv files.
+   */
+  private void exportWithNormalization(DataExport dinaExport, Path exportDir,
+                                        List<String> expandedColumns,
+                                        List<String> expandedAliases) throws IOException {
+    ensureProjectIdColumn(expandedColumns, expandedAliases);
+    
+    Map<String, List<Integer>> columnsByCategory = categorizeColumns(expandedColumns);
+    List<Integer> sampleColumnIndices = columnsByCategory.get("samples");
+    List<Integer> projectColumnIndices = columnsByCategory.get("projects");
+
+    List<String> sampleColumns = extractColumns(expandedColumns, sampleColumnIndices, false);
+    List<String> projectColumns = extractColumns(expandedColumns, projectColumnIndices, true);
+    List<String> sampleAliases = extractAliases(expandedAliases, sampleColumnIndices);
+    List<String> projectAliases = extractAliases(expandedAliases, projectColumnIndices);
+
+    Map<String, Map<String, Object>> uniqueProjects = new LinkedHashMap<>();
+
+    try (Writer samplesWriter = new FileWriter(exportDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
+         Writer projectsWriter = projectColumns.isEmpty() ? null : 
+             new FileWriter(exportDir.resolve("projects.csv").toFile(), StandardCharsets.UTF_8)) {
+
+      TabularOutput<JsonNode> samplesOutput = createTabularOutput(sampleColumns, sampleAliases, 
+          getColumnSeparator(dinaExport), samplesWriter);
+      TabularOutput<JsonNode> projectsOutput = projectsWriter != null ? 
+          createTabularOutput(projectColumns, projectAliases, getColumnSeparator(dinaExport), projectsWriter) : null;
+
+      paginateThroughResults(dinaExport.getSource(),
+          objectMapper.writeValueAsString(dinaExport.getQuery()),
+          hit -> processRecordWithNormalization(hit.id(), hit.source(), dinaExport.getFunctions(),
+              samplesOutput, projectColumnIndices, expandedColumns, uniqueProjects));
+
+      samplesOutput.close();
+      writeUniqueProjects(projectsOutput, uniqueProjects);
+    }
+
+    log.info("Normalized export completed: samples.csv, projects.csv ({} unique records)", uniqueProjects.size());
+  }
+
+  /**
+   * Paginates through Elasticsearch results using PIT (Point in Time).
+   */
+  private void paginateThroughResults(String sourceIndex, String query, 
+                                       RecordProcessor processor) throws IOException {
+    SearchResponse<JsonNode> response = elasticSearchDataSource.searchWithPIT(sourceIndex, query);
+
+    boolean pageAvailable = !response.hits().hits().isEmpty();
+    while (pageAvailable) {
+      for (Hit<JsonNode> hit : response.hits().hits()) {
+        processor.process(hit);
+      }
+      pageAvailable = false;
+
+      int numberOfHits = response.hits().hits().size();
+      if (elasticSearchDataSource.getPageSize() == numberOfHits) {
+        Hit<JsonNode> lastHit = response.hits().hits().get(numberOfHits - 1);
+        response = elasticSearchDataSource.searchAfter(query, response.pitId(), lastHit.sort());
+        pageAvailable = true;
+      }
+    }
+
+    elasticSearchDataSource.closePointInTime(response.pitId());
+  }
+
+  @FunctionalInterface
+  private interface RecordProcessor {
+    void process(Hit<JsonNode> hit) throws IOException;
+  }
+
+  /**
+   * Prepares an attribute node by flattening nested maps and relationships.
+   */
+  private ObjectNode prepareAttributeNode(String documentId, JsonNode record) {
+    Optional<JsonNode> attributes = JsonHelper.atJsonPtr(record, JSONApiDocumentStructure.ATTRIBUTES_PTR);
+    if (attributes.isEmpty() || !(attributes.get() instanceof ObjectNode attributeObjNode)) {
+      return null;
+    }
+
+    attributeObjNode.put(JSONApiDocumentStructure.ID, documentId);
+    replaceNestedByDotNotation(attributeObjNode);
+
+    Map<String, Object> flatRelationships = flatRelationships(record);
+    Map<String, Object> flatRelationshipsDotNotation =
+        JSONApiDocumentStructure.mergeNestedMapUsingDotNotation(flatRelationships);
+
+    for (var entry : flatRelationshipsDotNotation.entrySet()) {
+      attributeObjNode.set(entry.getKey(), objectMapper.valueToTree(entry.getValue()));
+      replaceNestedByDotNotation(attributeObjNode);
+    }
+
+    return attributeObjNode;
+  }
+
+  /**
+   * Applies export functions (CONCAT, CONVERT_COORDINATES_DD) to the attribute node.
+   */
+  private void applyFunctions(ObjectNode attributeObjNode, Map<String, DataExportFunction> columnFunctions) {
+    if (MapUtils.isEmpty(columnFunctions)) {
+      return;
+    }
+    for (var functionDef : columnFunctions.entrySet()) {
+      switch (functionDef.getValue().functionDef()) {
+        case CONCAT -> attributeObjNode.put(functionDef.getKey(),
+            handleConcatFunction(attributeObjNode, functionDef.getValue()));
+        case CONVERT_COORDINATES_DD -> attributeObjNode.put(functionDef.getKey(),
+            handleConvertCoordinatesDecimalDegrees(attributeObjNode, functionDef.getValue()));
+        default -> log.warn("Unknown function. Ignoring");
+      }
+    }
+  }
+
+  /**
+   * Processes a single record for standard export.
+   */
+  private void processRecord(String documentId, JsonNode record,
+                              Map<String, DataExportFunction> columnFunctions,
+                              DataOutput<JsonNode> output) {
+    if (record == null) return;
+    
+    ObjectNode attributeObjNode = prepareAttributeNode(documentId, record);
+    if (attributeObjNode == null) return;
+
+    applyFunctions(attributeObjNode, columnFunctions);
+    
+    try {
+      output.addRecord(attributeObjNode);
+    } catch (IOException e) {
+      log.error("Error writing record", e);
+    }
+  }
+
+  /**
+   * Processes a single record for normalized export.
+   */
+  private void processRecordWithNormalization(String documentId, JsonNode record,
+                                               Map<String, DataExportFunction> columnFunctions,
+                                               TabularOutput<JsonNode> samplesOutput,
+                                               List<Integer> projectColumnIndices,
+                                               List<String> allColumns,
+                                               Map<String, Map<String, Object>> uniqueProjects) {
+    if (record == null) return;
+
+    ObjectNode attributeObjNode = prepareAttributeNode(documentId, record);
+    if (attributeObjNode == null) return;
+
+    applyFunctions(attributeObjNode, columnFunctions);
+
+    if (!projectColumnIndices.isEmpty()) {
+      extractAndTrackProjects(record, allColumns, projectColumnIndices, uniqueProjects);
+    }
+
+    try {
+      samplesOutput.addRecord(attributeObjNode);
+    } catch (IOException e) {
+      log.error("Error writing record", e);
+    }
+  }
+
+  /**
+   * Flattens record relationships for use by WildcardColumnExpander.
+   */
+  private void flattenRecordRelationships(ObjectNode attributeObjNode, JsonNode record) {
+    replaceNestedByDotNotation(attributeObjNode);
+    Map<String, Object> flatRelationships = flatRelationships(record);
+    Map<String, Object> flatRelationshipsDotNotation =
+        JSONApiDocumentStructure.mergeNestedMapUsingDotNotation(flatRelationships);
+    for (var entry : flatRelationshipsDotNotation.entrySet()) {
+      attributeObjNode.set(entry.getKey(), objectMapper.valueToTree(entry.getValue()));
+      replaceNestedByDotNotation(attributeObjNode);
+    }
+  }
+
+  // ========== Helper Methods ==========
+
+  /**
+   * Strips the "projects." prefix from a column name.
+   */
+  private static String stripProjectPrefix(String column) {
+    for (String prefix : PROJECT_PREFIXES) {
+      if (column.startsWith(prefix)) {
+        return column.substring(prefix.length());
+      }
+    }
+    return column;
+  }
+
+  /**
+   * Ensures projects.id is included if there are project columns.
+   */
+  private void ensureProjectIdColumn(List<String> columns, List<String> aliases) {
+    boolean hasProjectColumns = columns.stream()
+        .anyMatch(col -> PROJECT_PREFIXES.stream().anyMatch(col::startsWith));
+    
+    if (hasProjectColumns && !columns.contains("projects.id")) {
+      columns.add("projects.id");
+      if (aliases != null) {
+        aliases.add("Project ID");
+      }
+    }
+  }
+
+  /**
+   * Categorizes columns into samples and projects based on their prefixes.
+   */
+  private Map<String, List<Integer>> categorizeColumns(List<String> columns) {
+    List<Integer> sampleIndices = new ArrayList<>();
+    List<Integer> projectIndices = new ArrayList<>();
+
+    for (int i = 0; i < columns.size(); i++) {
+      if (PROJECT_PREFIXES.stream().anyMatch(columns.get(i)::startsWith)) {
+        projectIndices.add(i);
+      } else {
+        sampleIndices.add(i);
+      }
+    }
+    return Map.of("samples", sampleIndices, "projects", projectIndices);
+  }
+
+  /**
+   * Extracts columns at the given indices, optionally stripping project prefix.
+   */
+  private List<String> extractColumns(List<String> allColumns, List<Integer> indices, boolean stripPrefix) {
+    return indices.stream()
+        .map(allColumns::get)
+        .map(col -> stripPrefix ? stripProjectPrefix(col) : col)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Extracts aliases at the given indices.
+   */
+  private List<String> extractAliases(List<String> allAliases, List<Integer> indices) {
+    if (allAliases == null) return null;
+    return indices.stream()
+        .map(i -> i < allAliases.size() ? allAliases.get(i) : "")
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Creates a TabularOutput with the given configuration.
+   */
+  private TabularOutput<JsonNode> createTabularOutput(List<String> columns, List<String> aliases,
+                                                       TabularOutput.ColumnSeparator separator, 
+                                                       Writer writer) throws IOException {
+    return TabularOutput.create(
+        TabularOutput.TabularOutputArgs.builder()
+            .headers(columns)
+            .receivedHeadersAliases(aliases)
+            .columnSeparator(separator)
+            .build(),
+        new TypeReference<>() {}, writer);
+  }
+
+  /**
+   * Writes unique projects to the output.
+   */
+  private void writeUniqueProjects(TabularOutput<JsonNode> projectsOutput,
+                                    Map<String, Map<String, Object>> uniqueProjects) throws IOException {
+    if (projectsOutput == null) return;
+    
+    for (Map<String, Object> projectData : uniqueProjects.values()) {
+      ObjectNode projectNode = objectMapper.createObjectNode();
+      for (var entry : projectData.entrySet()) {
+        projectNode.put(entry.getKey(), entry.getValue().toString());
+      }
+      projectsOutput.addRecord(projectNode);
+    }
+    projectsOutput.close();
+  }
+
+  /**
+   * Creates a ZIP file from CSV files and cleans up the originals.
+   */
+  private void createZipFromCsvFiles(Path exportDir, UUID exportId) throws IOException {
+    Path zipPath = exportDir.resolve(exportId.toString() + ".zip");
+    
+    try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipPath.toFile()))) {
+      addFileToZip(zos, exportDir.resolve("samples.csv"), "samples.csv");
+      addFileToZip(zos, exportDir.resolve("projects.csv"), "projects.csv");
+    }
+    
+    Files.deleteIfExists(exportDir.resolve("samples.csv"));
+    Files.deleteIfExists(exportDir.resolve("projects.csv"));
+    
+    log.info("Created ZIP archive: {}", zipPath);
+  }
+
+  private void addFileToZip(ZipOutputStream zos, Path filePath, String entryName) throws IOException {
+    if (Files.exists(filePath)) {
+      zos.putNextEntry(new ZipEntry(entryName));
+      Files.copy(filePath, zos);
+      zos.closeEntry();
+    }
+  }
+
+  private static TabularOutput.TabularOutputArgs createTabularOutputArgsFrom(DataExport dinaExport) {
     List<String> headerAliases = dinaExport.getColumnAliases() != null ?
-      Arrays.asList(dinaExport.getColumnAliases()) : null;
+        Arrays.asList(dinaExport.getColumnAliases()) : null;
 
     var builder = TabularOutput.TabularOutputArgs.builder()
-      .headers(Arrays.asList(dinaExport.getColumns()))
-      .receivedHeadersAliases(headerAliases);
+        .headers(Arrays.asList(dinaExport.getColumns()))
+        .receivedHeadersAliases(headerAliases);
 
     if (MapUtils.isNotEmpty(dinaExport.getExportOptions())) {
       String columnSeparator = dinaExport.getExportOptions().get(TabularOutput.OPTION_COLUMN_SEPARATOR);
       if (columnSeparator != null) {
-        Optional<TabularOutput.ColumnSeparator> sep = TabularOutput.ColumnSeparator.fromString(columnSeparator);
-        sep.ifPresent(s -> {
-          // if it's the default one don't set it
-          if (s != TabularOutput.ColumnSeparator.COMMA) {
-            builder.columnSeparator(s);
-          }
-        });
+        TabularOutput.ColumnSeparator.fromString(columnSeparator)
+            .filter(s -> s != TabularOutput.ColumnSeparator.COMMA)
+            .ifPresent(builder::columnSeparator);
       }
     }
     return builder.build();
   }
 
+  private TabularOutput.ColumnSeparator getColumnSeparator(DataExport dinaExport) {
+    if (MapUtils.isNotEmpty(dinaExport.getExportOptions())) {
+      String columnSeparator = dinaExport.getExportOptions().get(TabularOutput.OPTION_COLUMN_SEPARATOR);
+      if (columnSeparator != null) {
+        return TabularOutput.ColumnSeparator.fromString(columnSeparator)
+            .orElse(TabularOutput.ColumnSeparator.COMMA);
+      }
+    }
+    return TabularOutput.ColumnSeparator.COMMA;
+  }
+
+  /**
+   * Extracts project data directly from the raw JSON:API document's included section.
+   */
+  private void extractAndTrackProjects(JsonNode record, List<String> allColumns,
+                                        List<Integer> projectColumnIndices,
+                                        Map<String, Map<String, Object>> uniqueProjects) {
+    Optional<JsonNode> relNodeOpt = JsonHelper.atJsonPtr(record, JSONApiDocumentStructure.RELATIONSHIP_PTR);
+    Optional<JsonNode> includedNodeOpt = JsonHelper.atJsonPtr(record, JSONApiDocumentStructure.INCLUDED_PTR);
+
+    if (relNodeOpt.isEmpty() || includedNodeOpt.isEmpty()) return;
+
+    JsonNode projectsRel = relNodeOpt.get().get("projects");
+    if (projectsRel == null || !projectsRel.has(JSONApiDocumentStructure.DATA)) return;
+
+    JsonNode projectsData = projectsRel.get(JSONApiDocumentStructure.DATA);
+    if (projectsData == null || projectsData.isNull()) return;
+
+    List<Map<String, Object>> includedDoc = objectMapper.convertValue(includedNodeOpt.get(), LIST_MAP_TYPEREF);
+
+    Iterator<JsonNode> projectRefs = projectsData.isArray() ? 
+        projectsData.elements() : List.of(projectsData).iterator();
+
+    while (projectRefs.hasNext()) {
+      JsonNode projectRef = projectRefs.next();
+      String projectId = projectRef.get(JSONApiDocumentStructure.ID).asText();
+
+      if (uniqueProjects.containsKey(projectId)) continue;
+
+      Map<String, Object> includedProject = extractById(projectId, includedDoc);
+      if (includedProject.isEmpty()) {
+        log.warn("Project {} not found in included section", projectId);
+        continue;
+      }
+
+      @SuppressWarnings("unchecked")
+      Map<String, Object> projectAttributes = (Map<String, Object>) 
+          includedProject.get(JSONApiDocumentStructure.ATTRIBUTES);
+      if (projectAttributes == null) continue;
+
+      Map<String, Object> projectData = new LinkedHashMap<>();
+      projectData.put("id", projectId);
+
+      Map<String, Object> flatProjectAttributes = 
+          JSONApiDocumentStructure.mergeNestedMapUsingDotNotation(projectAttributes);
+
+      for (Integer idx : projectColumnIndices) {
+        String columnName = allColumns.get(idx);
+        String attributeName = stripProjectPrefix(columnName);
+        
+        if (!"id".equals(attributeName)) {
+          Object value = flatProjectAttributes.get(attributeName);
+          if (value != null) {
+            projectData.put(attributeName, value);
+          }
+        }
+      }
+
+      uniqueProjects.put(projectId, projectData);
+    }
+  }
+
   @Override
   public void deleteExport(DataExport dinaExport) throws IOException {
-
     if (dinaExport.getExportType() != DataExport.ExportType.TABULAR_DATA) {
       throw new IllegalArgumentException("Should only be used for ExportType TABULAR_DATA");
     }
@@ -175,96 +593,13 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     deleteIfExists(exportPath);
 
     if (exportPath != null &&
-      DataExportConfig.isExportTypeUsesDirectory(DataExport.ExportType.TABULAR_DATA) &&
-      DataExportConfig.isDataExportDirectory(exportPath.getParent(), dinaExport)) {
+        DataExportConfig.isExportTypeUsesDirectory(DataExport.ExportType.TABULAR_DATA) &&
+        DataExportConfig.isDataExportDirectory(exportPath.getParent(), dinaExport)) {
       deleteIfExists(exportPath.getParent());
     }
   }
 
-  /**
-   * Inner export method
-   * @param sourceIndex
-   * @param query
-   * @param output
-   * @throws IOException
-   */
-  private void export(String sourceIndex, String query,
-                      Map<String, DataExportFunction> exportFunctions,
-                      DataOutput<JsonNode> output) throws IOException {
-    SearchResponse<JsonNode>
-      response = elasticSearchDataSource.searchWithPIT(sourceIndex, query);
-
-    boolean pageAvailable = response.hits().hits().size() != 0;
-    while (pageAvailable) {
-      for (Hit<JsonNode> hit : response.hits().hits()) {
-        processRecord(hit.id(), hit.source(), exportFunctions, output);
-      }
-      pageAvailable = false;
-
-      int numberOfHits = response.hits().hits().size();
-      // if we have a full page, try to get the next one
-      if (elasticSearchDataSource.getPageSize() == numberOfHits) {
-        Hit<JsonNode> lastHit = response.hits().hits().get(numberOfHits - 1);
-        response =
-          elasticSearchDataSource.searchAfter(query, response.pitId(), lastHit.sort());
-        pageAvailable = true;
-      }
-    }
-
-    String pitId = response.pitId();
-    elasticSearchDataSource.closePointInTime(pitId);
-  }
-
-  /**
-   * @param record if null, the record will simply be skipped
-   * @param output
-   * @throws IOException
-   */
-  private void processRecord(String documentId, JsonNode record,
-                             Map<String, DataExportFunction> columnFunctions,
-                             DataOutput<JsonNode> output) throws IOException {
-    if (record == null) {
-      return;
-    }
-
-    Optional<JsonNode> attributes = JsonHelper.atJsonPtr(record, JSONApiDocumentStructure.ATTRIBUTES_PTR);
-    if (attributes.isPresent() && attributes.get() instanceof ObjectNode attributeObjNode) {
-
-      attributeObjNode.put(JSONApiDocumentStructure.ID, documentId);
-
-      // handle nested maps (e.g. managed attributes)
-      replaceNestedByDotNotation(attributeObjNode);
-
-      // handle relationships
-      // Get a map of all relationships (to-one only)
-      Map<String, Object> flatRelationships = flatRelationships(record);
-
-      // transform "collectingEvent": {"location" : "value"} in "collectingEvent.location" : "value"
-      Map<String, Object> flatRelationshipsDotNotation =
-        JSONApiDocumentStructure.mergeNestedMapUsingDotNotation(flatRelationships);
-      // we add the relationships in the attributes using dot notation
-      for (var entry : flatRelationshipsDotNotation.entrySet()) {
-        attributeObjNode.set(entry.getKey(),
-          objectMapper.valueToTree(entry.getValue()));
-        replaceNestedByDotNotation(attributeObjNode);
-      }
-
-      // Check if we have functions to apply
-      if (MapUtils.isNotEmpty(columnFunctions)) {
-        for (var functionDef : columnFunctions.entrySet()) {
-          switch (functionDef.getValue().functionDef()) {
-            case CONCAT -> attributeObjNode.put(functionDef.getKey(),
-              handleConcatFunction(attributeObjNode, functionDef.getValue()));
-            case CONVERT_COORDINATES_DD -> attributeObjNode.put(functionDef.getKey(),
-              handleConvertCoordinatesDecimalDegrees(attributeObjNode,
-                functionDef.getValue()));
-            default -> log.warn("Unknown function. Ignoring");
-          }
-        }
-      }
-      output.addRecord(attributeObjNode);
-    }
-  }
+  // ========== JSON Processing Methods ==========
 
   private Map<String, Object> extractById(String id, List<Map<String, Object>> document) {
     DocumentContext dc = JsonPath.using(jsonPathConfiguration).parse(document);
@@ -284,11 +619,8 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    * @return
    */
   private Map<String, Object> flatRelationships(JsonNode jsonApiDocumentRecord) {
-
-    Optional<JsonNode> relNodeOpt =
-      JsonHelper.atJsonPtr(jsonApiDocumentRecord, JSONApiDocumentStructure.RELATIONSHIP_PTR);
-    Optional<JsonNode> includedNodeOpt =
-      JsonHelper.atJsonPtr(jsonApiDocumentRecord, JSONApiDocumentStructure.INCLUDED_PTR);
+    Optional<JsonNode> relNodeOpt = JsonHelper.atJsonPtr(jsonApiDocumentRecord, JSONApiDocumentStructure.RELATIONSHIP_PTR);
+    Optional<JsonNode> includedNodeOpt = JsonHelper.atJsonPtr(jsonApiDocumentRecord, JSONApiDocumentStructure.INCLUDED_PTR);
 
     if (relNodeOpt.isEmpty() || includedNodeOpt.isEmpty()) {
       return Map.of();
@@ -296,34 +628,30 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
     Map<String, Object> flatRelationships = new HashMap<>();
     JsonNode relNode = relNodeOpt.get();
-    JsonNode includedNode = includedNodeOpt.get();
+    List<Map<String, Object>> includedDoc = objectMapper.convertValue(includedNodeOpt.get(), LIST_MAP_TYPEREF);
 
-    List<Map<String, Object>> includedDoc = objectMapper.convertValue(includedNode, LIST_MAP_TYPEREF);
-
-    // loop over relationships
     Iterator<String> relKeys = relNode.fieldNames();
     while (relKeys.hasNext()) {
       String relName = relKeys.next();
       JsonNode currRelNode = relNode.get(relName);
-      // if it's not an array (to-one), we can just take it as is
+      
       if (!currRelNode.isArray() &&
-        currRelNode.has(JSONApiDocumentStructure.DATA) &&
-        !currRelNode.get(JSONApiDocumentStructure.DATA).isNull() &&
-        !currRelNode.get(JSONApiDocumentStructure.DATA).isArray()) {
-        // get the id value from the relationships section
+          currRelNode.has(JSONApiDocumentStructure.DATA) &&
+          !currRelNode.get(JSONApiDocumentStructure.DATA).isNull() &&
+          !currRelNode.get(JSONApiDocumentStructure.DATA).isArray()) {
         String idValue = currRelNode.findValue(JSONApiDocumentStructure.ID).asText();
-        // pull the nested-document from the included section
-        flatRelationships.put(relName,
-          extractById(idValue, includedDoc).get(JSONApiDocumentStructure.ATTRIBUTES));
+        flatRelationships.put(relName, extractById(idValue, includedDoc).get(JSONApiDocumentStructure.ATTRIBUTES));
       } else if (JsonHelper.hasFieldAndIsArray(currRelNode, JSONApiDocumentStructure.DATA)) {
-        // if "data" is an array (to-many)
         List<Map<String, Object>> toMerge = new ArrayList<>();
         currRelNode.get(JSONApiDocumentStructure.DATA).elements().forEachRemaining(el -> {
           String idValue = el.findValue(JSONApiDocumentStructure.ID).asText();
-          // pull the included-document from the included section
-          var doc = extractById(idValue, includedDoc).get(JSONApiDocumentStructure.ATTRIBUTES);
+          Map<String, Object> includedDocMap = extractById(idValue, includedDoc);
+          var doc = includedDocMap.get(JSONApiDocumentStructure.ATTRIBUTES);
           if (doc != null) {
-            toMerge.add((Map<String, Object>) doc);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> docWithId = new HashMap<>((Map<String, Object>) doc);
+            docWithId.put(JSONApiDocumentStructure.ID, includedDocMap.get(JSONApiDocumentStructure.ID));
+            toMerge.add(docWithId);
           } else {
             log.warn("Can't find included document {}", idValue);
           }
@@ -331,7 +659,6 @@ public class TabularDataExportGenerator extends DataExportGenerator {
         flatRelationships.put(relName, flatToMany(toMerge));
       }
     }
-
     return flatRelationships;
   }
 
@@ -343,11 +670,11 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    * @return
    */
   private static String handleConcatFunction(ObjectNode attributeObjNod, DataExportFunction function) {
-
     List<String> toConcat = new ArrayList<>();
     List<String> items = function.getParamAsList(DataExportFunction.CONCAT_PARAM_ITEMS);
     Map<String, String> constants = function.getParamAsMap(DataExportFunction.CONCAT_PARAM_CONSTANTS);
-    String separator = function.params().getOrDefault(DataExportFunction.CONCAT_PARAM_SEPARATOR, DataExportFunction.CONCAT_DEFAULT_SEP).toString();
+    String separator = function.params()
+        .getOrDefault(DataExportFunction.CONCAT_PARAM_SEPARATOR, DataExportFunction.CONCAT_DEFAULT_SEP).toString();
 
     for (String col : items) {
       if (attributeObjNod.has(col)) {
@@ -369,20 +696,17 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   private static String handleConvertCoordinatesDecimalDegrees(ObjectNode attributeObjNod,
                                                                DataExportFunction function) {
     String column = function.getParamAsString(DataExportFunction.CONVERT_COORDINATES_DD_PARAM);
-    String decimalDegreeCoordinates = null;
-
     JsonNode coordinates = attributeObjNod.get(column);
+    
     if (coordinates != null && coordinates.isArray()) {
       List<JsonNode> longLatNode = IteratorUtils.toList(coordinates.iterator());
       if (longLatNode.size() == 2) {
-        decimalDegreeCoordinates = String.format(DataExportFunction.COORDINATES_DD_FORMAT,
-          longLatNode.get(1).asDouble(), longLatNode.get(0).asDouble());
+        return String.format(DataExportFunction.COORDINATES_DD_FORMAT,
+            longLatNode.get(1).asDouble(), longLatNode.get(0).asDouble());
       }
     }
-    if (StringUtils.isBlank(decimalDegreeCoordinates)) {
-      log.debug("Invalid Coordinates format. Array of doubles in form of [lon,lat] expected");
-    }
-    return decimalDegreeCoordinates;
+    log.debug("Invalid Coordinates format. Array of doubles in form of [lon,lat] expected");
+    return null;
   }
 
   /**
@@ -392,15 +716,17 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    */
   public static Map<String, Object> flatToMany(List<Map<String, Object>> toMerge) {
     Map<String, Object> flatToManyRelationships = new HashMap<>();
-
     for (Map<String, Object> doc : toMerge) {
+      if (doc == null) {
+        continue;
+      }
       for (var entry : doc.entrySet()) {
-        if (flatToManyRelationships.containsKey(entry.getKey())) {
-          flatToManyRelationships.computeIfPresent(entry.getKey(),
-            (k, v) -> v + ";" + entry.getValue());
-        } else {
-          flatToManyRelationships.put(entry.getKey(), entry.getValue());
+        // Skip null values - HashMap.merge throws NPE on null values
+        if (entry.getValue() == null) {
+          continue;
         }
+        flatToManyRelationships.merge(entry.getKey(), entry.getValue(), 
+            (v1, v2) -> v1 + ";" + v2);
       }
     }
     return flatToManyRelationships;
@@ -412,19 +738,15 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    * @param attributeObjNode the object node where to replace the nested map(s)
    */
   private void replaceNestedByDotNotation(ObjectNode attributeObjNode) {
-    // handle nested maps (e.g. managed attributes)
     JSONApiDocumentStructure.ExtractNestedMapResult nestedObjectsResult =
-      JSONApiDocumentStructure.extractNestedMapUsingDotNotation(objectMapper.convertValue(attributeObjNode, MAP_TYPEREF));
+        JSONApiDocumentStructure.extractNestedMapUsingDotNotation(
+            objectMapper.convertValue(attributeObjNode, MAP_TYPEREF));
 
-    // we add the nested objects with dot notation version
     for (var nestedMap : nestedObjectsResult.nestedMapsMap().entrySet()) {
-      attributeObjNode.set(nestedMap.getKey(),
-        objectMapper.valueToTree(nestedMap.getValue()));
+      attributeObjNode.set(nestedMap.getKey(), objectMapper.valueToTree(nestedMap.getValue()));
     }
-    // remove previous entries
     for (String key : nestedObjectsResult.usedKeys()) {
       attributeObjNode.remove(key);
     }
   }
-
 }

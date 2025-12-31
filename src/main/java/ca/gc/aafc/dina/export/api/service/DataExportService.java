@@ -32,6 +32,7 @@ public class DataExportService extends DefaultDinaService<DataExport> {
    * @param baseDAO
    * @param validator
    * @param tabularDataExportGenerator
+   * @param objectStoreExportGenerator
    * @param asyncConsumer optional consumer to get the Future created for the async export
    */
   public DataExportService(BaseDAO baseDAO,
@@ -52,14 +53,14 @@ public class DataExportService extends DefaultDinaService<DataExport> {
       dinaExport.setUuid(UUID.randomUUID());
     }
     dinaExport.setStatus(DataExport.ExportStatus.NEW);
-    dinaExport.setFilename(generatorByExportType(dinaExport.getExportType()).generateFilename(dinaExport));
+    dinaExport.setFilename(generatorByExportType(dinaExport).generateFilename(dinaExport));
   }
 
   @Override
   public void postCreate(DataExport dinaExport) {
     flush();
 
-    DataExportGenerator exportGenerator = generatorByExportType(dinaExport.getExportType());
+    DataExportGenerator exportGenerator = generatorByExportType(dinaExport);
 
     try {
       if (asyncConsumer == null) {
@@ -87,7 +88,7 @@ public class DataExportService extends DefaultDinaService<DataExport> {
 
   public void delete(DataExport dinaExport, boolean callExportGenerator) {
     if (callExportGenerator) {
-      DataExportGenerator exportGenerator = generatorByExportType(dinaExport.getExportType());
+      DataExportGenerator exportGenerator = generatorByExportType(dinaExport);
       try {
         exportGenerator.deleteExport(dinaExport);
       } catch (IOException e) {
@@ -97,8 +98,8 @@ public class DataExportService extends DefaultDinaService<DataExport> {
     super.delete(dinaExport);
   }
 
-  private DataExportGenerator generatorByExportType(DataExport.ExportType type) {
-    return switch (type) {
+  private DataExportGenerator generatorByExportType(DataExport export) {
+    return switch (export.getExportType()) {
       case TABULAR_DATA -> tabularDataExportGenerator;
       case OBJECT_ARCHIVE -> objectStoreExportGenerator;
     };
