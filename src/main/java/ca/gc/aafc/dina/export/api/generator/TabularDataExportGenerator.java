@@ -139,8 +139,12 @@ public class TabularDataExportGenerator extends DataExportGenerator {
           dinaExport.getExportOptions().get(NORMALIZE_RELATIONSHIPS_OPTION) : null);
 
       if (normalizeRelationships) {
-        exportWithNormalization(dinaExport, exportPath.getParent(), expandedColumns, expandedAliases);
-        createZipFromCsvFiles(exportPath.getParent(), dinaExport.getUuid());
+        Path parentDir = exportPath.getParent();
+        if (parentDir == null) {
+          throw new IllegalStateException("Export path has no parent directory");
+        }
+        exportWithNormalization(dinaExport, parentDir, expandedColumns, expandedAliases);
+        createZipFromCsvFiles(parentDir, dinaExport.getUuid());
       } else {
         exportStandard(dinaExport, exportPath, expandedColumns, expandedAliases);
       }
