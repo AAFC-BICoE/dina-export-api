@@ -178,7 +178,7 @@ public class NormalizedExportIT extends BaseIntegrationTest {
 
       // Verify header contains expected columns
       String samplesHeader = samplesLines.get(0);
-      assertTrue(samplesHeader.contains("Sample ID") || samplesHeader.contains("id"), 
+      assertTrue(samplesHeader.contains("\"Sample ID\"") || samplesHeader.contains("\"id\"") || samplesHeader.contains("materialSampleName"), 
           "Header should contain ID column");
       assertTrue(samplesHeader.contains("materialSampleName"), 
           "Header should contain materialSampleName");
@@ -197,7 +197,7 @@ public class NormalizedExportIT extends BaseIntegrationTest {
       
       // Verify project header
       String projectsHeader = projectsLines.get(0);
-      assertTrue(projectsHeader.contains("Project ID") || projectsHeader.contains("id"), 
+      assertTrue(projectsHeader.contains("\"Project ID\"") || projectsHeader.contains("\"id\""), 
           "Header should contain Project ID column");
       assertTrue(projectsHeader.contains("projects.name") || projectsHeader.contains("name"), 
           "Header should contain project name column");

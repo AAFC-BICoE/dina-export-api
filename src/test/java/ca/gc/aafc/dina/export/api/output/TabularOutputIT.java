@@ -42,8 +42,8 @@ public class TabularOutputIT {
       output.addRecord(jNode);
     }
     List<String> fileContent = Files.readAllLines(tmpFile);
-    assertTrue(fileContent.getFirst().startsWith("col1"));
-    assertTrue(fileContent.get(1).startsWith("a\t"));
+    assertTrue(fileContent.getFirst().startsWith("\"col1\""));
+    assertTrue(fileContent.get(1).startsWith("\"a\"\t"));
   }
 
 
@@ -70,7 +70,7 @@ public class TabularOutputIT {
       output.addRecord(jNode);
     }
     List<String> fileContent = Files.readAllLines(tmpFile);
-    assertTrue(fileContent.getFirst().startsWith("c1"));
+    assertTrue(fileContent.getFirst().startsWith("\"c1\""));
   }
 
   @Test
@@ -97,6 +97,6 @@ public class TabularOutputIT {
     }
     List<String> fileContent = Files.readAllLines(tmpFile);
     //the real name should be used since the alias is empty
-    assertTrue(fileContent.getFirst().startsWith("col1"));
+    assertTrue(fileContent.getFirst().startsWith("\"col1\""));
   }
 }
