@@ -3,7 +3,6 @@ package ca.gc.aafc.dina.export.api.generator;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -63,7 +62,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class TabularDataExportGenerator extends DataExportGenerator {
 
-  private static final TypeRef<List<Map<String, Object>>> JSON_PATH_TYPE_REF = new TypeRef<>() {};
+  private static final TypeRef<List<Map<String, Object>>> JSON_PATH_TYPE_REF = new TypeRef<>() { };
 
   public static final String NORMALIZE_RELATIONSHIPS_OPTION = "normalizeRelationships";
   private static final Set<String> PROJECT_PREFIXES = Set.of("projects.");
@@ -188,7 +187,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
     try (Writer w = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
          TabularOutput<JsonNode> output = TabularOutput.create(
-             createTabularOutputArgsFrom(expandedExport), new TypeReference<>() {}, w)) {
+             createTabularOutputArgsFrom(expandedExport), new TypeReference<>() { }, w)) {
       
       paginateThroughResults(dinaExport.getSource(), 
           objectMapper.writeValueAsString(dinaExport.getQuery()),
@@ -314,10 +313,14 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   private void processRecord(String documentId, JsonNode record,
                               Map<String, DataExportFunction> columnFunctions,
                               DataOutput<JsonNode> output) {
-    if (record == null) return;
+    if (record == null) {
+      return;
+    }
     
     ObjectNode attributeObjNode = prepareAttributeNode(documentId, record);
-    if (attributeObjNode == null) return;
+    if (attributeObjNode == null) {
+      return;
+    }
 
     applyFunctions(attributeObjNode, columnFunctions);
     
@@ -337,10 +340,14 @@ public class TabularDataExportGenerator extends DataExportGenerator {
                                                List<Integer> projectColumnIndices,
                                                List<String> allColumns,
                                                Map<String, Map<String, Object>> uniqueProjects) {
-    if (record == null) return;
+    if (record == null) {
+      return;
+    }
 
     ObjectNode attributeObjNode = prepareAttributeNode(documentId, record);
-    if (attributeObjNode == null) return;
+    if (attributeObjNode == null) {
+      return;
+    }
 
     applyFunctions(attributeObjNode, columnFunctions);
 
@@ -429,7 +436,9 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    * Extracts aliases at the given indices.
    */
   private List<String> extractAliases(List<String> allAliases, List<Integer> indices) {
-    if (allAliases == null) return null;
+    if (allAliases == null) {
+      return null;
+    }
     return indices.stream()
         .map(i -> i < allAliases.size() ? allAliases.get(i) : "")
         .collect(Collectors.toList());
@@ -447,7 +456,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
             .receivedHeadersAliases(aliases)
             .columnSeparator(separator)
             .build(),
-        new TypeReference<>() {}, writer);
+        new TypeReference<>() { }, writer);
   }
 
   /**
@@ -455,8 +464,10 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    */
   private void writeUniqueProjects(TabularOutput<JsonNode> projectsOutput,
                                     Map<String, Map<String, Object>> uniqueProjects) throws IOException {
-    if (projectsOutput == null) return;
-    
+    if (projectsOutput == null) {
+      return;
+    }
+
     for (Map<String, Object> projectData : uniqueProjects.values()) {
       ObjectNode projectNode = objectMapper.createObjectNode();
       for (var entry : projectData.entrySet()) {
@@ -531,13 +542,19 @@ public class TabularDataExportGenerator extends DataExportGenerator {
     Optional<JsonNode> relNodeOpt = JsonHelper.atJsonPtr(record, JSONApiDocumentStructure.RELATIONSHIP_PTR);
     Optional<JsonNode> includedNodeOpt = JsonHelper.atJsonPtr(record, JSONApiDocumentStructure.INCLUDED_PTR);
 
-    if (relNodeOpt.isEmpty() || includedNodeOpt.isEmpty()) return;
+    if (relNodeOpt.isEmpty() || includedNodeOpt.isEmpty()) {
+      return;
+    }
 
     JsonNode projectsRel = relNodeOpt.get().get("projects");
-    if (projectsRel == null || !projectsRel.has(JSONApiDocumentStructure.DATA)) return;
+    if (projectsRel == null || !projectsRel.has(JSONApiDocumentStructure.DATA)) {
+      return;
+    }
 
     JsonNode projectsData = projectsRel.get(JSONApiDocumentStructure.DATA);
-    if (projectsData == null || projectsData.isNull()) return;
+    if (projectsData == null || projectsData.isNull()) {
+      return;
+    }
 
     List<Map<String, Object>> includedDoc = objectMapper.convertValue(includedNodeOpt.get(), LIST_MAP_TYPEREF);
 
@@ -548,7 +565,9 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       JsonNode projectRef = projectRefs.next();
       String projectId = projectRef.get(JSONApiDocumentStructure.ID).asText();
 
-      if (uniqueProjects.containsKey(projectId)) continue;
+      if (uniqueProjects.containsKey(projectId)) {
+        continue;
+      }
 
       Map<String, Object> includedProject = extractById(projectId, includedDoc);
       if (includedProject.isEmpty()) {
@@ -559,7 +578,9 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       @SuppressWarnings("unchecked")
       Map<String, Object> projectAttributes = (Map<String, Object>) 
           includedProject.get(JSONApiDocumentStructure.ATTRIBUTES);
-      if (projectAttributes == null) continue;
+      if (projectAttributes == null) {
+        continue;
+      }
 
       Map<String, Object> projectData = new LinkedHashMap<>();
       projectData.put("id", projectId);
