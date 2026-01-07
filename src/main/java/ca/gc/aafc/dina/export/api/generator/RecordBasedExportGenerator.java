@@ -17,6 +17,7 @@ import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
 import ca.gc.aafc.dina.json.JsonHelper;
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.LIST_MAP_TYPEREF;
 
@@ -421,6 +422,9 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   /**
    * Creates a ZIP file from all CSV files in the directory and cleans up the originals.
    */
+  @SuppressFBWarnings(
+      value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE",
+      justification = "Files from Files.list() always have valid filenames")
   private void createZipFromCsvFiles(Path exportDir, UUID exportId) throws IOException {
     Path zipPath = exportDir.resolve(exportId.toString() + ".zip");
     
