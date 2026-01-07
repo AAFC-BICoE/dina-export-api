@@ -75,6 +75,125 @@ public class NormalizedExportIT extends BaseIntegrationTest {
   }
 
   @Test
+  public void testNormalizedExportWithCollectingEvent()
+      throws IOException, ExecutionException, InterruptedException,
+             ca.gc.aafc.dina.exception.ResourceNotFoundException,
+             ca.gc.aafc.dina.exception.ResourceGoneException {
+
+    // Setup ElasticSearch index with test data
+    ElasticSearchTestUtils.createIndex(esClient, MAT_SAMPLE_INDEX,
+        "elasticsearch/material_sample_index_settings.json");
+
+    // Create sample with collectingEvent
+    UUID sampleId1 = UUID.fromString("019b3205-330a-7999-9168-a841571cb3bb");
+    UUID collectingEventId = UUID.fromString("019b3205-3266-7c5f-91dd-7aa147a21d11");
+    UUID projectId = UUID.fromString("019b6a47-f755-7b2b-a3c1-79327203e928");
+
+    String testDoc = buildTestDocumentWithCollectingEvent(sampleId1, collectingEventId, projectId);
+    ElasticSearchTestUtils.indexDocument(esClient, MAT_SAMPLE_INDEX, sampleId1.toString(), testDoc);
+
+    // Wait for indexing
+    Thread.sleep(1000);
+
+    // Create normalized export with collectingEvent columns
+    UUID exportUuid = UUID.randomUUID();
+
+    DataExport dataExport = DataExport.builder()
+        .uuid(exportUuid)
+        .name("CollectingEvent Export Test")
+        .createdBy("test-user")
+        .source(MAT_SAMPLE_INDEX)
+        .exportType(DataExport.ExportType.TABULAR_DATA)
+        .query(Map.of("query", Map.of("match_all", Map.of())))
+        .columns(new String[]{
+            "materialSampleName",
+            "collectingEvent.dwcCountry",
+            "collectingEvent.startEventDateTime",
+            "collectingEvent.extensionValues.mixs_soil_v5.submitted_to_insdc",
+            "collectingEvent.extensionValues.mixs_soil_v5.dna_storage_conditons",
+            "projects.name"
+        })
+        .columnAliases(new String[]{
+            "Sample Name",
+            "Country",
+            "Collection Date",
+            "MIxS Soil v5submitted_to_insdc",
+            "MIxS Soil v5dna_storage_conditons",
+            "Project Name"
+        })
+        .exportOptions(Map.of(
+            "normalizeRelationships", "true",
+            "columnSeparator", "COMMA"
+        ))
+        .build();
+
+    dataExportServiceTransactionWrapper.createEntity(dataExport);
+
+    // Wait for async processing
+    int taskIndex = asyncConsumer.getAccepted().size() - 1;
+    asyncConsumer.getAccepted().get(taskIndex).get();
+
+    // Verify export completed
+    DataExportDto savedDataExportDto = dataExportRepository.getOne(exportUuid, null).getDto();
+    assertEquals(DataExport.ExportStatus.COMPLETED, savedDataExportDto.getStatus());
+
+    // Download and verify ZIP
+    ResponseEntity<InputStreamResource> response =
+        fileController.downloadFile(exportUuid, FileController.DownloadType.DATA_EXPORT);
+
+    assertNotNull(response);
+    assertEquals(200, response.getStatusCode().value());
+
+    // Extract and verify ZIP contents
+    try (ZipInputStream zis = new ZipInputStream(response.getBody().getInputStream())) {
+      List<String> samplesLines = null;
+      List<String> collectingEventLines = null;
+      List<String> projectsLines = null;
+
+      ZipEntry entry;
+      while ((entry = zis.getNextEntry()) != null) {
+        String fileName = entry.getName();
+        List<String> lines = readLinesFromZipEntry(zis);
+
+        System.out.println("\n=== " + fileName + " ===");
+        lines.forEach(System.out::println);
+
+        if ("samples.csv".equals(fileName)) {
+          samplesLines = lines;
+        } else if ("collectingEvent.csv".equals(fileName)) {
+          collectingEventLines = lines;
+        } else if ("projects.csv".equals(fileName)) {
+          projectsLines = lines;
+        }
+
+        zis.closeEntry();
+      }
+
+      // Verify samples.csv
+      assertNotNull(samplesLines, "samples.csv should exist");
+      assertEquals(2, samplesLines.size(), "Should have header + 1 sample row");
+
+      // Verify collectingEvent.csv - THIS IS THE KEY TEST
+      assertNotNull(collectingEventLines, "collectingEvent.csv should exist");
+      System.out.println("\nCollectingEvent lines count: " + collectingEventLines.size());
+      assertTrue(collectingEventLines.size() >= 2, 
+          "collectingEvent.csv should have header + at least 1 data row, but has: " + collectingEventLines.size());
+      
+      // Verify collectingEvent data
+      if (collectingEventLines.size() > 1) {
+        String dataRow = collectingEventLines.get(1);
+        System.out.println("CollectingEvent data row: " + dataRow);
+        assertTrue(dataRow.contains(collectingEventId.toString()), 
+            "collectingEvent row should contain the event ID");
+      }
+
+      // Verify projects.csv
+      assertNotNull(projectsLines, "projects.csv should exist");
+      assertTrue(projectsLines.size() >= 2, "Should have header + at least 1 project row");
+    }
+  }
+
+  @Test
   public void testNormalizedExportWithProjectFilter()
       throws IOException, ExecutionException, InterruptedException,
              ca.gc.aafc.dina.exception.ResourceNotFoundException,
@@ -211,6 +330,83 @@ public class NormalizedExportIT extends BaseIntegrationTest {
                  projectDataRow.contains("Test Project 1"),
           "Project row should contain project1 ID or name");
     }
+  }
+
+  /**
+   * Builds a test material sample document with collectingEvent and project relationships.
+   */
+  private String buildTestDocumentWithCollectingEvent(UUID sampleId, UUID collectingEventId, UUID projectId) {
+    return """
+    {
+      "data": {
+        "id": "%s",
+        "type": "material-sample",
+        "attributes": {
+          "version": 1,
+          "group": "cnc",
+          "createdOn": "2025-12-18T15:12:40.164167Z",
+          "createdBy": "cnc-su",
+          "materialSampleName": "test-sample-001",
+          "publiclyReleasable": true
+        },
+        "relationships": {
+          "collectingEvent": {
+            "data": {
+              "id": "%s",
+              "type": "collecting-event"
+            }
+          },
+          "projects": {
+            "data": [{
+              "id": "%s",
+              "type": "project"
+            }]
+          }
+        }
+      },
+      "included": [
+        {
+          "id": "%s",
+          "type": "collecting-event",
+          "attributes": {
+            "version": 1,
+            "group": "cnc",
+            "createdBy": "cnc-su",
+            "createdOn": "2025-12-18T15:12:40.048884Z",
+            "dwcCountry": "Canada",
+            "dwcStateProvince": "Ontario",
+            "startEventDateTime": "2025-12-01T10:00:00Z",
+            "dwcVerbatimSRS": "WGS84 (EPSG:4326)",
+            "publiclyReleasable": true,
+            "extensionValues": {
+              "mixs_soil_v5": {
+                "submitted_to_insdc": "yes",
+                "dna_storage_conditons": "test"
+              }
+            }
+          }
+        },
+        {
+          "id": "%s",
+          "type": "project",
+          "attributes": {
+            "createdOn": "2025-12-29T13:24:20.157855Z",
+            "createdBy": "cnc-su",
+            "group": "cnc",
+            "name": "Test project",
+            "startDate": "2025-12-29",
+            "status": "Ongoing"
+          }
+        }
+      ]
+    }
+    """.formatted(
+        sampleId.toString(),
+        collectingEventId.toString(),
+        projectId.toString(),
+        collectingEventId.toString(),
+        projectId.toString()
+    );
   }
 
   /**

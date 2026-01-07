@@ -436,7 +436,10 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     
     try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipPath.toFile()))) {
       for (Path csvFile : csvFiles) {
-        addFileToZip(zos, csvFile, csvFile.getFileName().toString());
+        String fileName = csvFile.getFileName() != null 
+            ? csvFile.getFileName().toString() 
+            : csvFile.toString();
+        addFileToZip(zos, csvFile, fileName);
       }
     }
     
