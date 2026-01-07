@@ -23,20 +23,15 @@ import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.LIST_MAP_T
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -150,7 +145,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     
     // Create composite output that routes to multiple CSV files
     try (CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
-        entityConfigs, new TypeReference<>() {}, exportDir)) {
+        entityConfigs, new TypeReference<>() { }, exportDir)) {
       
       // Process all records
       paginateThroughResults(dinaExport.getSource(),
@@ -421,7 +416,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       List<String> columns,
       List<String> aliases,
       List<Integer> columnIndices
-  ) {}
+  ) { }
 
   /**
    * Creates a ZIP file from all CSV files in the directory and cleans up the originals.
@@ -497,9 +492,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
           extractEntityFromIncluded(entityId, includedDoc, entityInfo, uniqueRecords);
         }
       });
-    } 
-    // Handle to-one relationships (single entity object)
-    else {
+    } else {
+      // Handle to-one relationships (single entity object)
       String entityId = entityData.get(JSONApiDocumentStructure.ID).asText();
       if (!uniqueRecords.containsKey(entityId)) {
         extractEntityFromIncluded(entityId, includedDoc, entityInfo, uniqueRecords);
