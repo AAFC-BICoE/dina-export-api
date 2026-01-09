@@ -18,8 +18,10 @@ import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.TypeRef;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
+import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.output.TabularOutput;
+import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
 import ca.gc.aafc.dina.json.JsonHelper;
@@ -56,9 +58,6 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
   private static final TypeRef<List<Map<String, Object>>> JSON_PATH_TYPE_REF = new TypeRef<>() {
   };
-  private static final String COORDINATES_DD_FORMAT = "%f,%f";
-  private static final String DEFAULT_CONCAT_SEP = ",";
-
 
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
@@ -122,7 +121,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
                  new TypeReference<>() {
                  }, w)) {
           export(dinaExport.getSource(), objectMapper.writeValueAsString(dinaExport.getQuery()),
-            dinaExport.getColumnFunctions(), output);
+            dinaExport.getFunctions(), output);
         }
       } catch (IOException ioEx) {
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
@@ -190,15 +189,15 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    * @throws IOException
    */
   private void export(String sourceIndex, String query,
-                      Map<String, DataExport.FunctionDef> columnFunctions,
-                      TabularOutput<JsonNode> output) throws IOException {
+                      Map<String, DataExportFunction> exportFunctions,
+                      DataOutput<JsonNode> output) throws IOException {
     SearchResponse<JsonNode>
       response = elasticSearchDataSource.searchWithPIT(sourceIndex, query);
 
     boolean pageAvailable = response.hits().hits().size() != 0;
     while (pageAvailable) {
       for (Hit<JsonNode> hit : response.hits().hits()) {
-        processRecord(hit.id(), hit.source(), columnFunctions, output);
+        processRecord(hit.id(), hit.source(), exportFunctions, output);
       }
       pageAvailable = false;
 
@@ -222,8 +221,8 @@ public class TabularDataExportGenerator extends DataExportGenerator {
    * @throws IOException
    */
   private void processRecord(String documentId, JsonNode record,
-                             Map<String, DataExport.FunctionDef> columnFunctions,
-                             TabularOutput<JsonNode> output) throws IOException {
+                             Map<String, DataExportFunction> columnFunctions,
+                             DataOutput<JsonNode> output) throws IOException {
     if (record == null) {
       return;
     }
@@ -253,17 +252,17 @@ public class TabularDataExportGenerator extends DataExportGenerator {
       // Check if we have functions to apply
       if (MapUtils.isNotEmpty(columnFunctions)) {
         for (var functionDef : columnFunctions.entrySet()) {
-          switch (functionDef.getValue().functionName()) {
+          switch (functionDef.getValue().functionDef()) {
             case CONCAT -> attributeObjNode.put(functionDef.getKey(),
-              handleConcatFunction(attributeObjNode, functionDef.getValue().params()));
+              handleConcatFunction(attributeObjNode, functionDef.getValue()));
             case CONVERT_COORDINATES_DD -> attributeObjNode.put(functionDef.getKey(),
               handleConvertCoordinatesDecimalDegrees(attributeObjNode,
-                functionDef.getValue().params()));
+                functionDef.getValue()));
             default -> log.warn("Unknown function. Ignoring");
           }
         }
       }
-      output.addRecord("record", attributeObjNode);
+      output.addRecord("record",attributeObjNode);
     }
   }
 
@@ -337,38 +336,47 @@ public class TabularDataExportGenerator extends DataExportGenerator {
   }
 
   /**
-   * Gets all the text for the "attributes" specified by the columns and concatenate them using
-   * the default separator.
+   * Gets all the text for the "attributes" specified by the columns (or constants) and concatenate
+   * them using a separator.
    * @param attributeObjNod
-   * @param columns
+   * @param function
    * @return
    */
-  private static String handleConcatFunction(ObjectNode attributeObjNod, List<String> columns) {
+  private static String handleConcatFunction(ObjectNode attributeObjNod, DataExportFunction function) {
+
     List<String> toConcat = new ArrayList<>();
-    for (String col : columns) {
-      toConcat.add(JsonHelper.safeAsText(attributeObjNod, col));
+    List<String> items = function.getParamAsList(DataExportFunction.CONCAT_PARAM_ITEMS);
+    Map<String, String> constants = function.getParamAsMap(DataExportFunction.CONCAT_PARAM_CONSTANTS);
+    String separator = function.params().getOrDefault(DataExportFunction.CONCAT_PARAM_SEPARATOR, DataExportFunction.CONCAT_DEFAULT_SEP).toString();
+
+    for (String col : items) {
+      if (attributeObjNod.has(col)) {
+        toConcat.add(JsonHelper.safeAsText(attributeObjNod, col));
+      } else if (constants.containsKey(col)) {
+        toConcat.add(constants.get(col));
+      }
     }
-    return String.join(DEFAULT_CONCAT_SEP, toConcat);
+    return String.join(separator, toConcat);
   }
 
   /**
    * Gets the coordinates from a geo_point column stored as [longitude,latitude] and return them as
    * decimal lat,long
    * @param attributeObjNod
-   * @param columns
+   * @param function
    * @return
    */
   private static String handleConvertCoordinatesDecimalDegrees(ObjectNode attributeObjNod,
-                                                               List<String> columns) {
+                                                               DataExportFunction function) {
+    String column = function.getParamAsString(DataExportFunction.CONVERT_COORDINATES_DD_PARAM);
     String decimalDegreeCoordinates = null;
-    if (columns.size() == 1) {
-      JsonNode coordinates = attributeObjNod.get(columns.getFirst());
-      if (coordinates != null && coordinates.isArray()) {
-        List<JsonNode> longLatNode = IteratorUtils.toList(coordinates.iterator());
-        if (longLatNode.size() == 2) {
-          decimalDegreeCoordinates = String.format(COORDINATES_DD_FORMAT,
-            longLatNode.get(1).asDouble(), longLatNode.get(0).asDouble());
-        }
+
+    JsonNode coordinates = attributeObjNod.get(column);
+    if (coordinates != null && coordinates.isArray()) {
+      List<JsonNode> longLatNode = IteratorUtils.toList(coordinates.iterator());
+      if (longLatNode.size() == 2) {
+        decimalDegreeCoordinates = String.format(DataExportFunction.COORDINATES_DD_FORMAT,
+          longLatNode.get(1).asDouble(), longLatNode.get(0).asDouble());
       }
     }
     if (StringUtils.isBlank(decimalDegreeCoordinates)) {
