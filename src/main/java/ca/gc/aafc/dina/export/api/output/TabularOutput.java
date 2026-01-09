@@ -147,18 +147,25 @@ public final class TabularOutput<T> implements DataOutput<T> {
 
   /**
    * Adds a record to the CSV output.
-   * Convenience method that delegates to the DataOutput interface method.
-   * 
+   *
    * @param record the record to write
    * @throws IOException if writing fails
    */
+  @Override
   public void addRecord(T record) throws IOException {
-    addRecord("record", record);
+    sw.write(record);
   }
 
+  /**
+   * Adds a record to the CSV output.
+   *
+   * @param type will be ignored for that output
+   * @param record the record to write
+   * @throws IOException if writing fails
+   */
   @Override
   public void addRecord(String type, T record) throws IOException {
-    sw.write(record);
+    addRecord(record);
   }
 
   @Override

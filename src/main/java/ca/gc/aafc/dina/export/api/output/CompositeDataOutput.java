@@ -68,6 +68,11 @@ public class CompositeDataOutput<T> implements DataOutput<T> {
   }
 
   @Override
+  public void addRecord(T record) throws IOException {
+    throw new IllegalArgumentException("type required for CompositeDataOutput");
+  }
+
+  @Override
   public void addRecord(String type, T record) throws IOException {
     TabularOutput<T> output = outputsByType.get(type);
     if (output == null) {

@@ -8,5 +8,12 @@ import java.io.IOException;
  */
 public interface DataOutput <T> extends AutoCloseable {
 
+  /**
+   * Add record without type
+   * @param record
+   * @throws IOException
+   */
+  void addRecord(T record) throws IOException;
+
   void addRecord(String type, T record) throws IOException;
 }
