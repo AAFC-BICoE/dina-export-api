@@ -111,60 +111,6 @@ public class RecordBasedExportHelperIT extends BaseIntegrationTest {
   }
 
   @Test
-  public void testExpandWildcardsIfNeeded_withWildcard() throws IOException, InterruptedException {
-    // Setup: Create ElasticSearch index with test data
-    ElasticSearchTestUtils.createIndex(esClient, TEST_INDEX,
-        "elasticsearch/material_sample_index_settings.json");
-
-    UUID docId = UUID.randomUUID();
-    String testDoc = """
-    {
-      "data": {
-        "id": "%s",
-        "type": "material-sample",
-        "attributes": {
-          "materialSampleName": "TEST-WILDCARD",
-          "managedAttributes": {
-            "attr1": "value1",
-            "attr2": "value2",
-            "attr3": "value3"
-          }
-        },
-        "relationships": {}
-      },
-      "included": []
-    }
-    """.formatted(docId);
-
-    ElasticSearchTestUtils.indexDocument(esClient, TEST_INDEX, docId.toString(), testDoc);
-
-    // Wait for indexing
-    Thread.sleep(1000);
-
-    // Given: columns with wildcard pattern
-    List<String> columns = new ArrayList<>(List.of("materialSampleName", "managedAttributes.*"));
-    List<String> aliases = new ArrayList<>(List.of("Sample Name", ""));
-
-    DataExport dataExport = DataExport.builder()
-        .source(TEST_INDEX)
-        .query(Map.of("query", Map.of("match_all", Map.of())))
-        .build();
-
-    // When: expanding wildcards
-    recordHelper.expandWildcardsIfNeeded(dataExport, columns, aliases);
-
-    // Then: wildcard should be expanded to actual attributes
-    assertTrue(columns.size() > 2, "Wildcard should be expanded");
-    assertTrue(columns.contains("materialSampleName"), "Should still have original column");
-    assertTrue(columns.stream().anyMatch(c -> c.contains("managedAttributes.attr1")),
-        "Should have expanded attr1");
-    assertTrue(columns.stream().anyMatch(c -> c.contains("managedAttributes.attr2")),
-        "Should have expanded attr2");
-    assertTrue(columns.stream().anyMatch(c -> c.contains("managedAttributes.attr3")),
-        "Should have expanded attr3");
-  }
-
-  @Test
   public void testFlatRelationships_withSimpleRelationship() throws IOException {
     // Given: a document with a to-one relationship
     UUID collectionId = UUID.randomUUID();

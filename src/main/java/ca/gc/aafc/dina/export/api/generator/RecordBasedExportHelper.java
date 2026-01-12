@@ -15,7 +15,6 @@ import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.TypeRef;
 
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
-import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
 import ca.gc.aafc.dina.json.JsonHelper;
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
@@ -24,7 +23,6 @@ import ca.gc.aafc.dina.jsonapi.JsonPathHelper;
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.LIST_MAP_TYPEREF;
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPEREF;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -54,25 +52,6 @@ public class RecordBasedExportHelper {
     this.jsonPathConfiguration = jsonPathConfiguration;
     this.elasticSearchDataSource = elasticSearchDataSource;
     this.objectMapper = objectMapper;
-  }
-
-  /**
-   * Expands wildcard columns if any are present.
-   */
-  public void expandWildcardsIfNeeded(DataExport dinaExport, List<String> columns, 
-                                       List<String> aliases) throws IOException {
-    boolean hasWildcards = columns.stream().anyMatch(col -> col.endsWith(".*"));
-    if (hasWildcards) {
-      WildcardColumnExpander expander = new WildcardColumnExpander(
-          dinaExport.getSource(),
-          objectMapper.writeValueAsString(dinaExport.getQuery()),
-          columns,
-          aliases,
-          elasticSearchDataSource,
-          objectMapper,
-          this::flattenRecordRelationships);
-      expander.expandWildcards();
-    }
   }
 
   /**
@@ -118,7 +97,7 @@ public class RecordBasedExportHelper {
   }
 
   /**
-   * Flattens record relationships for use by WildcardColumnExpander.
+   * Flattens record relationships.
    */
   public void flattenRecordRelationships(ObjectNode attributeObjNode, JsonNode record) {
     replaceNestedByDotNotation(attributeObjNode);

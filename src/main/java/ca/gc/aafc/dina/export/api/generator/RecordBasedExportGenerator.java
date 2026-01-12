@@ -24,7 +24,10 @@ import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.LIST_MAP_T
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -41,15 +44,23 @@ import java.util.zip.ZipOutputStream;
 import lombok.extern.log4j.Log4j2;
 
 /**
- * Responsible to generate normalized export files (multiple CSVs in a ZIP).
- * This generator dynamically detects entity types from column prefixes and creates
- * separate CSV files for each entity type (e.g., samples, projects, organisms).
+ * Responsible to generate tabular export files with support for two modes:
+ * 
+ * 1. Flattened mode (normalizeRelationships = false/not set):
+ *    Creates a single CSV/TSV file with all relationships flattened into columns.
+ *    Output format: data_export.csv or data_export.tsv
+ * 
+ * 2. Normalized mode (normalizeRelationships = true):
+ *    Creates multiple CSV files (one per entity type) packaged in a ZIP.
+ *    Dynamically detects entity types from column prefixes (e.g., projects.name, samples.id).
+ *    Output format: {uuid}.zip containing samples.csv, projects.csv, etc.
  */
 @Service
 @Log4j2
 public class RecordBasedExportGenerator extends DataExportGenerator {
 
   private static final String MAIN_ENTITY_NAME_OPTION = "mainEntityName";
+  private static final String NORMALIZE_RELATIONSHIPS_OPTION = "normalizeRelationships";
 
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
@@ -71,7 +82,37 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   @Override
   public String generateFilename(DataExport dinaExport) {
-    return dinaExport.getUuid() + ".zip";
+    boolean normalizeRelationships = shouldNormalizeRelationships(dinaExport);
+    
+    if (normalizeRelationships) {
+      return dinaExport.getUuid() + ".zip";
+    } else {
+      // Single CSV/TSV file
+      TabularOutput.ColumnSeparator separator = getColumnSeparator(dinaExport);
+      return DataExportConfig.DATA_EXPORT_TABULAR_FILENAME + switch (separator) {
+        case TAB -> ".tsv";
+        case COMMA -> ".csv";
+      };
+    }
+  }
+  
+  private boolean shouldNormalizeRelationships(DataExport dinaExport) {
+    return "true".equalsIgnoreCase(
+        dinaExport.getExportOptions() != null ? 
+        dinaExport.getExportOptions().get(NORMALIZE_RELATIONSHIPS_OPTION) : null);
+  }
+  
+  private TabularOutput.ColumnSeparator getColumnSeparator(DataExport dinaExport) {
+    if (dinaExport.getExportOptions() != null) {
+      String columnSeparator = dinaExport.getExportOptions().get(TabularOutput.OPTION_COLUMN_SEPARATOR);
+      if (columnSeparator != null) {
+        Optional<TabularOutput.ColumnSeparator> sep = TabularOutput.ColumnSeparator.fromString(columnSeparator);
+        if (sep.isPresent()) {
+          return sep.get();
+        }
+      }
+    }
+    return TabularOutput.ColumnSeparator.COMMA; // default
   }
 
   /**
@@ -97,19 +138,25 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
     try {
       ensureDirectoryExists(exportPath.getParent());
+      
+      boolean normalizeRelationships = shouldNormalizeRelationships(dinaExport);
 
-      List<String> expandedColumns = new ArrayList<>(Arrays.asList(dinaExport.getColumns()));
-      List<String> expandedAliases = dinaExport.getColumnAliases() != null ?
-          new ArrayList<>(Arrays.asList(dinaExport.getColumnAliases())) : null;
+      if (normalizeRelationships) {
+        // Multi-CSV normalized export
+        List<String> expandedColumns = new ArrayList<>(Arrays.asList(dinaExport.getColumns()));
+        List<String> expandedAliases = dinaExport.getColumnAliases() != null ?
+            new ArrayList<>(Arrays.asList(dinaExport.getColumnAliases())) : null;
 
-      recordHelper.expandWildcardsIfNeeded(dinaExport, expandedColumns, expandedAliases);
-
-      Path parentDir = exportPath.getParent();
-      if (parentDir == null) {
-        throw new IllegalStateException("Export path has no parent directory");
+        Path parentDir = exportPath.getParent();
+        if (parentDir == null) {
+          throw new IllegalStateException("Export path has no parent directory");
+        }
+        exportWithNormalization(dinaExport, parentDir, expandedColumns, expandedAliases);
+        createZipFromCsvFiles(parentDir, dinaExport.getUuid());
+      } else {
+        // Single CSV/TSV flattened export
+        exportFlattened(dinaExport, exportPath);
       }
-      exportWithNormalization(dinaExport, parentDir, expandedColumns, expandedAliases);
-      createZipFromCsvFiles(parentDir, dinaExport.getUuid());
 
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
     } catch (IOException ioEx) {
@@ -160,6 +207,42 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       log.info("Normalized export completed: {} entity types, {} total unique related records", 
           entityTypes.size(), uniqueRecordsByType.values().stream().mapToInt(Map::size).sum());
     }
+  }
+
+  /**
+   * Export with flattened relationships - creates a single CSV file (like TabularDataExportGenerator).
+   */
+  private void exportFlattened(DataExport dinaExport, Path exportPath) throws IOException {
+    TabularOutput.TabularOutputArgs args = createTabularOutputArgsFrom(dinaExport);
+    
+    try (Writer w = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
+         TabularOutput<JsonNode> output = TabularOutput.create(args, new TypeReference<>() { }, w)) {
+      
+      paginateThroughResults(dinaExport.getSource(),
+          objectMapper.writeValueAsString(dinaExport.getQuery()),
+          hit -> processRecordFlattened(hit.id(), hit.source(), dinaExport.getFunctions(), output));
+      
+      log.info("Flattened export completed");
+    }
+  }
+  
+  /**
+   * Creates TabularOutput arguments from DataExport configuration.
+   */
+  private TabularOutput.TabularOutputArgs createTabularOutputArgsFrom(DataExport dinaExport) {
+    List<String> headerAliases = dinaExport.getColumnAliases() != null ?
+        Arrays.asList(dinaExport.getColumnAliases()) : null;
+
+    var builder = TabularOutput.TabularOutputArgs.builder()
+        .headers(Arrays.asList(dinaExport.getColumns()))
+        .receivedHeadersAliases(headerAliases);
+
+    TabularOutput.ColumnSeparator separator = getColumnSeparator(dinaExport);
+    if (separator != TabularOutput.ColumnSeparator.COMMA) {
+      builder.columnSeparator(separator);
+    }
+    
+    return builder.build();
   }
 
   /**
@@ -225,6 +308,35 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     try {
       String mainEntityType = getMainEntityType(entityTypes);
       output.addRecord(mainEntityType, attributeObjNode);
+    } catch (IOException e) {
+      log.error("Error writing record", e);
+    }
+  }
+
+  /**
+   * Processes a single record for flattened export (single CSV with all relationships flattened).
+   */
+  private void processRecordFlattened(String documentId, JsonNode record,
+                                       Map<String, ca.gc.aafc.dina.export.api.config.DataExportFunction> columnFunctions,
+                                       DataOutput<JsonNode> output) {
+    if (record == null) {
+      return;
+    }
+
+    ObjectNode attributeObjNode = recordHelper.prepareAttributeNode(documentId, record);
+    if (attributeObjNode == null) {
+      return;
+    }
+
+    // Flatten all relationships into the attribute node
+    recordHelper.flattenRecordRelationships(attributeObjNode, record);
+    
+    // Apply functions after flattening
+    recordHelper.applyFunctions(attributeObjNode, columnFunctions);
+
+    // Write record
+    try {
+      output.addRecord(attributeObjNode);
     } catch (IOException e) {
       log.error("Error writing record", e);
     }
