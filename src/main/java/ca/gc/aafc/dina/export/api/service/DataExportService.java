@@ -22,7 +22,9 @@ import ca.gc.aafc.dina.service.DefaultDinaService;
 @Service
 public class DataExportService extends DefaultDinaService<DataExport> {
 
-  private final DataExportGenerator tabularDataExportGenerator;
+  public static final String NORMALIZE_RELATIONSHIPS_OPTION = "normalizeRelationships";
+
+  private final DataExportGenerator recordBasedExportGenerator;
   private final DataExportGenerator objectStoreExportGenerator;
 
   private final Consumer<Future<UUID>> asyncConsumer;
@@ -31,16 +33,17 @@ public class DataExportService extends DefaultDinaService<DataExport> {
    *
    * @param baseDAO
    * @param validator
-   * @param tabularDataExportGenerator
+   * @param recordBasedExportGenerator
+   * @param objectStoreExportGenerator
    * @param asyncConsumer optional consumer to get the Future created for the async export
    */
   public DataExportService(BaseDAO baseDAO,
                            SmartValidator validator,
-                           DataExportGenerator tabularDataExportGenerator,
+                           DataExportGenerator recordBasedExportGenerator,
                            DataExportGenerator objectStoreExportGenerator,
                            Optional<Consumer<Future<UUID>>> asyncConsumer) {
     super(baseDAO, validator);
-    this.tabularDataExportGenerator = tabularDataExportGenerator;
+    this.recordBasedExportGenerator = recordBasedExportGenerator;
     this.objectStoreExportGenerator = objectStoreExportGenerator;
     this.asyncConsumer = asyncConsumer.orElse(null);
   }
@@ -52,14 +55,14 @@ public class DataExportService extends DefaultDinaService<DataExport> {
       dinaExport.setUuid(UUID.randomUUID());
     }
     dinaExport.setStatus(DataExport.ExportStatus.NEW);
-    dinaExport.setFilename(generatorByExportType(dinaExport.getExportType()).generateFilename(dinaExport));
+    dinaExport.setFilename(generatorByExportType(dinaExport).generateFilename(dinaExport));
   }
 
   @Override
   public void postCreate(DataExport dinaExport) {
     flush();
 
-    DataExportGenerator exportGenerator = generatorByExportType(dinaExport.getExportType());
+    DataExportGenerator exportGenerator = generatorByExportType(dinaExport);
 
     try {
       if (asyncConsumer == null) {
@@ -87,7 +90,7 @@ public class DataExportService extends DefaultDinaService<DataExport> {
 
   public void delete(DataExport dinaExport, boolean callExportGenerator) {
     if (callExportGenerator) {
-      DataExportGenerator exportGenerator = generatorByExportType(dinaExport.getExportType());
+      DataExportGenerator exportGenerator = generatorByExportType(dinaExport);
       try {
         exportGenerator.deleteExport(dinaExport);
       } catch (IOException e) {
@@ -97,10 +100,10 @@ public class DataExportService extends DefaultDinaService<DataExport> {
     super.delete(dinaExport);
   }
 
-  private DataExportGenerator generatorByExportType(DataExport.ExportType type) {
-    return switch (type) {
-      case TABULAR_DATA -> tabularDataExportGenerator;
-      case OBJECT_ARCHIVE -> objectStoreExportGenerator;
-    };
+  private DataExportGenerator generatorByExportType(DataExport export) {
+    if (export.getExportType() == DataExport.ExportType.TABULAR_DATA) {
+      return recordBasedExportGenerator;
+    }
+    return objectStoreExportGenerator;
   }
 }

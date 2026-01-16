@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.SequenceWriter;
+import com.fasterxml.jackson.dataformat.csv.CsvGenerator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
@@ -68,6 +69,7 @@ public final class TabularOutput<T> implements DataOutput<T> {
     CsvSchema csvSchema = buildCsvSchema(tabularOutputArgs.getHeaders(), true, tabularOutputArgs);
     CsvMapper csvMapper = new CsvMapper();
     csvMapper.configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true);
+    csvMapper.configure(CsvGenerator.Feature.ALWAYS_QUOTE_STRINGS, true);
     return new TabularOutput<>(csvMapper.writerFor(typeRef)
       .with(csvSchema).writeValues(writer));
   }
@@ -105,6 +107,7 @@ public final class TabularOutput<T> implements DataOutput<T> {
     // Write all the header aliases first
     CsvSchema csvHeaderSchema = buildCsvSchema(headersAliases, true, tabularOutputArgs);
     CsvMapper csvMapper = new CsvMapper();
+    csvMapper.configure(CsvGenerator.Feature.ALWAYS_QUOTE_STRINGS, true);
     SequenceWriter ow = csvMapper.writer().with(csvHeaderSchema).writeValues(writer);
     ow.write(null);
     ow.flush();
@@ -113,6 +116,7 @@ public final class TabularOutput<T> implements DataOutput<T> {
     CsvSchema csvSchema = buildCsvSchema(tabularOutputArgs.getHeaders(), false, tabularOutputArgs);
     csvMapper = new CsvMapper();
     csvMapper.configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true);
+    csvMapper.configure(CsvGenerator.Feature.ALWAYS_QUOTE_STRINGS, true);
     return new TabularOutput<>(csvMapper.writerFor(typeRef)
       .with(csvSchema).writeValues(writer));
   }
@@ -133,6 +137,7 @@ public final class TabularOutput<T> implements DataOutput<T> {
     if (tabularOutputArgs.getColumnSeparator() != null) {
       builder.setColumnSeparator(tabularOutputArgs.getColumnSeparator().getSeparatorChar());
     }
+    
     return builder.build();
   }
 
@@ -140,9 +145,27 @@ public final class TabularOutput<T> implements DataOutput<T> {
     this.sw = sw;
   }
 
+  /**
+   * Adds a record to the CSV output.
+   *
+   * @param record the record to write
+   * @throws IOException if writing fails
+   */
   @Override
   public void addRecord(T record) throws IOException {
     sw.write(record);
+  }
+
+  /**
+   * Adds a record to the CSV output.
+   *
+   * @param type will be ignored for that output
+   * @param record the record to write
+   * @throws IOException if writing fails
+   */
+  @Override
+  public void addRecord(String type, T record) throws IOException {
+    addRecord(record);
   }
 
   @Override
