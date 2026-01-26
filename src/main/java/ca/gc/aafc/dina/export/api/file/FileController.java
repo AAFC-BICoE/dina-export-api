@@ -106,13 +106,6 @@ public class FileController {
       return Optional.empty();
     }
 
-    // First, check if there's a ZIP file (for normalized exports)
-    Path zipFilePath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(fileId + ".zip");
-    if (zipFilePath.toFile().exists()) {
-      return Optional.of(zipFilePath);
-    }
-
-    // Otherwise, look for the regular file
     Path tabularFilePath = dataExportWorkingFolder.resolve(fileId.toString()).resolve(filename);
     if (tabularFilePath.toFile().exists()) {
       return Optional.of(tabularFilePath);
