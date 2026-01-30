@@ -97,7 +97,7 @@ public class CompositeDataOutputIT {
   }
 
   @Test
-  void compositeDataOutput_withAliases_usesAliasesInHeaders(@TempDir Path tempDir) throws IOException {
+  void compositeDataOutput_withAliases_usesAliasesInHeaders() throws IOException {
     // Given: Configuration with column aliases
     TabularOutput.TabularOutputArgs sampleArgs = TabularOutput.TabularOutputArgs.builder()
       .headers(List.of("id", "name"))
@@ -122,175 +122,124 @@ public class CompositeDataOutputIT {
     assertTrue(content.getFirst().contains("Sample ID"));
     assertTrue(content.getFirst().contains("Sample Name"));
   }
-//
-//  @Test
-//  void compositeDataOutput_withTabSeparator_usesTabSeparator(@TempDir Path tempDir) throws IOException {
-//    // Given: Configuration with TAB separator
-//    Map<String, CompositeDataOutput.EntityConfig> entityConfigs = new LinkedHashMap<>();
-//
-//    entityConfigs.put("samples", CompositeDataOutput.EntityConfig.builder()
-//        .filename("samples.tsv")
-//        .columns(List.of("id", "name"))
-//        .separator(TabularOutput.ColumnSeparator.TAB)
-//        .build());
-//
-//    // When: Creating composite output and adding records
-//    try (CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
-//        entityConfigs, new TypeReference<>() {}, tempDir)) {
-//
-//      ObjectNode sample = objectMapper.createObjectNode();
-//      sample.put("id", "S001");
-//      sample.put("name", "Test Sample");
-//      output.addRecord("samples", sample);
-//    }
-//
-//    // Then: Verify tab separator is used
-//    List<String> content = Files.readAllLines(tempDir.resolve("samples.tsv"));
-//    assertTrue(content.get(1).contains("\t"), "Should use tab separator");
-//  }
-//
-//  @Test
-//  void compositeDataOutput_withDefaultFilename_usesEntityTypeAsFilename(@TempDir Path tempDir) throws IOException {
-//    // Given: Configuration without explicit filename
-//    Map<String, CompositeDataOutput.EntityConfig> entityConfigs = new LinkedHashMap<>();
-//
-//    entityConfigs.put("organisms", CompositeDataOutput.EntityConfig.builder()
-//        .columns(List.of("id", "scientificName"))
-//        .separator(TabularOutput.ColumnSeparator.COMMA)
-//        .build());
-//
-//    // When: Creating composite output and adding records
-//    try (CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
-//        entityConfigs, new TypeReference<>() {}, tempDir)) {
-//
-//      ObjectNode organism = objectMapper.createObjectNode();
-//      organism.put("id", "O001");
-//      organism.put("scientificName", "Homo sapiens");
-//      output.addRecord("organisms", organism);
-//    }
-//
-//    // Then: Verify default filename is used
-//    Path defaultFile = tempDir.resolve("organisms.csv");
-//    assertTrue(Files.exists(defaultFile), "Should use entity type as filename");
-//  }
-//
-//  @Test
-//  void compositeDataOutput_withUnknownType_throwsException(@TempDir Path tempDir) throws IOException {
-//    // Given: Configuration for only one entity type
-//    Map<String, CompositeDataOutput.EntityConfig> entityConfigs = new LinkedHashMap<>();
-//
-//    entityConfigs.put("samples", CompositeDataOutput.EntityConfig.builder()
-//        .columns(List.of("id", "name"))
-//        .separator(TabularOutput.ColumnSeparator.COMMA)
-//        .build());
-//
-//    // When: Adding record with unknown type
-//    try (CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
-//        entityConfigs, new TypeReference<>() {}, tempDir)) {
-//
-//      ObjectNode record = objectMapper.createObjectNode();
-//      record.put("id", "X001");
-//
-//      // Then: Should throw exception for unknown type
-//      IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-//        output.addRecord("unknownType", record);
-//      });
-//
-//      assertTrue(exception.getMessage().contains("No output configured for entity type: unknownType"));
-//    }
-//  }
-//
-//  @Test
-//  void compositeDataOutput_addRecordWithoutType_throwsException(@TempDir Path tempDir) throws IOException {
-//    // Given: Composite output configuration
-//    Map<String, CompositeDataOutput.EntityConfig> entityConfigs = new LinkedHashMap<>();
-//
-//    entityConfigs.put("samples", CompositeDataOutput.EntityConfig.builder()
-//        .columns(List.of("id", "name"))
-//        .separator(TabularOutput.ColumnSeparator.COMMA)
-//        .build());
-//
-//    // When: Adding record without specifying type
-//    try (CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
-//        entityConfigs, new TypeReference<>() {}, tempDir)) {
-//
-//      ObjectNode record = objectMapper.createObjectNode();
-//      record.put("id", "S001");
-//
-//      // Then: Should throw exception
-//      IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-//        output.addRecord(record);
-//      });
-//
-//      assertTrue(exception.getMessage().contains("type required for CompositeDataOutput"));
-//    }
-//  }
-//
-//  @Test
-//  void compositeDataOutput_withMultipleRecordsSameType_appendsToSameFile(@TempDir Path tempDir) throws IOException {
-//    // Given: Configuration for one entity type
-//    Map<String, CompositeDataOutput.EntityConfig> entityConfigs = new LinkedHashMap<>();
-//
-//    entityConfigs.put("samples", CompositeDataOutput.EntityConfig.builder()
-//        .filename("samples.csv")
-//        .columns(List.of("id", "name"))
-//        .separator(TabularOutput.ColumnSeparator.COMMA)
-//        .build());
-//
-//    // When: Adding multiple records of the same type
-//    try (CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
-//        entityConfigs, new TypeReference<>() {}, tempDir)) {
-//
-//      for (int i = 1; i <= 5; i++) {
-//        ObjectNode sample = objectMapper.createObjectNode();
-//        sample.put("id", "S00" + i);
-//        sample.put("name", "Sample " + i);
-//        output.addRecord("samples", sample);
-//      }
-//    }
-//
-//    // Then: All records should be in the same file
-//    List<String> content = Files.readAllLines(tempDir.resolve("samples.csv"));
-//    assertEquals(6, content.size()); // header + 5 records
-//  }
-//
-//  @Test
-//  void compositeDataOutput_withEmptyConfiguration_createsNoFiles(@TempDir Path tempDir) throws IOException {
-//    // Given: Empty configuration
-//    Map<String, CompositeDataOutput.EntityConfig> entityConfigs = new LinkedHashMap<>();
-//
-//    // When: Creating composite output with no entity types
-//    try (CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
-//        entityConfigs, new TypeReference<>() {}, tempDir)) {
-//      // Do nothing
-//    }
-//
-//    // Then: No files should be created
-//    assertEquals(0, Files.list(tempDir).count(), "No files should be created with empty configuration");
-//  }
-//
-//  @Test
-//  void compositeDataOutput_closeMultipleTimes_handlesGracefully(@TempDir Path tempDir) throws IOException {
-//    // Given: Configuration for one entity type
-//    Map<String, CompositeDataOutput.EntityConfig> entityConfigs = new LinkedHashMap<>();
-//
-//    entityConfigs.put("samples", CompositeDataOutput.EntityConfig.builder()
-//        .columns(List.of("id"))
-//        .separator(TabularOutput.ColumnSeparator.COMMA)
-//        .build());
-//
-//    // When: Closing output multiple times
-//    CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
-//        entityConfigs, new TypeReference<>() {}, tempDir);
-//
-//    ObjectNode sample = objectMapper.createObjectNode();
-//    sample.put("id", "S001");
-//    output.addRecord("samples", sample);
-//
-//    // Then: Should handle multiple closes gracefully
-//    output.close();
-//    output.close(); // Should not throw exception
-//
-//    assertTrue(Files.exists(tempDir.resolve("samples.csv")));
-//  }
+
+ @Test
+ void compositeDataOutput_withTabSeparator_usesTabSeparator() throws IOException {
+    // Given: Configuration with column aliases
+    TabularOutput.TabularOutputArgs sampleArgs = TabularOutput.TabularOutputArgs.builder()
+      .headers(List.of("id", "name"))
+      .receivedHeadersAliases(List.of("Sample ID", "Sample Name"))
+      .columnSeparator(TabularOutput.ColumnSeparator.TAB).build();
+
+    // When: Creating composite output and adding records
+    try (
+      Writer sampleWriter = new FileWriter(tempDir.resolve("samples.tsv").toFile(), StandardCharsets.UTF_8);
+      TabularOutput<JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
+      CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
+        Map.of("sample", sampleOutput))) {
+
+      ObjectNode sample = objectMapper.createObjectNode();
+      sample.put("id", "S001");
+      sample.put("name", "Test Sample");
+      output.addRecord("sample", sample);
+    }
+
+    // Then: Verify tab separator is used
+    List<String> content = Files.readAllLines(tempDir.resolve("samples.tsv"));
+    assertTrue(content.get(1).contains("\t"), "Should use tab separator");
+  }
+
+  @Test
+  void compositeDataOutput_withUnknownType_throwsException() throws IOException {
+    // Given: Configuration for only one entity type
+    TabularOutput.TabularOutputArgs sampleArgs = TabularOutput.TabularOutputArgs.builder()
+      .headers(List.of("id", "name"))
+      .columnSeparator(TabularOutput.ColumnSeparator.COMMA).build();
+
+    // When: Adding record with unknown type
+    try (
+      Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
+      TabularOutput<JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
+      CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
+        Map.of("sample", sampleOutput))) {
+
+      ObjectNode record = objectMapper.createObjectNode();
+      record.put("id", "X001");
+
+      // Then: Should throw exception for unknown type
+      IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+        output.addRecord("unknownType", record);
+      });
+
+      assertTrue(exception.getMessage().contains("No output configured for entity type: unknownType"));
+    }
+  }
+
+  @Test
+  void compositeDataOutput_addRecordWithoutType_throwsException() throws IOException {
+    // Given: Composite output configuration
+    TabularOutput.TabularOutputArgs sampleArgs = TabularOutput.TabularOutputArgs.builder()
+      .headers(List.of("id", "name"))
+      .columnSeparator(TabularOutput.ColumnSeparator.COMMA).build();
+
+    // When: Adding record without specifying type
+    try (
+      Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
+      TabularOutput<JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
+      CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
+        Map.of("sample", sampleOutput))) {
+
+      ObjectNode record = objectMapper.createObjectNode();
+      record.put("id", "S001");
+
+      // Then: Should throw exception
+      IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+        output.addRecord(record);
+      });
+
+      assertTrue(exception.getMessage().contains("type required for CompositeDataOutput"));
+    }
+  }
+
+  @Test
+  void compositeDataOutput_withMultipleRecordsSameType_appendsToSameFile() throws IOException {
+    // Given: Configuration for one entity type
+    TabularOutput.TabularOutputArgs sampleArgs = TabularOutput.TabularOutputArgs.builder()
+      .headers(List.of("id", "name"))
+      .columnSeparator(TabularOutput.ColumnSeparator.COMMA).build();
+
+    // When: Adding multiple records of the same type
+    try (
+      Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
+      TabularOutput<JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
+      CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
+        Map.of("sample", sampleOutput))) {
+
+      for (int i = 1; i <= 5; i++) {
+        ObjectNode sample = objectMapper.createObjectNode();
+        sample.put("id", "S00" + i);
+        sample.put("name", "Sample " + i);
+        output.addRecord("sample", sample);
+      }
+    }
+
+    // Then: All records should be in the same file
+    List<String> content = Files.readAllLines(tempDir.resolve("samples.csv"));
+    assertEquals(6, content.size()); // header + 5 records
+  }
+
+  @Test
+  void compositeDataOutput_withEmptyConfiguration_createsNoFiles() throws IOException {
+    // Given: Empty configuration
+    Map<String, TabularOutput<JsonNode>> emptyOutputs = new LinkedHashMap<>();
+
+    // When: Creating composite output with no entity types
+    try (CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(emptyOutputs)) {
+      // Do nothing
+    }
+
+    // Then: No files should be created
+    assertEquals(0, Files.list(tempDir).count(), "No files should be created with empty configuration");
+  }
+
 }
