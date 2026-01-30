@@ -138,7 +138,6 @@ public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
   /**
    * Helper method that generates a mock request with the following headers:
    *    Authorization: Bearer with the fake keycloak access token.
-   *    crnk-compact: true
    *    Connection: Keep-Alive
    *    Accept-Encoding: application/json
    * @return
