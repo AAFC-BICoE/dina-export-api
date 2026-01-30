@@ -21,7 +21,6 @@ import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.output.TabularOutput;
-import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
 import ca.gc.aafc.dina.json.JsonHelper;
@@ -116,7 +115,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
         // csv output
         try (Writer w = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
-             TabularOutput<JsonNode> output =
+             TabularOutput<UUID, JsonNode> output =
                TabularOutput.create(createTabularOutputArgsFrom(dinaExport),
                  new TypeReference<>() {
                  }, w)) {
@@ -160,6 +159,12 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
           }
         });
       }
+      
+      // Check for ID tracking option
+      String enableIdTracking = dinaExport.getExportOptions().get(TabularOutput.OPTION_ENABLE_ID_TRACKING);
+      if ("true".equalsIgnoreCase(enableIdTracking)) {
+        builder.enableIdTracking(true);
+      }
     }
     return builder.build();
   }
@@ -190,7 +195,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
    */
   private void export(String sourceIndex, String query,
                       Map<String, DataExportFunction> exportFunctions,
-                      DataOutput<JsonNode> output) throws IOException {
+                      TabularOutput<UUID, JsonNode> output) throws IOException {
     SearchResponse<JsonNode>
       response = elasticSearchDataSource.searchWithPIT(sourceIndex, query);
 
@@ -222,7 +227,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
    */
   private void processRecord(String documentId, JsonNode record,
                              Map<String, DataExportFunction> columnFunctions,
-                             DataOutput<JsonNode> output) throws IOException {
+                             TabularOutput<UUID, JsonNode> output) throws IOException {
     if (record == null) {
       return;
     }
@@ -262,7 +267,9 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
           }
         }
       }
-      output.addRecord(attributeObjNode);
+      // Convert documentId string to UUID for ID tracking
+      UUID recordId = UUID.fromString(documentId);
+      output.addRecord(recordId, attributeObjNode);
     }
   }
 
