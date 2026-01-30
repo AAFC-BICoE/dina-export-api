@@ -22,7 +22,7 @@ import ca.gc.aafc.dina.service.DefaultDinaService;
 @Service
 public class DataExportService extends DefaultDinaService<DataExport> {
 
-  private final DataExportGenerator tabularDataExportGenerator;
+  private final DataExportGenerator recordBasedExportGenerator;
   private final DataExportGenerator objectStoreExportGenerator;
 
   private final Consumer<Future<UUID>> asyncConsumer;
@@ -31,16 +31,17 @@ public class DataExportService extends DefaultDinaService<DataExport> {
    *
    * @param baseDAO
    * @param validator
-   * @param tabularDataExportGenerator
+   * @param recordBasedExportGenerator
+   * @param objectStoreExportGenerator
    * @param asyncConsumer optional consumer to get the Future created for the async export
    */
   public DataExportService(BaseDAO baseDAO,
                            SmartValidator validator,
-                           DataExportGenerator tabularDataExportGenerator,
+                           DataExportGenerator recordBasedExportGenerator,
                            DataExportGenerator objectStoreExportGenerator,
                            Optional<Consumer<Future<UUID>>> asyncConsumer) {
     super(baseDAO, validator);
-    this.tabularDataExportGenerator = tabularDataExportGenerator;
+    this.recordBasedExportGenerator = recordBasedExportGenerator;
     this.objectStoreExportGenerator = objectStoreExportGenerator;
     this.asyncConsumer = asyncConsumer.orElse(null);
   }
@@ -99,7 +100,7 @@ public class DataExportService extends DefaultDinaService<DataExport> {
 
   private DataExportGenerator generatorByExportType(DataExport.ExportType type) {
     return switch (type) {
-      case TABULAR_DATA -> tabularDataExportGenerator;
+      case TABULAR_DATA -> recordBasedExportGenerator;
       case OBJECT_ARCHIVE -> objectStoreExportGenerator;
     };
   }

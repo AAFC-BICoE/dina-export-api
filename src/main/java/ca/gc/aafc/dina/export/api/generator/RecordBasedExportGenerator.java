@@ -54,7 +54,7 @@ import lombok.extern.log4j.Log4j2;
  */
 @Service
 @Log4j2
-public class TabularDataExportGenerator extends DataExportGenerator {
+public class RecordBasedExportGenerator extends DataExportGenerator {
 
   private static final TypeRef<List<Map<String, Object>>> JSON_PATH_TYPE_REF = new TypeRef<>() {
   };
@@ -65,7 +65,7 @@ public class TabularDataExportGenerator extends DataExportGenerator {
 
   private final DataExportConfig dataExportConfig;
 
-  public TabularDataExportGenerator(
+  public RecordBasedExportGenerator(
     DataExportStatusService dataExportStatusService,
     DataExportConfig dataExportConfig,
     Configuration jsonPathConfiguration, ElasticSearchDataSource elasticSearchDataSource,

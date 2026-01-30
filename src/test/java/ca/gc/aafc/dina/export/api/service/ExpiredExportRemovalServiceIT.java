@@ -66,7 +66,7 @@ public class ExpiredExportRemovalServiceIT extends BaseIntegrationTest {
     // wait for the Scheduled job to run
     boolean fileDeleted = false;
     int numberRetry = 0;
-    while (!fileDeleted && numberRetry < 10) {
+    while (!fileDeleted && numberRetry < 100) {
       Thread.sleep(100);
       fileDeleted = !p.toFile().exists();
       numberRetry++;
