@@ -3,8 +3,10 @@ package ca.gc.aafc.dina.export.api.output;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -19,11 +21,13 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
 /**
  * Responsible to write a tabular output (csv, tsv).
+ * @param <I>
  * @param <T>
  */
-public final class TabularOutput<T> implements DataOutput<T> {
+public final class TabularOutput<I, T> implements DataOutput<T> {
 
   public static final String OPTION_COLUMN_SEPARATOR = "columnSeparator";
+  public static final String OPTION_ENABLE_ID_TRACKING = "enableIdTracking";
 
   public enum ColumnSeparator {
     COMMA(","), TAB("\t");
@@ -54,6 +58,8 @@ public final class TabularOutput<T> implements DataOutput<T> {
   }
 
   private final SequenceWriter sw;
+  private final Set<I> trackedIds;
+  private final boolean idTrackingEnabled;
 
   /**
    * Returns a {@link TabularOutput} instance configured for a specific type without using column aliases.
@@ -62,14 +68,14 @@ public final class TabularOutput<T> implements DataOutput<T> {
    * @param writer won't be closed. Responsibility of the caller.
    * @return
    */
-  private static <T> TabularOutput<T> createTabularFileNoAlias(TabularOutputArgs tabularOutputArgs, TypeReference<T> typeRef,
+  private static <I, T> TabularOutput<I, T> createTabularFileNoAlias(TabularOutputArgs tabularOutputArgs, TypeReference<T> typeRef,
                                                                Writer writer) throws IOException {
 
     CsvSchema csvSchema = buildCsvSchema(tabularOutputArgs.getHeaders(), true, tabularOutputArgs);
     CsvMapper csvMapper = new CsvMapper();
     csvMapper.configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true);
     return new TabularOutput<>(csvMapper.writerFor(typeRef)
-      .with(csvSchema).writeValues(writer));
+      .with(csvSchema).writeValues(writer), tabularOutputArgs.isEnableIdTracking());
   }
 
   /**
@@ -81,7 +87,7 @@ public final class TabularOutput<T> implements DataOutput<T> {
    * @param writer won't be closed. Responsibility of the caller.
    * @return
    */
-  public static <T> TabularOutput<T> create(TabularOutputArgs tabularOutputArgs,
+  public static <I, T> TabularOutput<I, T> create(TabularOutputArgs tabularOutputArgs,
                                             TypeReference<T> typeRef, Writer writer) throws IOException {
 
     if (CollectionUtils.isEmpty(tabularOutputArgs.getReceivedHeadersAliases())) {
@@ -114,7 +120,7 @@ public final class TabularOutput<T> implements DataOutput<T> {
     csvMapper = new CsvMapper();
     csvMapper.configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true);
     return new TabularOutput<>(csvMapper.writerFor(typeRef)
-      .with(csvSchema).writeValues(writer));
+      .with(csvSchema).writeValues(writer), tabularOutputArgs.isEnableIdTracking());
   }
 
   /**
@@ -137,12 +143,38 @@ public final class TabularOutput<T> implements DataOutput<T> {
     return builder.build();
   }
 
-  private TabularOutput(SequenceWriter sw) {
+  private TabularOutput(SequenceWriter sw, boolean idTrackingEnabled) {
     this.sw = sw;
+    this.idTrackingEnabled = idTrackingEnabled;
+    this.trackedIds = idTrackingEnabled ? new HashSet<>() : null;
   }
 
   /**
-   * Adds a record to the CSV output.
+   * Adds a record to the CSV output with ID tracking for deduplication.
+   * @param id the unique identifier for the record
+   * @param record the record to write
+   * @throws IOException if writing fails
+   */
+  public void addRecord(I id, T record) throws IOException {
+    if (idTrackingEnabled) {
+      if (id == null) {
+        throw new IllegalArgumentException("ID cannot be null when ID tracking is enabled");
+      }
+      
+      // Skip if already tracked
+      if (trackedIds.contains(id)) {
+        return;
+      }
+      
+      // Add to tracked IDs
+      trackedIds.add(id);
+    }
+    
+    // Write the record
+    sw.write(record);
+  }
+
+  /**
    *
    * @param record the record to write
    * @throws IOException if writing fails
@@ -175,5 +207,10 @@ public final class TabularOutput<T> implements DataOutput<T> {
     private final List<String> headers;
     private final List<String> receivedHeadersAliases;
     private final ColumnSeparator columnSeparator;
+    /**
+     * Enable in-memory ID tracking to avoid duplicate records.
+     * When enabled, use addRecord(I id, T record) to track and skip duplicates.
+     */
+    private final boolean enableIdTracking;
   }
 }
