@@ -50,8 +50,8 @@ public class CompositeDataOutputIT {
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
       Writer projectWriter = new FileWriter(tempDir.resolve("projects.csv").toFile(), StandardCharsets.UTF_8);
 
-      TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
-      TabularOutput<Object, JsonNode> projectOutput = TabularOutput.create(projectArgs, new TypeReference<>() {}, projectWriter);
+      TabularOutput<Integer, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
+      TabularOutput<Integer, JsonNode> projectOutput = TabularOutput.create(projectArgs, new TypeReference<>() {}, projectWriter);
 
       CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput, "project", projectOutput))) {
@@ -107,7 +107,7 @@ public class CompositeDataOutputIT {
     // When: Creating composite output and adding records
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
-      TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
+      TabularOutput<Integer, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
       CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
@@ -134,7 +134,7 @@ public class CompositeDataOutputIT {
     // When: Creating composite output and adding records
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.tsv").toFile(), StandardCharsets.UTF_8);
-      TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
+      TabularOutput<Integer, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
       CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
@@ -159,7 +159,7 @@ public class CompositeDataOutputIT {
     // When: Adding record with unknown type
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
-      TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
+      TabularOutput<Integer, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
       CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
@@ -185,7 +185,7 @@ public class CompositeDataOutputIT {
     // When: Adding record without specifying type
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
-      TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
+      TabularOutput<Integer, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
       CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
@@ -211,7 +211,7 @@ public class CompositeDataOutputIT {
     // When: Adding multiple records of the same type
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
-      TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
+      TabularOutput<Integer, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
       CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
@@ -231,7 +231,7 @@ public class CompositeDataOutputIT {
   @Test
   void compositeDataOutput_withEmptyConfiguration_createsNoFiles() throws IOException {
     // Given: Empty configuration
-    Map<String, TabularOutput<Object, JsonNode>> emptyOutputs = new LinkedHashMap<>();
+    Map<String, TabularOutput<Integer, JsonNode>> emptyOutputs = new LinkedHashMap<>();
 
     // When: Creating composite output with no entity types
     try (CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(emptyOutputs)) {

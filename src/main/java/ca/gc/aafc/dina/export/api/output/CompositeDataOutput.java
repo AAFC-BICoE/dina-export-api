@@ -11,7 +11,7 @@ import java.util.Map;
  */
 public class CompositeDataOutput<I, T> implements DataOutput<I, T> {
 
-  private final Map<String, TabularOutput<Object, T>> outputsByType;
+  private final Map<String, TabularOutput<I, T>> outputsByType;
 
   /**
    * Creates a composite data output with multiple entity configurations.
@@ -19,7 +19,7 @@ public class CompositeDataOutput<I, T> implements DataOutput<I, T> {
    * @param outputsByType tabular output for each type (type name -> TabularOutput)
    * @throws IOException if file creation fails
    */
-  public CompositeDataOutput(Map<String, TabularOutput<Object, T>> outputsByType) {
+  public CompositeDataOutput(Map<String, TabularOutput<I, T>> outputsByType) {
     this.outputsByType = Map.copyOf(outputsByType);
   }
 
@@ -30,7 +30,7 @@ public class CompositeDataOutput<I, T> implements DataOutput<I, T> {
 
   @Override
   public void addRecord(String type, I id, T record) throws IOException {
-    TabularOutput<Object, T> output = outputsByType.get(type);
+    TabularOutput<I, T> output = outputsByType.get(type);
     if (output == null) {
       throw new IllegalArgumentException(
           "No output configured for entity type: " + type);
@@ -43,7 +43,7 @@ public class CompositeDataOutput<I, T> implements DataOutput<I, T> {
     IOException firstException = null;
     
     // Close all outputs
-    for (TabularOutput<Object, T> output : outputsByType.values()) {
+    for (TabularOutput<I, T> output : outputsByType.values()) {
       try {
         output.close();
       } catch (IOException e) {
