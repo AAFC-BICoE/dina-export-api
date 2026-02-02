@@ -21,10 +21,8 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
 /**
  * Responsible to write a tabular output (csv, tsv).
- * @param <I>
- * @param <T>
  */
-public final class TabularOutput<I, T> implements DataOutput<T> {
+public final class TabularOutput<I, T> implements DataOutput<I, T> {
 
   public static final String OPTION_COLUMN_SEPARATOR = "columnSeparator";
   public static final String OPTION_ENABLE_ID_TRACKING = "enableIdTracking";
@@ -155,6 +153,7 @@ public final class TabularOutput<I, T> implements DataOutput<T> {
    * @param record the record to write
    * @throws IOException if writing fails
    */
+  @Override
   public void addRecord(I id, T record) throws IOException {
     if (idTrackingEnabled) {
       if (id == null) {
@@ -175,16 +174,6 @@ public final class TabularOutput<I, T> implements DataOutput<T> {
   }
 
   /**
-   *
-   * @param record the record to write
-   * @throws IOException if writing fails
-   */
-  @Override
-  public void addRecord(T record) throws IOException {
-    sw.write(record);
-  }
-
-  /**
    * Adds a record to the CSV output.
    *
    * @param type will be ignored for that output
@@ -192,8 +181,8 @@ public final class TabularOutput<I, T> implements DataOutput<T> {
    * @throws IOException if writing fails
    */
   @Override
-  public void addRecord(String type, T record) throws IOException {
-    addRecord(record);
+  public void addRecord(String type, I id, T record) throws IOException {
+    addRecord(id, record);
   }
 
   @Override

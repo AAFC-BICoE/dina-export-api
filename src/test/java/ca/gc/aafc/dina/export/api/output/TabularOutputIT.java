@@ -27,7 +27,7 @@ public class TabularOutputIT {
     Path tmpFile = Files.createTempFile(null, null);
     try (Writer w = new FileWriter(tmpFile.toFile(),
       StandardCharsets.UTF_8);
-         TabularOutput<Object, JsonNode> output =
+         TabularOutput<Integer, JsonNode> output =
            TabularOutput.create(TabularOutput.TabularOutputArgs.builder()
              .headers(List.of("col1", "col2"))
              .columnSeparator(TabularOutput.ColumnSeparator.TAB).build(), new TypeReference<>() {
@@ -37,11 +37,11 @@ public class TabularOutputIT {
       ObjectNode jNode = om.createObjectNode();
       jNode.put("col1", "a");
       jNode.put("col2", "b");
-      output.addRecord(jNode);
+      output.addRecord(1, jNode);
       jNode = om.createObjectNode();
       jNode.put("col1", "y");
       jNode.put("col2", "z");
-      output.addRecord(jNode);
+      output.addRecord(2, jNode);
     }
     List<String> fileContent = Files.readAllLines(tmpFile);
     assertTrue(fileContent.getFirst().startsWith("col1"));
@@ -55,7 +55,7 @@ public class TabularOutputIT {
     Path tmpFile = Files.createTempFile(null, null);
     try (Writer w = new FileWriter(tmpFile.toFile(),
          StandardCharsets.UTF_8);
-         TabularOutput<Object, JsonNode> output =
+         TabularOutput<Integer, JsonNode> output =
            TabularOutput.create(TabularOutput.TabularOutputArgs.builder()
              .headers(List.of("col1", "col2"))
              .receivedHeadersAliases(List.of("c1", "c2")).build(), new TypeReference<>() {
@@ -65,11 +65,11 @@ public class TabularOutputIT {
       ObjectNode jNode = om.createObjectNode();
       jNode.put("col1", "a");
       jNode.put("col2", "b");
-      output.addRecord(jNode);
+      output.addRecord(1, jNode);
       jNode = om.createObjectNode();
       jNode.put("col1", "y");
       jNode.put("col2", "z");
-      output.addRecord(jNode);
+      output.addRecord(2, jNode);
     }
     List<String> fileContent = Files.readAllLines(tmpFile);
     assertTrue(fileContent.getFirst().startsWith("c1"));
@@ -81,7 +81,7 @@ public class TabularOutputIT {
     Path tmpFile = Files.createTempFile(null, null);
     try (Writer w = new FileWriter(tmpFile.toFile(),
       StandardCharsets.UTF_8);
-         TabularOutput<Object, JsonNode> output =
+         TabularOutput<Integer, JsonNode> output =
            TabularOutput.create(TabularOutput.TabularOutputArgs.builder()
              .headers(List.of("col1", "col2"))
              .receivedHeadersAliases(List.of("", "c2")).build(), new TypeReference<>() {
@@ -91,11 +91,11 @@ public class TabularOutputIT {
       ObjectNode jNode = om.createObjectNode();
       jNode.put("col1", "a");
       jNode.put("col2", "b");
-      output.addRecord(jNode);
+      output.addRecord(1, jNode);
       jNode = om.createObjectNode();
       jNode.put("col1", "y");
       jNode.put("col2", "z");
-      output.addRecord(jNode);
+      output.addRecord(2, jNode);
     }
     List<String> fileContent = Files.readAllLines(tmpFile);
     //the real name should be used since the alias is empty

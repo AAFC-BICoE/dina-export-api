@@ -169,7 +169,7 @@ public class ReportRequestService {
          TabularOutput<Object, Map<String, Object>> output =
            TabularOutput.create(TabularOutput.TabularOutputArgs.builder().headers(headers).build(), MAP_TYPEREF, w)) {
       for (Map<String, Object> line : payload) {
-        output.addRecord(line);
+        output.addRecord(null, line);
       }
     }
 

@@ -9,7 +9,7 @@ import java.util.Map;
  * 
  * @param <T> the record type
  */
-public class CompositeDataOutput<T> implements DataOutput<T> {
+public class CompositeDataOutput<I, T> implements DataOutput<I, T> {
 
   private final Map<String, TabularOutput<Object, T>> outputsByType;
 
@@ -24,18 +24,18 @@ public class CompositeDataOutput<T> implements DataOutput<T> {
   }
 
   @Override
-  public void addRecord(T record) throws IOException {
+  public void addRecord(I id, T record) throws IOException {
     throw new IllegalArgumentException("type required for CompositeDataOutput");
   }
 
   @Override
-  public void addRecord(String type, T record) throws IOException {
+  public void addRecord(String type, I id, T record) throws IOException {
     TabularOutput<Object, T> output = outputsByType.get(type);
     if (output == null) {
       throw new IllegalArgumentException(
           "No output configured for entity type: " + type);
     }
-    output.addRecord(type, record);
+    output.addRecord(type, id, record);
   }
 
   @Override

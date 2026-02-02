@@ -4,16 +4,18 @@ import java.io.IOException;
 
 /**
  * Main interface for record output.
- * @param <T>
+ * @param <I> record identifier class
+ * @param <T> record class
  */
-public interface DataOutput <T> extends AutoCloseable {
+public interface DataOutput <I, T> extends AutoCloseable {
 
   /**
    * Add record without type
-   * @param record
+   * @param id identifier of the record
+   * @param record the record
    * @throws IOException
    */
-  void addRecord(T record) throws IOException;
+  void addRecord(I id, T record) throws IOException;
 
-  void addRecord(String type, T record) throws IOException;
+  void addRecord(String type, I id, T record) throws IOException;
 }

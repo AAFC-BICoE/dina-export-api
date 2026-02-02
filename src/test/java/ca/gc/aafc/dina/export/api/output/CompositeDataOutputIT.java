@@ -53,7 +53,7 @@ public class CompositeDataOutputIT {
       TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
       TabularOutput<Object, JsonNode> projectOutput = TabularOutput.create(projectArgs, new TypeReference<>() {}, projectWriter);
 
-      CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
+      CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput, "project", projectOutput))) {
       
       // Add sample records
@@ -61,20 +61,20 @@ public class CompositeDataOutputIT {
       sample1.put("id", "S001");
       sample1.put("name", "Sample 1");
       sample1.put("type", "soil");
-      output.addRecord("sample", sample1);
+      output.addRecord("sample", 1, sample1);
       
       ObjectNode sample2 = objectMapper.createObjectNode();
       sample2.put("id", "S002");
       sample2.put("name", "Sample 2");
       sample2.put("type", "water");
-      output.addRecord("sample", sample2);
+      output.addRecord("sample", 2, sample2);
       
       // Add project records
       ObjectNode project1 = objectMapper.createObjectNode();
       project1.put("id", "P001");
       project1.put("title", "Project Alpha");
       project1.put("description", "First project");
-      output.addRecord("project", project1);
+      output.addRecord("project", 1, project1);
     }
 
     // Then: Verify files are created with correct content
@@ -108,13 +108,13 @@ public class CompositeDataOutputIT {
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
       TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
-      CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
+      CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
       ObjectNode sample = objectMapper.createObjectNode();
       sample.put("id", "S001");
       sample.put("name", "Test Sample");
-      output.addRecord("sample", sample);
+      output.addRecord("sample", 1, sample);
     }
 
     // Then: Verify aliases are used in header
@@ -135,13 +135,13 @@ public class CompositeDataOutputIT {
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.tsv").toFile(), StandardCharsets.UTF_8);
       TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
-      CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
+      CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
       ObjectNode sample = objectMapper.createObjectNode();
       sample.put("id", "S001");
       sample.put("name", "Test Sample");
-      output.addRecord("sample", sample);
+      output.addRecord("sample", 1, sample);
     }
 
     // Then: Verify tab separator is used
@@ -160,7 +160,7 @@ public class CompositeDataOutputIT {
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
       TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
-      CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
+      CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
       ObjectNode record = objectMapper.createObjectNode();
@@ -168,7 +168,7 @@ public class CompositeDataOutputIT {
 
       // Then: Should throw exception for unknown type
       IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-        output.addRecord("unknownType", record);
+        output.addRecord("unknownType", 1, record);
       });
 
       assertTrue(exception.getMessage().contains("No output configured for entity type: unknownType"));
@@ -186,7 +186,7 @@ public class CompositeDataOutputIT {
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
       TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
-      CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
+      CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
       ObjectNode record = objectMapper.createObjectNode();
@@ -194,7 +194,7 @@ public class CompositeDataOutputIT {
 
       // Then: Should throw exception
       IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-        output.addRecord(record);
+        output.addRecord(1, record);
       });
 
       assertTrue(exception.getMessage().contains("type required for CompositeDataOutput"));
@@ -212,14 +212,14 @@ public class CompositeDataOutputIT {
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
       TabularOutput<Object, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
-      CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(
+      CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
       for (int i = 1; i <= 5; i++) {
         ObjectNode sample = objectMapper.createObjectNode();
         sample.put("id", "S00" + i);
         sample.put("name", "Sample " + i);
-        output.addRecord("sample", sample);
+        output.addRecord("sample", 1, sample);
       }
     }
 
@@ -234,7 +234,7 @@ public class CompositeDataOutputIT {
     Map<String, TabularOutput<Object, JsonNode>> emptyOutputs = new LinkedHashMap<>();
 
     // When: Creating composite output with no entity types
-    try (CompositeDataOutput<JsonNode> output = new CompositeDataOutput<>(emptyOutputs)) {
+    try (CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(emptyOutputs)) {
       // Do nothing
     }
 
