@@ -166,10 +166,10 @@ public class ReportRequestService {
     // Base the headers on the first record
     List<String> headers = payload.isEmpty() ? List.of() : List.copyOf(payload.getFirst().keySet());
     try (Writer w = new FileWriter(csvFile, StandardCharsets.UTF_8);
-         TabularOutput<Map<String, Object>> output =
+         TabularOutput<Object, Map<String, Object>> output =
            TabularOutput.create(TabularOutput.TabularOutputArgs.builder().headers(headers).build(), MAP_TYPEREF, w)) {
       for (Map<String, Object> line : payload) {
-        output.addRecord(line);
+        output.addRecord(null, line);
       }
     }
 
