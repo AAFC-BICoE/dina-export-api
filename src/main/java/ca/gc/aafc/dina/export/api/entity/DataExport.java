@@ -97,13 +97,28 @@ public class DataExport implements DinaEntity {
   @Column
   private Map<String, Object> query;
 
+  // will be removed in 0.19
   @Type(type = "string-array")
   @Column
   private String[] columns;
 
-  @Type(type = "string-array")
+  /**
+   * Column aliases for headers.
+   * Supports nested map (for multi-entity).
+   * - Nested map: {"materialSample": ["Sample Name", "ID"], "collectingEvent": ["Location", "Event ID"]}
+   */
+  @Type(type = "jsonb")
   @Column
-  private String[] columnAliases;
+  private Object columnAliases;
+
+  /**
+   * Schema-based column configuration for exports.
+   * Unified field that handles multi-entity exports.
+   * - Multi-entity export: {"materialSample": ["materialSampleName", "id"], "collectingEvent": ["dwcVerbatimLocality", "id"]}
+   */
+  @Type(type = "jsonb")
+  @Column
+  private Map<String, String[]> schema;
 
   // to be removed in 0.18
   @Type(type = "jsonb")
