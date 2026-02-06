@@ -10,26 +10,26 @@
     
     <!-- For data_export table -->
     <sql>
-      ALTER TABLE export.data_export 
+      ALTER TABLE data_export 
       ALTER COLUMN column_aliases TYPE JSONB 
       USING to_jsonb(column_aliases)
     </sql>
     
     <!-- For data_export_template table -->
     <sql>
-      ALTER TABLE export.data_export_template 
+      ALTER TABLE data_export_template 
       ALTER COLUMN column_aliases TYPE JSONB 
       USING to_jsonb(column_aliases)
     </sql>
     
     <rollback>
       <sql>
-        ALTER TABLE export.data_export 
+        ALTER TABLE data_export 
         ALTER COLUMN column_aliases TYPE text[] 
         USING ARRAY(SELECT jsonb_array_elements_text(column_aliases))
       </sql>
       <sql>
-        ALTER TABLE export.data_export_template 
+        ALTER TABLE data_export_template 
         ALTER COLUMN column_aliases TYPE text[] 
         USING ARRAY(SELECT jsonb_array_elements_text(column_aliases))
       </sql>
