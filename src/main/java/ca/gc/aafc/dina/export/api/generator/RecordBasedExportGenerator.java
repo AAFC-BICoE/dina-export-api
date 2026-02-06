@@ -36,6 +36,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -80,7 +81,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   public String generateFilename(DataExport dinaExport) {
     Map<String, String[]> schema = getEffectiveSchema(dinaExport);
 
-    if (isMultiEntityExport(schema)) {
+    if (isMultiEntityExport(dinaExport, schema)) {
       return dinaExport.getUuid().toString() + ".zip";
     }
 
@@ -110,7 +111,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       ensureDirectoryExists(exportPath.getParent());
       Map<String, String[]> schema = getEffectiveSchema(dinaExport);
 
-      if (isMultiEntityExport(schema)) {
+      if (isMultiEntityExport(dinaExport, schema)) {
         exportMultiEntity(dinaExport, schema, exportPath);
       } else {
         exportSingleEntity(dinaExport, schema, exportPath);
@@ -196,6 +197,9 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
                                 boolean isMultiEntity) throws IOException {
     String query = objectMapper.writeValueAsString(dinaExport.getQuery());
     Map<String, DataExportFunction> functions = dinaExport.getFunctions();
+    
+    // For single-entity exports, check if schema has multiple entries (needs relationships merged)
+    boolean needsRelationships = isMultiEntity || getEffectiveSchema(dinaExport).size() > 1;
 
     SearchResponse<JsonNode> response =
       elasticSearchDataSource.searchWithPIT(dinaExport.getSource(), query);
@@ -204,7 +208,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       boolean pageAvailable = !response.hits().hits().isEmpty();
       while (pageAvailable) {
         for (Hit<JsonNode> hit : response.hits().hits()) {
-          processHit(hit, functions, output, isMultiEntity);
+          processHit(hit, functions, output, isMultiEntity, needsRelationships);
         }
 
         int hitCount = response.hits().hits().size();
@@ -221,7 +225,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   private void processHit(Hit<JsonNode> hit, Map<String, DataExportFunction> functions,
-                           DataOutput<UUID, JsonNode> output, boolean isMultiEntity) throws IOException {
+                           DataOutput<UUID, JsonNode> output, boolean isMultiEntity, 
+                           boolean needsRelationships) throws IOException {
     JsonNode source = hit.source();
     if (source == null) {
       return;
@@ -232,8 +237,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       return;
     }
 
-    // Main /data entity — merge relationships in multi-entity mode
-    processEntity(dataOpt.get(), hit.id(), isMultiEntity ? source : null, functions, output);
+    // Main /data entity — merge relationships when needed (multi-entity OR multi-entity schema)
+    processEntity(dataOpt.get(), hit.id(), needsRelationships ? source : null, functions, output);
 
     // In multi-entity mode, each /included entity becomes its own row
     if (isMultiEntity) {
@@ -259,6 +264,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
     String entityId = extractText(entity, JSONApiDocumentStructure.ID, fallbackId);
     String entityType = extractText(entity, JSONApiDocumentStructure.TYPE, null);
+    // Convert kebab-case to camelCase (e.g., "material-sample" -> "materialSample")
+    entityType = kebabToCamelCase(entityType);
 
     if (StringUtils.isBlank(entityId)) {
       log.warn("Entity missing id, skipping");
@@ -301,16 +308,44 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     return "TAB".equals(columnSeparator) ? ".tsv" : ".csv";
   }
 
-  private static boolean isMultiEntityExport(Map<String, String[]> schema) {
-    return MapUtils.isNotEmpty(schema) && schema.size() > 1;
+  private boolean isMultiEntityExport(DataExport dinaExport, Map<String, String[]> schema) {
+    // Only create separate files (ZIP) if enablePackaging is true AND there are multiple entities
+    boolean packagingEnabled = dinaExport.getExportOptions() != null && 
+      Boolean.parseBoolean(dinaExport.getExportOptions().getOrDefault("enablePackaging", "false"));
+    return MapUtils.isNotEmpty(schema) && schema.size() > 1 && packagingEnabled;
   }
 
   private TabularOutput.TabularOutputArgs buildOutputArgs(DataExport dinaExport,
                                                            Map<String, String[]> schema) {
-    String entityType = schema.keySet().iterator().next();
-    List<String> headers = Arrays.asList(schema.get(entityType));
+    // For single-entity exports (no packaging), merge all columns from all schema entries
+    // The schema keys represent entity types/relationships in the data    
+    List<String> allColumns = new ArrayList<>();
+    String primaryEntity = null;
+    
+    // Process schema entries
+    int index = 0;
+    for (Map.Entry<String, String[]> entry : schema.entrySet()) {
+      String entityType = entry.getKey();
+      String[] columns = entry.getValue();
+      
+      if (index == 0) {
+        // First entity is primary - columns are used as-is
+        primaryEntity = entityType;
+        allColumns.addAll(Arrays.asList(columns));
+      } else {
+        // Related entities - prefix columns with entity type (relationship name from the data)
+        for (String column : columns) {
+          allColumns.add(entityType + "." + column);
+        }
+      }
+      index++;
+    }
+    
+    // Use primary entity for alias resolution (or first key if somehow null)
+    String outputEntity = primaryEntity != null ? primaryEntity : schema.keySet().iterator().next();
+    
     // ID tracking not needed for single-entity exports
-    return buildOutputArgsForEntity(dinaExport, entityType, headers, false);
+    return buildOutputArgsForEntity(dinaExport, outputEntity, allColumns, false);
   }
 
   private TabularOutput.TabularOutputArgs buildOutputArgsForEntity(
@@ -369,5 +404,24 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   private static String extractText(JsonNode node, String field, String fallback) {
     JsonNode child = node.get(field);
     return child != null ? child.asText() : fallback;
+  }
+
+  private static String kebabToCamelCase(String kebabCase) {
+    if (StringUtils.isBlank(kebabCase) || !kebabCase.contains("-")) {
+      return kebabCase;
+    }
+    StringBuilder result = new StringBuilder();
+    boolean capitalizeNext = false;
+    for (char c : kebabCase.toCharArray()) {
+      if (c == '-') {
+        capitalizeNext = true;
+      } else if (capitalizeNext) {
+        result.append(Character.toUpperCase(c));
+        capitalizeNext = false;
+      } else {
+        result.append(c);
+      }
+    }
+    return result.toString();
   }
 }

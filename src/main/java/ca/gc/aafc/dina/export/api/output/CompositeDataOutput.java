@@ -33,8 +33,8 @@ public class CompositeDataOutput<I, T> implements DataOutput<I, T> {
   public void addRecord(String type, I id, T record) throws IOException {
     TabularOutput<I, T> output = outputsByType.get(type);
     if (output == null) {
-      throw new IllegalArgumentException(
-          "No output configured for entity type: " + type);
+      // Silently skip entities for which no output is configured
+      return;
     }
     output.addRecord(type, id, record);
   }
