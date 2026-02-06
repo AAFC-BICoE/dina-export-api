@@ -76,9 +76,10 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       .source(MAT_SAMPLE_INDEX)
       .name("my export")
       .query(query)
-      .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
-        "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
-        "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong", "concatResult"))
+      .schema(Map.of(
+        "material-sample", List.of("id", "materialSampleName", "dwcCatalogNumber", 
+          "dwcOtherCatalogNumbers", "managedAttributes.attribute_1", "projects.name", "latLong", "concatResult"),
+        "collecting-event", List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1")))
       .functions(Map.of("latLong",
         new DataExportFunction(DataExportFunction.FunctionDef.CONVERT_COORDINATES_DD,
           Map.of( DataExportFunction.CONVERT_COORDINATES_DD_PARAM, "collectingEvent.eventGeom")),
