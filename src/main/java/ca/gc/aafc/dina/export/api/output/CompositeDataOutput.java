@@ -6,8 +6,9 @@ import java.util.Map;
 /**
  * Composite DataOutput that routes records to different TabularOutput instances based on its type.
  * Implements the Composite pattern for DataOutput, delegating to multiple TabularOutput instances.
- * 
- * @param <T> the record type
+ *
+ * @param <I> record identifier class
+ * @param <T> record type
  */
 public class CompositeDataOutput<I, T> implements DataOutput<I, T> {
 

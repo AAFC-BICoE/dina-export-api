@@ -1,5 +1,8 @@
 package ca.gc.aafc.dina.export.api.mapper;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,22 +35,55 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
 
   @Override
   @Mappings({
-    @Mapping(source = "query", target = "query", qualifiedByName = "mapToJson")
+    @Mapping(source = "query", target = "query", qualifiedByName = "mapToJson"),
+    @Mapping(source = "schema", target = "schema", qualifiedByName = "schemaToDto")
   })
   DataExportDto toDto(DataExport entity, @Context Set<String> provided, @Context String scope);
 
   @Override
   @Mappings({
-    @Mapping(source = "query", target = "query", qualifiedByName = "jsonToMap")
+    @Mapping(source = "query", target = "query", qualifiedByName = "jsonToMap"),
+    @Mapping(source = "schema", target = "schema", qualifiedByName = "schemaToEntity"),
+    @Mapping(target = "id", ignore = true),
+    @Mapping(target = "filename", ignore = true),
+    @Mapping(target = "transitiveData", ignore = true)
   })
   DataExport toEntity(DataExportDto dto, @Context Set<String> provided, @Context String scope);
 
   @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
   @Mappings({
-    @Mapping(source = "query", target = "query", qualifiedByName = "jsonToMap")
+    @Mapping(source = "query", target = "query", qualifiedByName = "jsonToMap"),
+    @Mapping(source = "schema", target = "schema", qualifiedByName = "schemaToEntity"),
+    @Mapping(target = "id", ignore = true),
+    @Mapping(target = "filename", ignore = true),
+    @Mapping(target = "transitiveData", ignore = true)
   })
   void patchEntity(@MappingTarget DataExport entity, DataExportDto dto,
                    @Context Set<String> provided, @Context String scope);
+
+  @Named("schemaToDto")
+  static Map<String, List<String>> schemaToDto(Map<String, String[]> schema) {
+    if (schema == null) {
+      return null;
+    }
+    Map<String, List<String>> result = new HashMap<>();
+    for (var entry : schema.entrySet()) {
+      result.put(entry.getKey(), Arrays.asList(entry.getValue()));
+    }
+    return result;
+  }
+
+  @Named("schemaToEntity")
+  static Map<String, String[]> schemaToEntity(Map<String, List<String>> schema) {
+    if (schema == null) {
+      return null;
+    }
+    Map<String, String[]> result = new HashMap<>();
+    for (var entry : schema.entrySet()) {
+      result.put(entry.getKey(), entry.getValue().toArray(new String[0]));
+    }
+    return result;
+  }
 
   @Named("mapToJson")
   static String mapToJsonString(Map<String, Object> query) {

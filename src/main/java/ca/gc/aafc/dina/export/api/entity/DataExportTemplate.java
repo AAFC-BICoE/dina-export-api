@@ -108,6 +108,8 @@ public class DataExportTemplate implements DinaEntity {
    * Unified field that handles multi-entity exports.
    * - Multi-entity export: {"materialSample": ["materialSampleName", "id"], "collectingEvent": ["dwcVerbatimLocality", "id"]}
    */
+  @Type(type = "jsonb")
+  @Column
   private Map<String, String[]> schema;
 
   // functions by column
