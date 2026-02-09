@@ -333,9 +333,10 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
         primaryEntity = entityType;
         allColumns.addAll(Arrays.asList(columns));
       } else {
-        // Related entities - prefix columns with entity type (relationship name from the data)
+        // Related entities - prefix columns with camelCase entity type
+        String camelCaseType = kebabToCamelCase(entityType);
         for (String column : columns) {
-          allColumns.add(entityType + "." + column);
+          allColumns.add(camelCaseType + "." + column);
         }
       }
       index++;

@@ -1,5 +1,6 @@
 package ca.gc.aafc.dina.export.api.repository;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
@@ -27,11 +28,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -61,6 +64,16 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
   @Inject
   private AsyncConsumer<Future<UUID>> asyncConsumer;
 
+  @AfterEach
+  public void cleanup() throws IOException {
+    // Delete the index after each test to ensure test isolation
+    try {
+      esClient.indices().delete(d -> d.index(MAT_SAMPLE_INDEX));
+    } catch (ElasticsearchException e) {
+      // Ignore if index doesn't exist
+    }
+  }
+
   @Test
   public void testESDatasource()
     throws IOException, ResourceGoneException, ca.gc.aafc.dina.exception.ResourceNotFoundException {
@@ -78,7 +91,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     String query = "{\"query\": {\"match_all\": {}}}";
 
     // Use LinkedHashMap to preserve order - first entry is primary entity
-    Map<String, List<String>> schema = new java.util.LinkedHashMap<>();
+    LinkedHashMap<String, List<String>> schema = new java.util.LinkedHashMap<>();
     schema.put("materialSample", List.of("id", "materialSampleName", "dwcCatalogNumber",
       "dwcOtherCatalogNumbers", "managedAttributes.attribute_1", "projects.name", "latLong", "concatResult"));
     schema.put("collectingEvent", List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"));
@@ -109,7 +122,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     assertNotNull(uuid);
 
     try {
-      asyncConsumer.getAccepted().getFirst().get();
+      asyncConsumer.getAccepted().getLast().get();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -175,7 +188,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     String query = "{\"query\": {\"match_all\": {}}}";
 
     // Use LinkedHashMap to preserve order - first entry is primary entity
-    Map<String, List<String>> schema = new java.util.LinkedHashMap<>();
+    LinkedHashMap<String, List<String>> schema = new java.util.LinkedHashMap<>();
     schema.put("materialSample", List.of("id", "materialSampleName", "dwcCatalogNumber"));
     schema.put("collectingEvent", List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"));
 
@@ -200,7 +213,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     assertNotNull(uuid);
 
     try {
-      asyncConsumer.getAccepted().getFirst().get();
+      asyncConsumer.getAccepted().getLast().get();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }

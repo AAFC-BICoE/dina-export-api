@@ -5,6 +5,7 @@ import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -58,8 +59,9 @@ public class DataExportDto implements ca.gc.aafc.dina.dto.JsonApiResource {
    * Schema-based column configuration for exports.
    * Unified field that handles multi-entity exports.
    * - Multi-entity: {"materialSample": ["materialSampleName", "id"], "collectingEvent": ["dwcVerbatimLocality", "id"]}
+   * Uses LinkedHashMap to preserve entity order - first entity is primary.
    */
-  private Map<String, List<String>> schema;
+  private LinkedHashMap<String, List<String>> schema;
 
   private Map<String, DataExportFunction> functions;
 
