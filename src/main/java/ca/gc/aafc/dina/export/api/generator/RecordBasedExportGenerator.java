@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -79,7 +80,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   @Override
   public String generateFilename(DataExport dinaExport) {
-    Map<String, String[]> schema = getEffectiveSchema(dinaExport);
+    LinkedHashMap<String, String[]> schema = getEffectiveSchema(dinaExport);
 
     if (isMultiEntityExport(dinaExport, schema)) {
       return dinaExport.getUuid().toString() + ".zip";
@@ -109,7 +110,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
     try {
       ensureDirectoryExists(exportPath.getParent());
-      Map<String, String[]> schema = getEffectiveSchema(dinaExport);
+      LinkedHashMap<String, String[]> schema = getEffectiveSchema(dinaExport);
 
       if (isMultiEntityExport(dinaExport, schema)) {
         exportMultiEntity(dinaExport, schema, exportPath);
@@ -143,7 +144,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   // Export single/multi entity
 
-  private void exportSingleEntity(DataExport dinaExport, Map<String, String[]> schema,
+  private void exportSingleEntity(DataExport dinaExport, LinkedHashMap<String, String[]> schema,
                                    Path exportPath) throws IOException {
     try (Writer writer = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
          TabularOutput<UUID, JsonNode> output =
@@ -152,7 +153,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     }
   }
 
-  private void exportMultiEntity(DataExport dinaExport, Map<String, String[]> schema,
+  private void exportMultiEntity(DataExport dinaExport, LinkedHashMap<String, String[]> schema,
                                   Path exportPath) throws IOException {
     Path tempDir = Files.createTempDirectory("dina-export-" + dinaExport.getUuid());
     try {
@@ -294,8 +295,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   // Helpers
 
-  private static Map<String, String[]> getEffectiveSchema(DataExport dinaExport) {
-    return MapUtils.isNotEmpty(dinaExport.getSchema()) ? dinaExport.getSchema() : Map.of();
+  private static LinkedHashMap<String, String[]> getEffectiveSchema(DataExport dinaExport) {
+    return MapUtils.isNotEmpty(dinaExport.getSchema()) ? dinaExport.getSchema() : new LinkedHashMap<>();
   }
 
   private static String getColumnSeparatorOption(DataExport dinaExport) {
@@ -308,7 +309,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     return "TAB".equals(columnSeparator) ? ".tsv" : ".csv";
   }
 
-  private boolean isMultiEntityExport(DataExport dinaExport, Map<String, String[]> schema) {
+  private boolean isMultiEntityExport(DataExport dinaExport, LinkedHashMap<String, String[]> schema) {
     // Only create separate files (ZIP) if enablePackaging is true AND there are multiple entities
     boolean packagingEnabled = dinaExport.getExportOptions() != null && 
       Boolean.parseBoolean(dinaExport.getExportOptions().getOrDefault("enablePackaging", "false"));
@@ -316,7 +317,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   private TabularOutput.TabularOutputArgs buildOutputArgs(DataExport dinaExport,
-                                                           Map<String, String[]> schema) {
+                                                           LinkedHashMap<String, String[]> schema) {
     // For single-entity exports (no packaging), merge all columns from all schema entries
     // The schema keys represent entity types/relationships in the data    
     List<String> allColumns = new ArrayList<>();

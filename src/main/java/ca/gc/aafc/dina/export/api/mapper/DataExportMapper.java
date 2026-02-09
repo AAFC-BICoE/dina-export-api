@@ -1,7 +1,7 @@
 package ca.gc.aafc.dina.export.api.mapper;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,30 +43,24 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
   @Override
   @Mappings({
     @Mapping(source = "query", target = "query", qualifiedByName = "jsonToMap"),
-    @Mapping(source = "schema", target = "schema", qualifiedByName = "schemaToEntity"),
-    @Mapping(target = "id", ignore = true),
-    @Mapping(target = "filename", ignore = true),
-    @Mapping(target = "transitiveData", ignore = true)
+    @Mapping(source = "schema", target = "schema", qualifiedByName = "schemaToEntity")
   })
   DataExport toEntity(DataExportDto dto, @Context Set<String> provided, @Context String scope);
 
   @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
   @Mappings({
     @Mapping(source = "query", target = "query", qualifiedByName = "jsonToMap"),
-    @Mapping(source = "schema", target = "schema", qualifiedByName = "schemaToEntity"),
-    @Mapping(target = "id", ignore = true),
-    @Mapping(target = "filename", ignore = true),
-    @Mapping(target = "transitiveData", ignore = true)
+    @Mapping(source = "schema", target = "schema", qualifiedByName = "schemaToEntity")
   })
   void patchEntity(@MappingTarget DataExport entity, DataExportDto dto,
                    @Context Set<String> provided, @Context String scope);
 
   @Named("schemaToDto")
-  static Map<String, List<String>> schemaToDto(Map<String, String[]> schema) {
+  static LinkedHashMap<String, List<String>> schemaToDto(LinkedHashMap<String, String[]> schema) {
     if (schema == null) {
       return null;
     }
-    Map<String, List<String>> result = new HashMap<>();
+    LinkedHashMap<String, List<String>> result = new LinkedHashMap<>();
     for (var entry : schema.entrySet()) {
       result.put(entry.getKey(), Arrays.asList(entry.getValue()));
     }
@@ -74,11 +68,11 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
   }
 
   @Named("schemaToEntity")
-  static Map<String, String[]> schemaToEntity(Map<String, List<String>> schema) {
+  static LinkedHashMap<String, String[]> schemaToEntity(LinkedHashMap<String, List<String>> schema) {
     if (schema == null) {
       return null;
     }
-    Map<String, String[]> result = new HashMap<>();
+    LinkedHashMap<String, String[]> result = new LinkedHashMap<>();
     for (var entry : schema.entrySet()) {
       result.put(entry.getKey(), entry.getValue().toArray(new String[0]));
     }
