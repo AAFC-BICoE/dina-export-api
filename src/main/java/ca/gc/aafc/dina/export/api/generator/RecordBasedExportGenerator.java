@@ -1,7 +1,6 @@
 package ca.gc.aafc.dina.export.api.generator;
 
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -148,7 +147,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
                                    Path exportPath) throws IOException {
     try (Writer writer = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
          TabularOutput<UUID, JsonNode> output =
-           TabularOutput.create(buildOutputArgs(dinaExport, schema), new TypeReference<>() {}, writer)) {
+           TabularOutput.create(buildOutputArgs(dinaExport, schema), new TypeReference<>() { }, writer)) {
       queryAndProcess(dinaExport, output, false);
     }
   }
@@ -169,7 +168,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
         TabularOutput.TabularOutputArgs args = buildOutputArgsForEntity(
           dinaExport, entityType, Arrays.asList(entry.getValue()), true);
-        outputsByType.put(entityType, TabularOutput.create(args, new TypeReference<>() {}, writer));
+        outputsByType.put(entityType, TabularOutput.create(args, new TypeReference<>() { }, writer));
       }
 
       try (CompositeDataOutput<UUID, JsonNode> composite = new CompositeDataOutput<>(outputsByType)) {
@@ -191,15 +190,18 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   /**
    * Pages through Elasticsearch results and writes each entity to the output.
    *
-   * @param isMultiEntity if true, /included entities are processed as separate records
-   *                      and relationships are merged into the main /data entity
+   * Both modes parse /included data from JSON:API responses:
+   * - Single-entity: /included data is merged into primary entity via RelationshipFlattener (denormalized)
+   * - Multi-entity: /included entities are also processed as separate rows in separate CSVs (normalized)
+   *
+   * @param isMultiEntity if true, each /included entity becomes its own row in addition to merging
    */
   private void queryAndProcess(DataExport dinaExport, DataOutput<UUID, JsonNode> output,
                                 boolean isMultiEntity) throws IOException {
     String query = objectMapper.writeValueAsString(dinaExport.getQuery());
     Map<String, DataExportFunction> functions = dinaExport.getFunctions();
     
-    // For single-entity exports, check if schema has multiple entries (needs relationships merged)
+    // Merge relationships when schema includes multiple entity types
     boolean needsRelationships = isMultiEntity || getEffectiveSchema(dinaExport).size() > 1;
 
     SearchResponse<JsonNode> response =
@@ -238,10 +240,11 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       return;
     }
 
-    // Main /data entity — merge relationships when needed (multi-entity OR multi-entity schema)
+    // Process main /data entity - if needsRelationships, pass source so RelationshipFlattener
+    // can lookup and merge data from /included entities into this entity's attributes
     processEntity(dataOpt.get(), hit.id(), needsRelationships ? source : null, functions, output);
 
-    // In multi-entity mode, each /included entity becomes its own row
+    // Multi-entity mode: also process each /included entity as its own separate row
     if (isMultiEntity) {
       Optional<JsonNode> includedOpt = JsonHelper.atJsonPtr(source, JSONApiDocumentStructure.INCLUDED_PTR);
       if (includedOpt.isPresent() && includedOpt.get().isArray()) {
@@ -256,45 +259,52 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
    * Transforms a single JSON:API entity node and writes it to the output.
    * The output layer decides whether to accept or skip based on entity type.
    */
-  private void processEntity(JsonNode entity, String fallbackId, JsonNode relSource,
-                              Map<String, DataExportFunction> functions,
-                              DataOutput<UUID, JsonNode> output) throws IOException {
+  private void processEntity(JsonNode entity, String fallbackId, 
+                            JsonNode relationshipSource, // Renamed for clarity
+                            Map<String, DataExportFunction> functions,
+                            DataOutput<UUID, JsonNode> output) throws IOException {
     if (entity == null) {
       return;
     }
 
     String entityId = extractText(entity, JSONApiDocumentStructure.ID, fallbackId);
-    String entityType = extractText(entity, JSONApiDocumentStructure.TYPE, null);
-    // Convert kebab-case to camelCase (e.g., "material-sample" -> "materialSample")
-    entityType = kebabToCamelCase(entityType);
-
     if (StringUtils.isBlank(entityId)) {
-      log.warn("Entity missing id, skipping");
       return;
     }
 
-    JsonNode attributesNode = entity.get(JSONApiDocumentStructure.ATTRIBUTES);
-    if (attributesNode == null || attributesNode.isNull() || !(attributesNode instanceof ObjectNode)) {
-      log.warn("Entity {} has no attributes, skipping", entityId);
+    // Attributes processing
+    JsonNode attrsNode = entity.get(JSONApiDocumentStructure.ATTRIBUTES);
+    if (attrsNode == null || attrsNode.isNull()) {
       return;
     }
 
-    ObjectNode attributes = (ObjectNode) attributesNode.deepCopy();
+    ObjectNode attributes = (ObjectNode) attrsNode.deepCopy();
     attributes.put(JSONApiDocumentStructure.ID, entityId);
-    replaceNestedByDotNotation(attributes);
 
-    if (relSource != null) {
-      relationshipFlattener.mergeRelationshipsIntoAttributes(relSource, attributes);
-      replaceNestedByDotNotation(attributes);
+    // 1. Merge Relationships if source exists
+    if (relationshipSource != null) {
+      relationshipFlattener.mergeRelationshipsIntoAttributes(relationshipSource, attributes);
     }
+
+    // 2. Flatten nested objects (e.g. managedAttributes) to dot notation
+    flattenNestedMaps(attributes); 
 
     ExportFunctionHandler.applyExportFunctions(attributes, functions);
 
-    output.addRecord(entityType, UUID.fromString(entityId), attributes);
+    String type = kebabToCamelCase(extractText(entity, JSONApiDocumentStructure.TYPE, ""));
+    output.addRecord(type, UUID.fromString(entityId), attributes);
   }
 
   // Helpers
 
+  private void flattenNestedMaps(ObjectNode node) {
+    var result = JSONApiDocumentStructure.extractNestedMapUsingDotNotation(
+        objectMapper.convertValue(node, MAP_TYPEREF));
+    
+    result.nestedMapsMap().forEach((k, v) -> node.set(k, objectMapper.valueToTree(v)));
+    result.usedKeys().forEach(node::remove);
+  }
+  
   private static LinkedHashMap<String, String[]> getEffectiveSchema(DataExport dinaExport) {
     return MapUtils.isNotEmpty(dinaExport.getSchema()) ? dinaExport.getSchema() : new LinkedHashMap<>();
   }
@@ -317,45 +327,56 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   private TabularOutput.TabularOutputArgs buildOutputArgs(DataExport dinaExport,
-                                                           LinkedHashMap<String, String[]> schema) {
-    // For single-entity exports (no packaging), merge all columns from all schema entries
-    // The schema keys represent entity types/relationships in the data    
-    List<String> allColumns = new ArrayList<>();
-    String primaryEntity = null;
-    
-    // Process schema entries
-    int index = 0;
-    for (Map.Entry<String, String[]> entry : schema.entrySet()) {
-      String entityType = entry.getKey();
-      String[] columns = entry.getValue();
-      
-      if (index == 0) {
-        // First entity is primary - columns are used as-is
-        primaryEntity = entityType;
-        allColumns.addAll(Arrays.asList(columns));
-      } else {
-        // Related entities - prefix columns with camelCase entity type
-        String camelCaseType = kebabToCamelCase(entityType);
-        for (String column : columns) {
-          allColumns.add(camelCaseType + "." + column);
-        }
-      }
-      index++;
+                                                          LinkedHashMap<String, String[]> schema) {
+    if (schema.isEmpty()) {
+      throw new IllegalArgumentException("Schema cannot be empty");
     }
+
+    // Identify Primary vs Related
+    List<String> allColumns = new ArrayList<>();
+    List<String> allAliases = new ArrayList<>();
+
+    var iterator = schema.entrySet().iterator();
+
+    // Handle primary entity (first entry in schema)
+    var primaryEntry = iterator.next();
+    String[] primaryColumns = primaryEntry.getValue();
+
+    allColumns.addAll(Arrays.asList(primaryColumns));
+
+    addAliases(dinaExport, primaryEntry.getKey(), primaryColumns.length, allAliases);
+
+    // Handle Related Columns (Remaining entries)
+    while (iterator.hasNext()) {
+      var entry = iterator.next();
+      String[] entityColumns = entry.getValue();
+      String prefix = kebabToCamelCase(entry.getKey()) + ".";
+
+      for (String col : entityColumns) {
+        allColumns.add(prefix + col);
+      }
+      addAliases(dinaExport, entry.getKey(), entityColumns.length, allAliases);
+    }
+
+    // Pass the fully constructed lists to the builder
+    var builder = TabularOutput.TabularOutputArgs.builder()
+      .headers(allColumns)
+      .receivedHeadersAliases(allAliases);
+
+    applyColumnSeparator(dinaExport, builder);
     
-    // Use primary entity for alias resolution (or first key if somehow null)
-    String outputEntity = primaryEntity != null ? primaryEntity : schema.keySet().iterator().next();
-    
-    // ID tracking not needed for single-entity exports
-    return buildOutputArgsForEntity(dinaExport, outputEntity, allColumns, false);
+    return builder.build();
   }
 
+  
   private TabularOutput.TabularOutputArgs buildOutputArgsForEntity(
     DataExport dinaExport, String entityType, List<String> headers, boolean enableIdTracking) {
 
+    String camelCaseType = kebabToCamelCase(entityType);
+
     var builder = TabularOutput.TabularOutputArgs.builder()
       .headers(headers)
-      .receivedHeadersAliases(getAliasesForEntity(dinaExport, entityType))
+      .receivedHeadersAliases(getAliasesForEntity(dinaExport, camelCaseType))
       .enableIdTracking(enableIdTracking);
 
     applyColumnSeparator(dinaExport, builder);
@@ -377,31 +398,22 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     if (dinaExport.getColumnAliases() == null) {
       return null;
     }
+    
     if (dinaExport.getColumnAliases() instanceof Map<?, ?> aliasMap) {
+
       Object entityAliases = aliasMap.get(entityType);
       if (entityAliases instanceof List) {
         return (List<String>) entityAliases;
       } else if (entityAliases instanceof String[] arr) {
         return Arrays.asList(arr);
       }
+    } else {
+       log.warn("columnAliases is not a Map, it is: {}", dinaExport.getColumnAliases().getClass().getName());
     }
     return null;
   }
 
   // ── JSON transformation helpers ────────────────────────────────────────
-
-  private void replaceNestedByDotNotation(ObjectNode node) {
-    JSONApiDocumentStructure.ExtractNestedMapResult result =
-      JSONApiDocumentStructure.extractNestedMapUsingDotNotation(
-        objectMapper.convertValue(node, MAP_TYPEREF));
-
-    for (var entry : result.nestedMapsMap().entrySet()) {
-      node.set(entry.getKey(), objectMapper.valueToTree(entry.getValue()));
-    }
-    for (String key : result.usedKeys()) {
-      node.remove(key);
-    }
-  }
 
   private static String extractText(JsonNode node, String field, String fallback) {
     JsonNode child = node.get(field);
@@ -426,4 +438,22 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     }
     return result.toString();
   }
+
+  /**
+   * Helper to fetch aliases and add them to the master list.
+   * Pads with nulls if aliases are missing to maintain column alignment.
+   */
+  private void addAliases(DataExport dinaExport, String entityType, int colCount, List<String> accumulator) {
+    List<String> foundAliases = getAliasesForEntity(dinaExport, entityType);
+
+    for (int i = 0; i < colCount; i++) {
+      if (foundAliases != null && i < foundAliases.size()) {
+        accumulator.add(foundAliases.get(i));
+      } else {
+        accumulator.add(null);
+      }
+    }
+  }
+
 }
+

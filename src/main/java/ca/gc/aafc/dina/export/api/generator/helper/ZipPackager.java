@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -63,7 +64,7 @@ public final class ZipPackager {
       return;
     }
     try (Stream<Path> paths = Files.walk(directory)) {
-      paths.sorted((a, b) -> -a.compareTo(b))
+      paths.sorted(Comparator.reverseOrder()) 
         .forEach(path -> {
           try {
             Files.delete(path);
