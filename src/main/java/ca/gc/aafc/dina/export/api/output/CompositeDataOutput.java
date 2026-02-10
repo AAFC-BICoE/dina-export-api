@@ -6,8 +6,9 @@ import java.util.Map;
 /**
  * Composite DataOutput that routes records to different TabularOutput instances based on its type.
  * Implements the Composite pattern for DataOutput, delegating to multiple TabularOutput instances.
- * 
- * @param <T> the record type
+ *
+ * @param <I> record identifier class
+ * @param <T> record type
  */
 public class CompositeDataOutput<I, T> implements DataOutput<I, T> {
 
@@ -32,8 +33,8 @@ public class CompositeDataOutput<I, T> implements DataOutput<I, T> {
   public void addRecord(String type, I id, T record) throws IOException {
     TabularOutput<I, T> output = outputsByType.get(type);
     if (output == null) {
-      throw new IllegalArgumentException(
-          "No output configured for entity type: " + type);
+      // Silently skip entities for which no output is configured
+      return;
     }
     output.addRecord(type, id, record);
   }

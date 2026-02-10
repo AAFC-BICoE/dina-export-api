@@ -150,29 +150,36 @@ public class CompositeDataOutputIT {
   }
 
   @Test
-  void compositeDataOutput_withUnknownType_throwsException() throws IOException {
+  void compositeDataOutput_withUnknownType_silentlySkips() throws IOException {
     // Given: Configuration for only one entity type
     TabularOutput.TabularOutputArgs sampleArgs = TabularOutput.TabularOutputArgs.builder()
       .headers(List.of("id", "name"))
       .columnSeparator(TabularOutput.ColumnSeparator.COMMA).build();
 
-    // When: Adding record with unknown type
+    // When: Adding records with both known and unknown types
     try (
       Writer sampleWriter = new FileWriter(tempDir.resolve("samples.csv").toFile(), StandardCharsets.UTF_8);
       TabularOutput<Integer, JsonNode> sampleOutput = TabularOutput.create(sampleArgs, new TypeReference<>() {}, sampleWriter);
       CompositeDataOutput<Integer, JsonNode> output = new CompositeDataOutput<>(
         Map.of("sample", sampleOutput))) {
 
-      ObjectNode record = objectMapper.createObjectNode();
-      record.put("id", "X001");
+      // Add known type record
+      ObjectNode knownRecord = objectMapper.createObjectNode();
+      knownRecord.put("id", "S001");
+      knownRecord.put("name", "Known Sample");
+      output.addRecord("sample", 1, knownRecord);
 
-      // Then: Should throw exception for unknown type
-      IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-        output.addRecord("unknownType", 1, record);
-      });
-
-      assertTrue(exception.getMessage().contains("No output configured for entity type: unknownType"));
+      // Add unknown type record - should be silently skipped
+      ObjectNode unknownRecord = objectMapper.createObjectNode();
+      unknownRecord.put("id", "X001");
+      unknownRecord.put("name", "Unknown Type");
+      output.addRecord("unknownType", 2, unknownRecord);
     }
+
+    // Then: Only the known type record should be written
+    List<String> content = Files.readAllLines(tempDir.resolve("samples.csv"));
+    assertEquals(2, content.size()); // header + 1 record (unknown type was skipped)
+    assertTrue(content.get(1).contains("S001"));
   }
 
   @Test

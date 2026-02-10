@@ -44,8 +44,21 @@ public class DataExportTemplateDto implements JsonApiResource {
   private DataExport.ExportType exportType;
   private Map<String, String> exportOptions;
 
+  // will be removed in 0.19
   private String[] columns;
-  private String[] columnAliases;
+  
+  /**
+   * Column aliases for headers.
+   * - Nested map: {"materialSample": ["Sample Name", "ID"], "collectingEvent": ["Location", "Event ID"]}
+   */
+  private Object columnAliases;
+
+  /**
+   * Schema-based column configuration for exports.
+   * Unified field that handles multi-entity exports.
+   * - Multi-entity: {"materialSample": ["materialSampleName", "id"], "collectingEvent": ["dwcVerbatimLocality", "id"]}
+   */
+  private Map<String, String[]> schema;
 
   private Map<String, DataExportFunction> functions;
 

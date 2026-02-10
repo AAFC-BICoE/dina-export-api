@@ -1,0 +1,30 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
+
+  <changeSet id="12" author="dina-export-api" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="data_export" columnName="schema"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="data_export">
+      <column name="schema" type="jsonb">
+        <constraints nullable="true"/>
+      </column>
+    </addColumn>
+    <addColumn tableName="data_export_template">
+      <column name="schema" type="jsonb">
+        <constraints nullable="true"/>
+      </column>
+    </addColumn>
+    <rollback>
+      <dropColumn tableName="data_export" columnName="schema"/>
+      <dropColumn tableName="data_export_template" columnName="schema"/>
+    </rollback>
+  </changeSet>
+
+</databaseChangeLog>
