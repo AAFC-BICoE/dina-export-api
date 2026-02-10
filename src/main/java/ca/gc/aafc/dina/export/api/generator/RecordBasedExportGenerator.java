@@ -408,7 +408,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
         return Arrays.asList(arr);
       }
     } else {
-        log.warn("columnAliases is not a Map, it is: {}", dinaExport.getColumnAliases().getClass().getName());
+      log.warn("columnAliases is not a Map, it is: {}", dinaExport.getColumnAliases().getClass().getName());
     }
     return null;
   }

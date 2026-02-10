@@ -23,6 +23,7 @@ import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchTestUtils;
 import ca.gc.aafc.dina.testsupport.jsonapi.JsonAPITestHelper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -268,4 +269,92 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       ResourceNotFoundException.class, () -> dataExportRepository.onFindOne(uuid, null));
   }
 
+@Test
+  public void testMultiEntityExportWithAliases() throws Exception {
+    ElasticSearchTestUtils.createIndex(esClient, MAT_SAMPLE_INDEX, "elasticsearch/material_sample_index_settings.json");
+
+    UUID docId = UUID.randomUUID();
+    // Index a document that has both materialSample and collectingEvent data
+    ElasticSearchTestUtils.indexDocument(esClient, MAT_SAMPLE_INDEX, docId.toString(), JsonApiDocuments.getMaterialSampleDocument(docId));
+
+    String query = "{\"query\": {\"match_all\": {}}}";
+
+    // Define Schema
+    LinkedHashMap<String, List<String>> schema = new LinkedHashMap<>();
+    schema.put("materialSample", List.of("materialSampleName", "id"));
+    schema.put("collectingEvent", List.of("dwcVerbatimLocality", "id"));
+
+    // Define Aliases
+    LinkedHashMap<String, List<String>> aliases = new LinkedHashMap<>();
+    aliases.put("materialSample", List.of("Sample Name", "Material Sample ID"));
+    aliases.put("collectingEvent", List.of("Locality", "Collecting Event ID"));
+
+    // Create Export Request
+    DataExportDto dto = DataExportDto.builder()
+      .source(MAT_SAMPLE_INDEX)
+      .name("multi entity alias export")
+      .query(query)
+      .schema(schema)
+      .columnAliases(aliases) // Pass aliases map
+      .exportOptions(Map.of(
+        "columnSeparator", "COMMA",
+        "enablePackaging", "true"
+      ))
+      .build();
+
+    JsonApiDocument docToCreate = ca.gc.aafc.dina.jsonapi.JsonApiDocuments.createJsonApiDocument(
+      null, "data-export",
+      JsonAPITestHelper.toAttributeMap(dto)
+    );
+
+    // Submit & Wait for Completion
+    var created = dataExportRepository.onCreate(docToCreate);
+    UUID uuid = JsonApiModelAssistant.extractUUIDFromRepresentationModelLink(created);
+    
+    try {
+      asyncConsumer.getAccepted().getLast().get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    DataExportDto savedDto = dataExportRepository.getOne(uuid, null).getDto();
+    assertEquals(DataExport.ExportStatus.COMPLETED, savedDto.getStatus());
+
+    // Download & Verify ZIP Content
+    ResponseEntity<InputStreamResource> response = 
+      fileController.downloadFile(uuid, FileController.DownloadType.DATA_EXPORT);
+
+    Map<String, String> csvHeaders = new HashMap<>();
+    
+    try (ZipInputStream zis = new ZipInputStream(response.getBody().getInputStream())) {
+      ZipEntry entry;
+      while ((entry = zis.getNextEntry()) != null) {
+        // Read just the first line (header) of each CSV
+        BufferedReader reader = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
+        String headerLine = reader.readLine();
+        if (headerLine != null) {
+          csvHeaders.put(entry.getName(), headerLine);
+        }
+        zis.closeEntry();
+      }
+    }
+
+    // Verify materialSample.csv headers matched aliases
+    String msHeader = csvHeaders.get("materialSample.csv");
+    assertNotNull(msHeader, "materialSample.csv missing from ZIP");
+    assertTrue(msHeader.contains("\"Sample Name\""), "Header should contain alias 'Sample Name'");
+    assertTrue(msHeader.contains("\"Material Sample ID\""), "Header should contain alias 'Material Sample ID'");
+    assertFalse(msHeader.contains("materialSampleName"), "Header should NOT contain raw column name");
+
+    // Verify collectingEvent.csv headers matched aliases
+    String ceHeader = csvHeaders.get("collectingEvent.csv");
+    assertNotNull(ceHeader, "collectingEvent.csv missing from ZIP");
+    assertTrue(ceHeader.contains("Locality"), "Header should contain alias 'Locality'");
+    assertTrue(ceHeader.contains("\"Collecting Event ID\""), "Header should contain alias 'Collecting Event ID'");
+    assertFalse(ceHeader.contains("dwcVerbatimLocality"), "Header should NOT contain raw column name");
+    assertFalse(ceHeader.contains("id"), "Header should NOT contain raw column name 'id'");
+
+    // Clean up
+    dataExportRepository.onDelete(uuid);
+  }
 }
