@@ -97,11 +97,16 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       "dwcOtherCatalogNumbers", "managedAttributes.attribute_1", "projects.name", "latLong", "concatResult"));
     schema.put("collecting-event", List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"));
 
+    LinkedHashMap<String, List<String>> schemaMap = new LinkedHashMap<>();
+    schemaMap.put("material-sample", List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
+      "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
+      "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong", "concatResult"));
+
     DataExportDto dto = DataExportDto.builder()
       .source(MAT_SAMPLE_INDEX)
       .name("my export")
       .query(query)
-      .schema(schema)
+      .schema(schemaMap)
       .functions(Map.of("latLong",
         new DataExportFunction(DataExportFunction.FunctionDef.CONVERT_COORDINATES_DD,
           Map.of( DataExportFunction.CONVERT_COORDINATES_DD_PARAM, "collectingEvent.eventGeom")),

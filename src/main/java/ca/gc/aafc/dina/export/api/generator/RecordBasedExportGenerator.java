@@ -241,9 +241,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       return;
     }
 
-    // Process main /data entity - if needsRelationships, pass source so RelationshipFlattener
-    // can lookup and merge data from /included entities into this entity's attributes
-    processEntity(dataOpt.get(), hit.id(), needsRelationships ? source : null, functions, output);
+    // Main /data entity — merge relationships
+    processEntity(dataOpt.get(), hit.id(), source, functions, output);
 
     // Multi-entity mode: also process each /included entity as its own separate row
     if (isMultiEntity) {
