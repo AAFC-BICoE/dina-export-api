@@ -106,7 +106,7 @@ public class DataExport implements DinaEntity {
   /**
    * Column aliases for headers.
    * Supports nested map (for multi-entity).
-   * - Nested map: {"materialSample": ["Sample Name", "ID"], "collectingEvent": ["Location", "Event ID"]}
+   * - Nested map: {"material-sample": ["Sample Name", "ID"], "collecting-event": ["Location", "Event ID"]}
    */
   @Type(type = "jsonb")
   @Column
@@ -115,7 +115,7 @@ public class DataExport implements DinaEntity {
   /**
    * Schema-based column configuration for exports.
    * Unified field that handles multi-entity exports.
-   * - Multi-entity export: {"materialSample": ["materialSampleName", "id"], "collectingEvent": ["dwcVerbatimLocality", "id"]}
+   * - Multi-entity export: {"material-sample": ["materialSampleName", "id"], "collecting-event": ["dwcVerbatimLocality", "id"]}
    * Uses LinkedHashMap to preserve entity order - first entity is primary.
    */
   @Type(type = "jsonb")

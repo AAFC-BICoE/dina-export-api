@@ -293,7 +293,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
     ExportFunctionHandler.applyExportFunctions(attributes, functions);
 
-    String type = kebabToCamelCase(extractText(entity, JSONApiDocumentStructure.TYPE, ""));
+    String type = extractText(entity, JSONApiDocumentStructure.TYPE, "");
     output.addRecord(type, UUID.fromString(entityId), attributes);
   }
 
@@ -352,7 +352,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     while (iterator.hasNext()) {
       var entry = iterator.next();
       String[] entityColumns = entry.getValue();
-      String prefix = kebabToCamelCase(entry.getKey()) + ".";
+      String prefix = entry.getKey() + ".";
 
       for (String col : entityColumns) {
         allColumns.add(prefix + col);
@@ -374,11 +374,11 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   private TabularOutput.TabularOutputArgs buildOutputArgsForEntity(
     DataExport dinaExport, String entityType, List<String> headers, boolean enableIdTracking) {
 
-    String camelCaseType = kebabToCamelCase(entityType);
+    Map<String, List<String>> aliases = dinaExport.getColumnAliases();
 
     var builder = TabularOutput.TabularOutputArgs.builder()
       .headers(headers)
-      .receivedHeadersAliases(getAliasesForEntity(dinaExport, camelCaseType))
+      .receivedHeadersAliases(aliases != null ? aliases.get(entityType) : null)
       .enableIdTracking(enableIdTracking);
 
     applyColumnSeparator(dinaExport, builder);
@@ -395,26 +395,6 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private static List<String> getAliasesForEntity(DataExport dinaExport, String entityType) {
-    if (dinaExport.getColumnAliases() == null) {
-      return null;
-    }
-    
-    if (dinaExport.getColumnAliases() instanceof Map<?, ?> aliasMap) {
-
-      Object entityAliases = aliasMap.get(entityType);
-      if (entityAliases instanceof List) {
-        return (List<String>) entityAliases;
-      } else if (entityAliases instanceof String[] arr) {
-        return Arrays.asList(arr);
-      }
-    } else {
-      log.warn("columnAliases is not a Map, it is: {}", dinaExport.getColumnAliases().getClass().getName());
-    }
-    return null;
-  }
-
   // ── JSON transformation helpers ────────────────────────────────────────
 
   private static String extractText(JsonNode node, String field, String fallback) {
@@ -422,31 +402,13 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     return child != null ? child.asText() : fallback;
   }
 
-  private static String kebabToCamelCase(String kebabCase) {
-    if (StringUtils.isBlank(kebabCase) || !kebabCase.contains("-")) {
-      return kebabCase;
-    }
-    StringBuilder result = new StringBuilder();
-    boolean capitalizeNext = false;
-    for (char c : kebabCase.toCharArray()) {
-      if (c == '-') {
-        capitalizeNext = true;
-      } else if (capitalizeNext) {
-        result.append(Character.toUpperCase(c));
-        capitalizeNext = false;
-      } else {
-        result.append(c);
-      }
-    }
-    return result.toString();
-  }
-
   /**
    * Helper to fetch aliases and add them to the master list.
    * Pads with nulls if aliases are missing to maintain column alignment.
    */
   private void addAliases(DataExport dinaExport, String entityType, int colCount, List<String> accumulator) {
-    List<String> foundAliases = getAliasesForEntity(dinaExport, entityType);
+    Map<String, List<String>> aliases = dinaExport.getColumnAliases();
+    List<String> foundAliases = aliases != null ? aliases.get(entityType) : null;
 
     for (int i = 0; i < colCount; i++) {
       if (foundAliases != null && i < foundAliases.size()) {

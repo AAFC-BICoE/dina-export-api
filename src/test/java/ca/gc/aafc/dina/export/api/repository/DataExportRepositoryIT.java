@@ -93,9 +93,9 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     // Use LinkedHashMap to preserve order - first entry is primary entity
     LinkedHashMap<String, List<String>> schema = new java.util.LinkedHashMap<>();
-    schema.put("materialSample", List.of("id", "materialSampleName", "dwcCatalogNumber",
+    schema.put("material-sample", List.of("id", "materialSampleName", "dwcCatalogNumber",
       "dwcOtherCatalogNumbers", "managedAttributes.attribute_1", "projects.name", "latLong", "concatResult"));
-    schema.put("collectingEvent", List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"));
+    schema.put("collecting-event", List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"));
 
     DataExportDto dto = DataExportDto.builder()
       .source(MAT_SAMPLE_INDEX)
@@ -190,8 +190,8 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     // Use LinkedHashMap to preserve order - first entry is primary entity
     LinkedHashMap<String, List<String>> schema = new java.util.LinkedHashMap<>();
-    schema.put("materialSample", List.of("id", "materialSampleName", "dwcCatalogNumber"));
-    schema.put("collectingEvent", List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"));
+    schema.put("material-sample", List.of("id", "materialSampleName", "dwcCatalogNumber"));
+    schema.put("collecting-event", List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"));
 
     DataExportDto dto = DataExportDto.builder()
       .source(MAT_SAMPLE_INDEX)
@@ -245,21 +245,21 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     }
 
     // Verify we have both CSV files
-    assertTrue(fileContents.containsKey("materialSample.csv"), "Missing materialSample.csv");
-    assertTrue(fileContents.containsKey("collectingEvent.csv"), "Missing collectingEvent.csv");
+    assertTrue(fileContents.containsKey("material-sample.csv"), "Missing material-sample.csv");
+    assertTrue(fileContents.containsKey("collecting-event.csv"), "Missing collecting-event.csv");
 
-    // Verify materialSample.csv content
-    List<String> materialSampleLines = fileContents.get("materialSample.csv");
-    assertTrue(materialSampleLines.size() >= 3, "Expected at least 3 lines in materialSample.csv (header + 2 data rows)");
+    // Verify material-sample.csv content
+    List<String> materialSampleLines = fileContents.get("material-sample.csv");
+    assertTrue(materialSampleLines.size() >= 3, "Expected at least 3 lines in material-sample.csv (header + 2 data rows)");
     assertTrue(materialSampleLines.get(0).contains("id"));
     assertTrue(materialSampleLines.get(0).contains("materialSampleName"));
     assertTrue(materialSampleLines.get(1).contains(docId.toString()) || materialSampleLines.get(2).contains(docId.toString()));
 
-    // Verify collectingEvent.csv content
+    // Verify collecting-event.csv content
     // Note: Both material samples reference the SAME collecting event, so with enableIdTracking
     // it should only appear once
-    List<String> collectingEventLines = fileContents.get("collectingEvent.csv");
-    assertTrue(collectingEventLines.size() >= 2, "Expected at least 2 lines in collectingEvent.csv (header + 1 data row)");
+    List<String> collectingEventLines = fileContents.get("collecting-event.csv");
+    assertTrue(collectingEventLines.size() >= 2, "Expected at least 2 lines in collecting-event.csv (header + 1 data row)");
     assertTrue(collectingEventLines.get(0).contains("dwcVerbatimLocality"));
     assertTrue(collectingEventLines.get(1).contains("Montreal") || collectingEventLines.get(2).contains("Montreal"));
 
@@ -281,13 +281,13 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     // Define Schema
     LinkedHashMap<String, List<String>> schema = new LinkedHashMap<>();
-    schema.put("materialSample", List.of("materialSampleName", "id"));
-    schema.put("collectingEvent", List.of("dwcVerbatimLocality", "id"));
+    schema.put("material-sample", List.of("materialSampleName", "id"));
+    schema.put("collecting-event", List.of("dwcVerbatimLocality", "id"));
 
     // Define Aliases
     LinkedHashMap<String, List<String>> aliases = new LinkedHashMap<>();
-    aliases.put("materialSample", List.of("Sample Name", "Material Sample ID"));
-    aliases.put("collectingEvent", List.of("Locality", "Collecting Event ID"));
+    aliases.put("material-sample", List.of("Sample Name", "Material Sample ID"));
+    aliases.put("collecting-event", List.of("Locality", "Collecting Event ID"));
 
     // Create Export Request
     DataExportDto dto = DataExportDto.builder()
@@ -339,16 +339,16 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       }
     }
 
-    // Verify materialSample.csv headers matched aliases
-    String msHeader = csvHeaders.get("materialSample.csv");
-    assertNotNull(msHeader, "materialSample.csv missing from ZIP");
+    // Verify material-sample.csv headers matched aliases
+    String msHeader = csvHeaders.get("material-sample.csv");
+    assertNotNull(msHeader, "material-sample.csv missing from ZIP");
     assertTrue(msHeader.contains("\"Sample Name\""), "Header should contain alias 'Sample Name'");
     assertTrue(msHeader.contains("\"Material Sample ID\""), "Header should contain alias 'Material Sample ID'");
     assertFalse(msHeader.contains("materialSampleName"), "Header should NOT contain raw column name");
 
-    // Verify collectingEvent.csv headers matched aliases
-    String ceHeader = csvHeaders.get("collectingEvent.csv");
-    assertNotNull(ceHeader, "collectingEvent.csv missing from ZIP");
+    // Verify collecting-event.csv headers matched aliases
+    String ceHeader = csvHeaders.get("collecting-event.csv");
+    assertNotNull(ceHeader, "collecting-event.csv missing from ZIP");
     assertTrue(ceHeader.contains("Locality"), "Header should contain alias 'Locality'");
     assertTrue(ceHeader.contains("\"Collecting Event ID\""), "Header should contain alias 'Collecting Event ID'");
     assertFalse(ceHeader.contains("dwcVerbatimLocality"), "Header should NOT contain raw column name");

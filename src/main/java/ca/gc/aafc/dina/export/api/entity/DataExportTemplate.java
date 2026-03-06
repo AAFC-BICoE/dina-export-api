@@ -97,7 +97,7 @@ public class DataExportTemplate implements DinaEntity {
 
   /**
    * Column aliases for headers.
-   * - Nested map: {"materialSample": ["Sample Name", "ID"], "collectingEvent": ["Location", "Event ID"]}
+   * - Nested map: {"material-sample": ["Sample Name", "ID"], "collecting-event": ["Location", "Event ID"]}
    * Flat array format will be removed in 0.19. Use nested map matching schema structure.
    */
   @Type(type = "jsonb")
@@ -107,7 +107,7 @@ public class DataExportTemplate implements DinaEntity {
   /**
    * Schema-based column configuration for exports.
    * Unified field that handles multi-entity exports.
-   * - Multi-entity export: {"materialSample": ["materialSampleName", "id"], "collectingEvent": ["dwcVerbatimLocality", "id"]}
+   * - Multi-entity export: {"material-sample": ["materialSampleName", "id"], "collecting-event": ["dwcVerbatimLocality", "id"]}
    */
   @Type(type = "jsonb")
   @Column

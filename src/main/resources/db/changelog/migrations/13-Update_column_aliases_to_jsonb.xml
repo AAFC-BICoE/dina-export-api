@@ -6,32 +6,46 @@
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
 
   <changeSet id="13" author="dina-export-api" context="schema-change">
-    <comment>Convert columnAliases from string array to jsonb to support nested structure</comment>
+    <comment>Convert columnAliases from string array to jsonb to support Map&lt;String, List&lt;String&gt;&gt; structure</comment>
     
     <!-- For data_export table -->
     <sql>
       ALTER TABLE data_export 
       ALTER COLUMN column_aliases TYPE JSONB 
-      USING to_jsonb(column_aliases)
+      USING CASE 
+        WHEN column_aliases IS NULL THEN NULL
+        ELSE to_jsonb(column_aliases)
+      END
     </sql>
     
     <!-- For data_export_template table -->
     <sql>
       ALTER TABLE data_export_template 
       ALTER COLUMN column_aliases TYPE JSONB 
-      USING to_jsonb(column_aliases)
+      USING CASE 
+        WHEN column_aliases IS NULL THEN NULL
+        ELSE to_jsonb(column_aliases)
+      END
     </sql>
     
     <rollback>
       <sql>
         ALTER TABLE data_export 
         ALTER COLUMN column_aliases TYPE text[] 
-        USING ARRAY(SELECT jsonb_array_elements_text(column_aliases))
+        USING CASE 
+          WHEN column_aliases IS NULL THEN NULL
+          WHEN jsonb_typeof(column_aliases) = 'array' THEN ARRAY(SELECT jsonb_array_elements_text(column_aliases))
+          ELSE NULL
+        END
       </sql>
       <sql>
         ALTER TABLE data_export_template 
         ALTER COLUMN column_aliases TYPE text[] 
-        USING ARRAY(SELECT jsonb_array_elements_text(column_aliases))
+        USING CASE 
+          WHEN column_aliases IS NULL THEN NULL
+          WHEN jsonb_typeof(column_aliases) = 'array' THEN ARRAY(SELECT jsonb_array_elements_text(column_aliases))
+          ELSE NULL
+        END
       </sql>
     </rollback>
   </changeSet>
