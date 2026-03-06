@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.entity;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -101,7 +102,7 @@ public class DataExportTemplate implements DinaEntity {
    */
   @Type(type = "jsonb")
   @Column
-  private Object columnAliases;
+  private Map<String, List<String>> columnAliases;
 
   /**
    * Schema-based column configuration for exports.

@@ -110,7 +110,7 @@ public class DataExport implements DinaEntity {
    */
   @Type(type = "jsonb")
   @Column
-  private Object columnAliases;
+  private Map<String, List<String>> columnAliases;
 
   /**
    * Schema-based column configuration for exports.

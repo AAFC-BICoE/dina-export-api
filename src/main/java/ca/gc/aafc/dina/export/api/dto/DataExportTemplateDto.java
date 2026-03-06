@@ -11,6 +11,7 @@ import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.entity.DataExportTemplate;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -51,7 +52,7 @@ public class DataExportTemplateDto implements JsonApiResource {
    * Column aliases for headers.
    * - Nested map: {"materialSample": ["Sample Name", "ID"], "collectingEvent": ["Location", "Event ID"]}
    */
-  private Object columnAliases;
+  private Map<String, List<String>> columnAliases;
 
   /**
    * Schema-based column configuration for exports.

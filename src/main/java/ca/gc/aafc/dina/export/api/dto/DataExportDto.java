@@ -53,7 +53,7 @@ public class DataExportDto implements ca.gc.aafc.dina.dto.JsonApiResource {
    * Supports nested map (for multi-entity).
    * - Nested map: {"materialSample": ["Sample Name", "ID"], "collectingEvent": ["Location", "Event ID"]}
    */
-  private Object columnAliases;
+  private Map<String, List<String>> columnAliases;
 
   /**
    * Schema-based column configuration for exports.
