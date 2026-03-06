@@ -24,8 +24,6 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
  */
 public final class TabularOutput<I, T> implements DataOutput<I, T> {
 
-  public static final String OPTION_COLUMN_SEPARATOR = "columnSeparator";
-
   public enum ColumnSeparator {
     COMMA(","), TAB("\t");
     private final String separatorChar;

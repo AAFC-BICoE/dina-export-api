@@ -13,6 +13,7 @@ import com.jayway.jsonpath.Configuration;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
+import ca.gc.aafc.dina.export.api.config.DataExportOption;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.generator.helper.ExportFunctionHandler;
 import ca.gc.aafc.dina.export.api.generator.helper.RelationshipFlattener;
@@ -60,7 +61,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   private final ObjectMapper objectMapper;
   private final ElasticSearchDataSource elasticSearchDataSource;
   private final DataExportConfig dataExportConfig;
-  private final RelationshipFlattener relationshipFlattener;
+  private final Configuration jsonPathConfiguration;
 
   public RecordBasedExportGenerator(
     DataExportStatusService dataExportStatusService,
@@ -74,7 +75,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     this.elasticSearchDataSource = elasticSearchDataSource;
     this.objectMapper = objectMapper;
     this.dataExportConfig = dataExportConfig;
-    this.relationshipFlattener = new RelationshipFlattener(objectMapper, jsonPathConfiguration);
+    this.jsonPathConfiguration = jsonPathConfiguration;
   }
 
   @Override
@@ -260,7 +261,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
    * The output layer decides whether to accept or skip based on entity type.
    */
   private void processEntity(JsonNode entity, String fallbackId, 
-                            JsonNode relationshipSource, // Renamed for clarity
+                            JsonNode relationshipSource,
                             Map<String, DataExportFunction> functions,
                             DataOutput<UUID, JsonNode> output) throws IOException {
     if (entity == null) {
@@ -283,6 +284,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
     // 1. Merge Relationships if source exists
     if (relationshipSource != null) {
+      RelationshipFlattener relationshipFlattener = new RelationshipFlattener(objectMapper, jsonPathConfiguration);
       relationshipFlattener.mergeRelationshipsIntoAttributes(relationshipSource, attributes);
     }
 
@@ -311,7 +313,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   private static String getColumnSeparatorOption(DataExport dinaExport) {
     return MapUtils.isNotEmpty(dinaExport.getExportOptions())
-      ? dinaExport.getExportOptions().get(TabularOutput.OPTION_COLUMN_SEPARATOR)
+      ? dinaExport.getExportOptions().get(DataExportOption.OPTION_COLUMN_SEPARATOR)
       : null;
   }
 
@@ -321,8 +323,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   private boolean isMultiEntityExport(DataExport dinaExport, LinkedHashMap<String, String[]> schema) {
     // Only create separate files (ZIP) if enablePackaging is true AND there are multiple entities
-    boolean packagingEnabled = dinaExport.getExportOptions() != null && 
-      Boolean.parseBoolean(dinaExport.getExportOptions().getOrDefault("enablePackaging", "false"));
+    boolean packagingEnabled = DataExportOption.getOptionAsBool(dinaExport.getExportOptions(),
+      DataExportOption.ENABLE_PACKAGING);
     return MapUtils.isNotEmpty(schema) && schema.size() > 1 && packagingEnabled;
   }
 
