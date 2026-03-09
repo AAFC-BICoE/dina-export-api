@@ -19,9 +19,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.gc.aafc.dina.export.api.dto.DataExportDto;
-import ca.gc.aafc.dina.export.api.dto.EntitySchemaDto;
+import ca.gc.aafc.dina.export.api.dto.DataExportSchemaEntryDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
-import ca.gc.aafc.dina.export.api.entity.EntitySchema;
+import ca.gc.aafc.dina.export.api.entity.DataExportSchemaEntry;
 import ca.gc.aafc.dina.mapper.DinaMapperV2;
 
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPEREF;
@@ -56,14 +56,14 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
                    @Context Set<String> provided, @Context String scope);
 
   @Named("schemaToDto")
-  static LinkedHashMap<String, EntitySchemaDto> schemaToDto(LinkedHashMap<String, EntitySchema> schema) {
+  static LinkedHashMap<String, DataExportSchemaEntryDto> schemaToDto(LinkedHashMap<String, DataExportSchemaEntry> schema) {
     if (schema == null) {
       return null;
     }
-    LinkedHashMap<String, EntitySchemaDto> result = new LinkedHashMap<>();
+    LinkedHashMap<String, DataExportSchemaEntryDto> result = new LinkedHashMap<>();
     for (var entry : schema.entrySet()) {
-      EntitySchema entitySchema = entry.getValue();
-      result.put(entry.getKey(), EntitySchemaDto.builder()
+      DataExportSchemaEntry entitySchema = entry.getValue();
+      result.put(entry.getKey(), DataExportSchemaEntryDto.builder()
         .columns(entitySchema.columns())
         .aliases(entitySchema.aliases())
         .build());
@@ -77,14 +77,14 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
    * @return the entity schema map
    */
   @Named("schemaToEntity")
-  static LinkedHashMap<String, EntitySchema> schemaToEntity(LinkedHashMap<String, EntitySchemaDto> schema) {
+  static LinkedHashMap<String, DataExportSchemaEntry> schemaToEntity(LinkedHashMap<String, DataExportSchemaEntryDto> schema) {
     if (schema == null) {
       return null;
     }
-    LinkedHashMap<String, EntitySchema> result = new LinkedHashMap<>();
+    LinkedHashMap<String, DataExportSchemaEntry> result = new LinkedHashMap<>();
     for (var entry : schema.entrySet()) {
-      EntitySchemaDto dto = entry.getValue();
-      result.put(entry.getKey(), new EntitySchema(dto.getColumns(), dto.getAliases()));
+      DataExportSchemaEntryDto dto = entry.getValue();
+      result.put(entry.getKey(), new DataExportSchemaEntry(dto.getColumns(), dto.getAliases()));
     }
     return result;
   }

@@ -60,7 +60,7 @@ public class DataExportTemplateDto implements JsonApiResource {
    * Schema-based column configuration for exports.
    * See {@link DataExportDto#schema} for format details.
    */
-  private LinkedHashMap<String, EntitySchemaDto> schema;
+  private LinkedHashMap<String, DataExportSchemaEntryDto> schema;
 
   private Map<String, DataExportFunction> functions;
 

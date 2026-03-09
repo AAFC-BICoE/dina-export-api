@@ -14,7 +14,7 @@ import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.dto.DataExportDto;
-import ca.gc.aafc.dina.export.api.dto.EntitySchemaDto;
+import ca.gc.aafc.dina.export.api.dto.DataExportSchemaEntryDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileController;
 import ca.gc.aafc.dina.export.api.testsupport.jsonapi.JsonApiDocuments;
@@ -93,8 +93,8 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     String query = "{\"query\": {\"match_all\": {}}}";
 
     // Use LinkedHashMap to preserve order - first entry is primary entity
-    LinkedHashMap<String, EntitySchemaDto> schemaMap = new LinkedHashMap<>();
-    schemaMap.put("material-sample", EntitySchemaDto.builder()
+    LinkedHashMap<String, DataExportSchemaEntryDto> schemaMap = new LinkedHashMap<>();
+    schemaMap.put("material-sample", DataExportSchemaEntryDto.builder()
       .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
         "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
         "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong", "concatResult"))
@@ -192,11 +192,11 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     String query = "{\"query\": {\"match_all\": {}}}";
 
     // Use LinkedHashMap to preserve order - first entry is primary entity
-    LinkedHashMap<String, EntitySchemaDto> schema = new LinkedHashMap<>();
-    schema.put("material-sample", EntitySchemaDto.builder()
+    LinkedHashMap<String, DataExportSchemaEntryDto> schema = new LinkedHashMap<>();
+    schema.put("material-sample", DataExportSchemaEntryDto.builder()
       .columns(List.of("id", "materialSampleName", "dwcCatalogNumber"))
       .build());
-    schema.put("collecting-event", EntitySchemaDto.builder()
+    schema.put("collecting-event", DataExportSchemaEntryDto.builder()
       .columns(List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"))
       .build());
 
@@ -286,12 +286,12 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     String query = "{\"query\": {\"match_all\": {}}}";
 
     // Define Schema with columns and aliases
-    LinkedHashMap<String, EntitySchemaDto> schema = new LinkedHashMap<>();
-    schema.put("material-sample", EntitySchemaDto.builder()
+    LinkedHashMap<String, DataExportSchemaEntryDto> schema = new LinkedHashMap<>();
+    schema.put("material-sample", DataExportSchemaEntryDto.builder()
       .columns(List.of("materialSampleName", "id"))
       .aliases(List.of("Sample Name", "Material Sample ID"))
       .build());
-    schema.put("collecting-event", EntitySchemaDto.builder()
+    schema.put("collecting-event", DataExportSchemaEntryDto.builder()
       .columns(List.of("dwcVerbatimLocality", "id"))
       .aliases(List.of("Locality", "Collecting Event ID"))
       .build());

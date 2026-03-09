@@ -132,7 +132,7 @@ public class DataExport implements DinaEntity {
    */
   @Type(type = "jsonb")
   @Column
-  private LinkedHashMap<String, EntitySchema> schema;
+  private LinkedHashMap<String, DataExportSchemaEntry> schema;
 
   // to be removed in 0.18
   @Type(type = "jsonb")

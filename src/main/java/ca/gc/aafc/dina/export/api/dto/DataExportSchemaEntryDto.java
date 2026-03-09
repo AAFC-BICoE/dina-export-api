@@ -8,14 +8,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO for entity schema configuration.
+ * DTO for schema configuration.
  * Defines which columns to export and optional aliases for column headers.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EntitySchemaDto {
+public class DataExportSchemaEntryDto {
   
   /**
    * List of field names to export from the entity.

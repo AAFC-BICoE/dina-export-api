@@ -5,12 +5,7 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
 
-  <changeSet id="12" author="dina-export-api" context="schema-change">
-    <preConditions onFail="MARK_RAN">
-      <not>
-        <columnExists tableName="data_export" columnName="schema"/>
-      </not>
-    </preConditions>
+  <changeSet id="12-Add_schema_to_data_export_table"  context="schema-change" author="hdosprazeres">
     <addColumn tableName="data_export">
       <column name="schema" type="jsonb">
         <constraints nullable="true"/>
@@ -26,5 +21,4 @@
       <dropColumn tableName="data_export_template" columnName="schema"/>
     </rollback>
   </changeSet>
-
 </databaseChangeLog>

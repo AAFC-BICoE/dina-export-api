@@ -16,7 +16,7 @@ import lombok.NonNull;
  *                Example: columns=["id","name","group"], aliases=["","Created By",""] → headers: "id", "Created By", "group"
  *                Invalid: aliases with different length than columns will throw IllegalArgumentException
  */
-public record EntitySchema(@NonNull List<String> columns, List<String> aliases) {
+public record DataExportSchemaEntry(@NonNull List<String> columns, List<String> aliases) {
   
   /**
    * Compact constructor that validates the aliases array length matches columns length.
@@ -24,7 +24,7 @@ public record EntitySchema(@NonNull List<String> columns, List<String> aliases) 
    * 
    * @throws IllegalArgumentException if aliases is non-null, non-empty, and length doesn't match columns
    */
-  public EntitySchema {
+  public DataExportSchemaEntry {
     if (aliases != null && !aliases.isEmpty() && aliases.size() != columns.size()) {
       throw new IllegalArgumentException(
         String.format("Aliases array length (%d) must match columns array length (%d). " +

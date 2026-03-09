@@ -60,7 +60,7 @@ public class DataExportDto implements ca.gc.aafc.dina.dto.JsonApiResource {
    * Unified field that handles multi-entity exports with columns and optional aliases per entity.
    * Uses LinkedHashMap to preserve entity order - first entity is primary.
    */
-  private LinkedHashMap<String, EntitySchemaDto> schema;
+  private LinkedHashMap<String, DataExportSchemaEntryDto> schema;
 
   private Map<String, DataExportFunction> functions;
 
