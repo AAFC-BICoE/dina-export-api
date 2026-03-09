@@ -1,8 +1,6 @@
 package ca.gc.aafc.dina.export.api.mapper;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -73,6 +71,11 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
     return result;
   }
 
+  /**
+   * Converts schema from DTO to entity format.
+   * @param schema the DTO schema map
+   * @return the entity schema map
+   */
   @Named("schemaToEntity")
   static LinkedHashMap<String, EntitySchema> schemaToEntity(LinkedHashMap<String, EntitySchemaDto> schema) {
     if (schema == null) {
@@ -86,6 +89,11 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
     return result;
   }
 
+  /**
+   * Converts a map to JSON string.
+   * @param query the map to convert
+   * @return the JSON string representation
+   */
   @Named("mapToJson")
   static String mapToJsonString(Map<String, Object> query) {
     try {
