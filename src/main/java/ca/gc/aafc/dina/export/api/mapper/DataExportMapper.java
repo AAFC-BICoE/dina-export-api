@@ -21,7 +21,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.gc.aafc.dina.export.api.dto.DataExportDto;
+import ca.gc.aafc.dina.export.api.dto.EntitySchemaDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
+import ca.gc.aafc.dina.export.api.entity.EntitySchema;
 import ca.gc.aafc.dina.mapper.DinaMapperV2;
 
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPEREF;
@@ -56,25 +58,30 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
                    @Context Set<String> provided, @Context String scope);
 
   @Named("schemaToDto")
-  static LinkedHashMap<String, List<String>> schemaToDto(LinkedHashMap<String, String[]> schema) {
+  static LinkedHashMap<String, EntitySchemaDto> schemaToDto(LinkedHashMap<String, EntitySchema> schema) {
     if (schema == null) {
       return null;
     }
-    LinkedHashMap<String, List<String>> result = new LinkedHashMap<>();
+    LinkedHashMap<String, EntitySchemaDto> result = new LinkedHashMap<>();
     for (var entry : schema.entrySet()) {
-      result.put(entry.getKey(), Arrays.asList(entry.getValue()));
+      EntitySchema entitySchema = entry.getValue();
+      result.put(entry.getKey(), EntitySchemaDto.builder()
+        .columns(entitySchema.columns())
+        .aliases(entitySchema.aliases())
+        .build());
     }
     return result;
   }
 
   @Named("schemaToEntity")
-  static LinkedHashMap<String, String[]> schemaToEntity(LinkedHashMap<String, List<String>> schema) {
+  static LinkedHashMap<String, EntitySchema> schemaToEntity(LinkedHashMap<String, EntitySchemaDto> schema) {
     if (schema == null) {
       return null;
     }
-    LinkedHashMap<String, String[]> result = new LinkedHashMap<>();
+    LinkedHashMap<String, EntitySchema> result = new LinkedHashMap<>();
     for (var entry : schema.entrySet()) {
-      result.put(entry.getKey(), entry.getValue().toArray(new String[0]));
+      EntitySchemaDto dto = entry.getValue();
+      result.put(entry.getKey(), new EntitySchema(dto.getColumns(), dto.getAliases()));
     }
     return result;
   }

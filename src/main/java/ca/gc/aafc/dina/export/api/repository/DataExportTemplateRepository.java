@@ -22,6 +22,7 @@ import ca.gc.aafc.dina.export.api.dto.DataExportTemplateDto;
 import ca.gc.aafc.dina.export.api.entity.DataExportTemplate;
 import ca.gc.aafc.dina.export.api.mapper.DataExportTemplateMapper;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
+import ca.gc.aafc.dina.mapper.DinaMappingRegistry;
 import ca.gc.aafc.dina.repository.DinaRepositoryV2;
 import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
 import ca.gc.aafc.dina.security.auth.ObjectOwnerAuthorizationService;
@@ -54,7 +55,7 @@ public class DataExportTemplateRepository extends DinaRepositoryV2<DataExportTem
     super(dinaService, authorizationService, auditService,
         DataExportTemplateMapper.INSTANCE,
         DataExportTemplateDto.class, DataExportTemplate.class,
-        buildProperties, objMapper);
+        buildProperties, objMapper, new DinaMappingRegistry(DataExportTemplateDto.class, true));
 
     this.authenticatedUser = authenticatedUser.orElse(null);
   }

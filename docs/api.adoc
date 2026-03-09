@@ -85,11 +85,13 @@ POST /data-export
       "source": "dina_material_sample_index",
       "query": "{\"query\": {\"match_all\": {}}}",
       "schema": {
-        "material-sample": [
-          "id",
-          "materialSampleName",
-          "collectingEvent.dwcVerbatimLocality"
-        ]
+        "material-sample": {
+          "columns": [
+            "id",
+            "materialSampleName",
+            "collectingEvent.dwcVerbatimLocality"
+          ]
+        }
       },
       "exportOptions": {
         "columnSeparator": "COMMA"
@@ -113,32 +115,33 @@ For multiple entity types, enable packaging to generate separate CSV files packa
       "source": "dina_material_sample_index",
       "query": "{\"query\": {\"match_all\": {}}}",
       "schema": {
-        "material-sample": [
-          "id",
-          "materialSampleName",
-          "group"
-        ],
-        "collecting-event": [
-          "id",
-          "dwcVerbatimElevation",
-          "createdBy"
-        ]
-      },
-      "columnAliases": {
-        "material-sample": [
-          "Sample ID",
-          "Sample Name",
-          "Group"
-        ],
-        "collecting-event": [
-          "Event ID",
-          "Elevation",
-          "Created By"
-        ]
+        "material-sample": {
+          "columns": [
+            "id",
+            "materialSampleName",
+            "group"
+          ],
+          "aliases": [
+            "Sample ID",
+            "Sample Name",
+            "Group"
+          ]
+        },
+        "collecting-event": {
+          "columns": [
+            "id",
+            "dwcVerbatimElevation",
+            "createdBy"
+          ],
+          "aliases": [
+            "Event ID",
+            "Elevation",
+            "Created By"
+          ]
+        }
       },
       "exportOptions": {
         "enablePackaging": "true",
-        "enableIdTracking": "true",
         "columnSeparator": "COMMA"
       }
     }
@@ -146,13 +149,31 @@ For multiple entity types, enable packaging to generate separate CSV files packa
 }
 ----
 
-NOTE: Entity type keys use kebab-case (e.g., `material-sample`, `collecting-event`). The `columnAliases` count must match the schema column count for each entity.
+NOTE: Entity type keys use kebab-case (e.g., `material-sample`, `collecting-event`). The `aliases` field is optional:
+
+* **Omit entirely** (`aliases: null`): All columns use their field names as headers
+* **Exact length match**: The `aliases` array MUST be the same length as `columns` array
+* **Empty strings or null**: Use `""` or `null` in specific positions to keep that column's field name while aliasing others
+
+IMPORTANT: If `aliases` is provided with a different length than `columns`, the request will fail with a validation error.
+
+Example with selective aliases:
+[source, json]
+----
+"schema": {
+  "material-sample": {
+    "columns": ["id", "name", "group"],
+    "aliases": ["Sample ID", "", "Group"]  // name uses field name
+  }
+}
+----
 
 === Export Options
 
 * `columnSeparator`: `COMMA` (default) or `TAB`
 * `enablePackaging`: `true` creates separate files per entity type in a ZIP (requires multiple entities in schema)
-* `enableIdTracking`: `true` prevents duplicate related entities across files in multi-entity exports
+
+NOTE: ID tracking is automatically enabled for multi-entity exports to prevent duplicate related entities across files.
 
 === Functions
 
@@ -162,7 +183,9 @@ Functions create calculated columns. Add the function name to your schema and de
 ----
 {
   "schema": {
-    "material-sample": ["id", "materialSampleName", "latLong"]
+    "material-sample": {
+      "columns": ["id", "materialSampleName", "latLong"]
+    }
   },
   "functions": {
     "latLong": {

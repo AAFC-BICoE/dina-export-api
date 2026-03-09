@@ -14,6 +14,7 @@ import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.dto.DataExportDto;
+import ca.gc.aafc.dina.export.api.dto.EntitySchemaDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileController;
 import ca.gc.aafc.dina.export.api.testsupport.jsonapi.JsonApiDocuments;
@@ -92,15 +93,12 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     String query = "{\"query\": {\"match_all\": {}}}";
 
     // Use LinkedHashMap to preserve order - first entry is primary entity
-    LinkedHashMap<String, List<String>> schema = new java.util.LinkedHashMap<>();
-    schema.put("material-sample", List.of("id", "materialSampleName", "dwcCatalogNumber",
-      "dwcOtherCatalogNumbers", "managedAttributes.attribute_1", "projects.name", "latLong", "concatResult"));
-    schema.put("collecting-event", List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"));
-
-    LinkedHashMap<String, List<String>> schemaMap = new LinkedHashMap<>();
-    schemaMap.put("material-sample", List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
-      "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
-      "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong", "concatResult"));
+    LinkedHashMap<String, EntitySchemaDto> schemaMap = new LinkedHashMap<>();
+    schemaMap.put("material-sample", EntitySchemaDto.builder()
+      .columns(List.of("id", "materialSampleName", "collectingEvent.dwcVerbatimLocality",
+        "dwcCatalogNumber", "dwcOtherCatalogNumbers", "managedAttributes.attribute_1",
+        "collectingEvent.managedAttributes.attribute_ce_1", "projects.name", "latLong", "concatResult"))
+      .build());
 
     DataExportDto dto = DataExportDto.builder()
       .source(MAT_SAMPLE_INDEX)
@@ -194,9 +192,13 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     String query = "{\"query\": {\"match_all\": {}}}";
 
     // Use LinkedHashMap to preserve order - first entry is primary entity
-    LinkedHashMap<String, List<String>> schema = new java.util.LinkedHashMap<>();
-    schema.put("material-sample", List.of("id", "materialSampleName", "dwcCatalogNumber"));
-    schema.put("collecting-event", List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"));
+    LinkedHashMap<String, EntitySchemaDto> schema = new LinkedHashMap<>();
+    schema.put("material-sample", EntitySchemaDto.builder()
+      .columns(List.of("id", "materialSampleName", "dwcCatalogNumber"))
+      .build());
+    schema.put("collecting-event", EntitySchemaDto.builder()
+      .columns(List.of("dwcVerbatimLocality", "managedAttributes.attribute_ce_1"))
+      .build());
 
     DataExportDto dto = DataExportDto.builder()
       .source(MAT_SAMPLE_INDEX)
@@ -204,8 +206,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       .query(query)
       .schema(schema)
       .exportOptions(Map.of(
-        "enablePackaging", "true",  // Enable multi-entity ZIP export
-        "enableIdTracking", "true"   // Track IDs to prevent duplicates across entity files
+        "enablePackaging", "true"  // Enable multi-entity ZIP export (ID tracking is automatic)
       ))
       .build();
 
@@ -261,8 +262,8 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     assertTrue(materialSampleLines.get(1).contains(docId.toString()) || materialSampleLines.get(2).contains(docId.toString()));
 
     // Verify collecting-event.csv content
-    // Note: Both material samples reference the SAME collecting event, so with enableIdTracking
-    // it should only appear once
+    // Note: Both material samples reference the SAME collecting event, so with automatic ID tracking
+    // in multi-entity exports, it should only appear once
     List<String> collectingEventLines = fileContents.get("collecting-event.csv");
     assertTrue(collectingEventLines.size() >= 2, "Expected at least 2 lines in collecting-event.csv (header + 1 data row)");
     assertTrue(collectingEventLines.get(0).contains("dwcVerbatimLocality"));
@@ -284,15 +285,16 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     String query = "{\"query\": {\"match_all\": {}}}";
 
-    // Define Schema
-    LinkedHashMap<String, List<String>> schema = new LinkedHashMap<>();
-    schema.put("material-sample", List.of("materialSampleName", "id"));
-    schema.put("collecting-event", List.of("dwcVerbatimLocality", "id"));
-
-    // Define Aliases
-    LinkedHashMap<String, List<String>> aliases = new LinkedHashMap<>();
-    aliases.put("material-sample", List.of("Sample Name", "Material Sample ID"));
-    aliases.put("collecting-event", List.of("Locality", "Collecting Event ID"));
+    // Define Schema with columns and aliases
+    LinkedHashMap<String, EntitySchemaDto> schema = new LinkedHashMap<>();
+    schema.put("material-sample", EntitySchemaDto.builder()
+      .columns(List.of("materialSampleName", "id"))
+      .aliases(List.of("Sample Name", "Material Sample ID"))
+      .build());
+    schema.put("collecting-event", EntitySchemaDto.builder()
+      .columns(List.of("dwcVerbatimLocality", "id"))
+      .aliases(List.of("Locality", "Collecting Event ID"))
+      .build());
 
     // Create Export Request
     DataExportDto dto = DataExportDto.builder()
@@ -300,7 +302,6 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       .name("multi entity alias export")
       .query(query)
       .schema(schema)
-      .columnAliases(aliases) // Pass aliases map
       .exportOptions(Map.of(
         "columnSeparator", "COMMA",
         "enablePackaging", "true"

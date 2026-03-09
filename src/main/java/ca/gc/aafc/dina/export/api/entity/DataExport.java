@@ -105,22 +105,34 @@ public class DataExport implements DinaEntity {
 
   /**
    * Column aliases for headers.
-   * Supports nested map (for multi-entity).
-   * - Nested map: {"material-sample": ["Sample Name", "ID"], "collecting-event": ["Location", "Event ID"]}
+   * @deprecated Use {@link #schema} with aliases embedded in EntitySchema instead. Will be removed in 0.20.
    */
+  @Deprecated(since = "0.19", forRemoval = true)
   @Type(type = "jsonb")
   @Column
   private Map<String, List<String>> columnAliases;
 
   /**
    * Schema-based column configuration for exports.
-   * Unified field that handles multi-entity exports.
-   * - Multi-entity export: {"material-sample": ["materialSampleName", "id"], "collecting-event": ["dwcVerbatimLocality", "id"]}
+   * Unified field that handles multi-entity exports with columns and optional aliases per entity.
+   * Example:
+   * <pre>
+   * {
+   *   "material-sample": {
+   *     "columns": ["id", "materialSampleName"],
+   *     "aliases": ["Sample ID", "Sample Name"]
+   *   },
+   *   "collecting-event": {
+   *     "columns": ["dwcVerbatimLocality"],
+   *     "aliases": ["Location"]
+   *   }
+   * }
+   * </pre>
    * Uses LinkedHashMap to preserve entity order - first entity is primary.
    */
   @Type(type = "jsonb")
   @Column
-  private LinkedHashMap<String, String[]> schema;
+  private LinkedHashMap<String, EntitySchema> schema;
 
   // to be removed in 0.18
   @Type(type = "jsonb")

@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.entity;
 
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -97,21 +98,21 @@ public class DataExportTemplate implements DinaEntity {
 
   /**
    * Column aliases for headers.
-   * - Nested map: {"material-sample": ["Sample Name", "ID"], "collecting-event": ["Location", "Event ID"]}
-   * Flat array format will be removed in 0.19. Use nested map matching schema structure.
+   * @deprecated Use {@link #schema} with aliases embedded in EntitySchema instead. Will be removed in 0.20.
    */
+  @Deprecated(since = "0.19", forRemoval = true)
   @Type(type = "jsonb")
   @Column
   private Map<String, List<String>> columnAliases;
 
   /**
    * Schema-based column configuration for exports.
-   * Unified field that handles multi-entity exports.
-   * - Multi-entity export: {"material-sample": ["materialSampleName", "id"], "collecting-event": ["dwcVerbatimLocality", "id"]}
+   * Unified field that handles multi-entity exports with columns and optional aliases per entity.
+   * See {@link DataExport#schema} for format details.
    */
   @Type(type = "jsonb")
   @Column
-  private Map<String, String[]> schema;
+  private LinkedHashMap<String, EntitySchema> schema;
 
   // functions by column
   @Type(type = "jsonb")

@@ -11,6 +11,7 @@ import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.entity.DataExportTemplate;
 
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,16 +51,16 @@ public class DataExportTemplateDto implements JsonApiResource {
   
   /**
    * Column aliases for headers.
-   * - Nested map: {"materialSample": ["Sample Name", "ID"], "collectingEvent": ["Location", "Event ID"]}
+   * @deprecated Use {@link #schema} with aliases embedded in EntitySchemaDto instead. Will be removed in 0.20.
    */
+  @Deprecated(since = "0.19", forRemoval = true)
   private Map<String, List<String>> columnAliases;
 
   /**
    * Schema-based column configuration for exports.
-   * Unified field that handles multi-entity exports.
-   * - Multi-entity: {"materialSample": ["materialSampleName", "id"], "collectingEvent": ["dwcVerbatimLocality", "id"]}
+   * See {@link DataExportDto#schema} for format details.
    */
-  private Map<String, String[]> schema;
+  private LinkedHashMap<String, EntitySchemaDto> schema;
 
   private Map<String, DataExportFunction> functions;
 

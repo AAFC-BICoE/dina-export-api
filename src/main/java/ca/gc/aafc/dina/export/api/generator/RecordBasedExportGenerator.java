@@ -15,6 +15,7 @@ import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.config.DataExportOption;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
+import ca.gc.aafc.dina.export.api.entity.EntitySchema;
 import ca.gc.aafc.dina.export.api.generator.helper.ExportFunctionHandler;
 import ca.gc.aafc.dina.export.api.generator.helper.RelationshipFlattener;
 import ca.gc.aafc.dina.export.api.generator.helper.ZipPackager;
@@ -80,7 +81,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   @Override
   public String generateFilename(DataExport dinaExport) {
-    LinkedHashMap<String, String[]> schema = getEffectiveSchema(dinaExport);
+    LinkedHashMap<String, EntitySchema> schema = getEffectiveSchema(dinaExport);
 
     if (isMultiEntityExport(dinaExport, schema)) {
       return dinaExport.getUuid().toString() + ".zip";
@@ -110,7 +111,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.RUNNING);
     try {
       ensureDirectoryExists(exportPath.getParent());
-      LinkedHashMap<String, String[]> schema = getEffectiveSchema(dinaExport);
+      LinkedHashMap<String, EntitySchema> schema = getEffectiveSchema(dinaExport);
 
       if (isMultiEntityExport(dinaExport, schema)) {
         exportMultiEntity(dinaExport, schema, exportPath);
@@ -144,7 +145,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   // Export single/multi entity
 
-  private void exportSingleEntity(DataExport dinaExport, LinkedHashMap<String, String[]> schema,
+  private void exportSingleEntity(DataExport dinaExport, LinkedHashMap<String, EntitySchema> schema,
                                    Path exportPath) throws IOException {
     try (Writer writer = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
          TabularOutput<UUID, JsonNode> output =
@@ -153,7 +154,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     }
   }
 
-  private void exportMultiEntity(DataExport dinaExport, LinkedHashMap<String, String[]> schema,
+  private void exportMultiEntity(DataExport dinaExport, LinkedHashMap<String, EntitySchema> schema,
                                   Path exportPath) throws IOException {
     Path tempDir = Files.createTempDirectory("dina-export-" + dinaExport.getUuid());
     try {
@@ -168,7 +169,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
         writersByType.put(entityType, writer);
 
         TabularOutput.TabularOutputArgs args = buildOutputArgsForEntity(
-          dinaExport, entityType, Arrays.asList(entry.getValue()), true);
+          dinaExport, entityType, entry.getValue());
         outputsByType.put(entityType, TabularOutput.create(args, new TypeReference<>() { }, writer));
       }
 
@@ -306,7 +307,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     result.usedKeys().forEach(node::remove);
   }
   
-  private static LinkedHashMap<String, String[]> getEffectiveSchema(DataExport dinaExport) {
+  private static LinkedHashMap<String, EntitySchema> getEffectiveSchema(DataExport dinaExport) {
     return MapUtils.isNotEmpty(dinaExport.getSchema()) ? dinaExport.getSchema() : new LinkedHashMap<>();
   }
 
@@ -320,7 +321,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     return "TAB".equals(columnSeparator) ? ".tsv" : ".csv";
   }
 
-  private boolean isMultiEntityExport(DataExport dinaExport, LinkedHashMap<String, String[]> schema) {
+  private boolean isMultiEntityExport(DataExport dinaExport, LinkedHashMap<String, EntitySchema> schema) {
     // Only create separate files (ZIP) if enablePackaging is true AND there are multiple entities
     boolean packagingEnabled = DataExportOption.getOptionAsBool(dinaExport.getExportOptions(),
       DataExportOption.ENABLE_PACKAGING);
@@ -328,7 +329,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   private TabularOutput.TabularOutputArgs buildOutputArgs(DataExport dinaExport,
-                                                          LinkedHashMap<String, String[]> schema) {
+                                                          LinkedHashMap<String, EntitySchema> schema) {
     if (schema.isEmpty()) {
       throw new IllegalArgumentException("Schema cannot be empty");
     }
@@ -341,22 +342,21 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
     // Handle primary entity (first entry in schema)
     var primaryEntry = iterator.next();
-    String[] primaryColumns = primaryEntry.getValue();
+    EntitySchema primarySchema = primaryEntry.getValue();
 
-    allColumns.addAll(Arrays.asList(primaryColumns));
-
-    addAliases(dinaExport, primaryEntry.getKey(), primaryColumns.length, allAliases);
+    allColumns.addAll(primarySchema.columns());
+    addAliasesFromSchema(primarySchema, allAliases);
 
     // Handle Related Columns (Remaining entries)
     while (iterator.hasNext()) {
       var entry = iterator.next();
-      String[] entityColumns = entry.getValue();
+      EntitySchema entitySchema = entry.getValue();
       String prefix = entry.getKey() + ".";
 
-      for (String col : entityColumns) {
+      for (String col : entitySchema.columns()) {
         allColumns.add(prefix + col);
       }
-      addAliases(dinaExport, entry.getKey(), entityColumns.length, allAliases);
+      addAliasesFromSchema(entitySchema, allAliases);
     }
 
     // Pass the fully constructed lists to the builder
@@ -371,14 +371,12 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   
   private TabularOutput.TabularOutputArgs buildOutputArgsForEntity(
-    DataExport dinaExport, String entityType, List<String> headers, boolean enableIdTracking) {
-
-    Map<String, List<String>> aliases = dinaExport.getColumnAliases();
+    DataExport dinaExport, String entityType, EntitySchema entitySchema) {
 
     var builder = TabularOutput.TabularOutputArgs.builder()
-      .headers(headers)
-      .receivedHeadersAliases(aliases != null ? aliases.get(entityType) : null)
-      .enableIdTracking(enableIdTracking);
+      .headers(entitySchema.columns())
+      .receivedHeadersAliases(entitySchema.aliases())
+      .enableIdTracking(true);  // Always enabled for multi-entity exports
 
     applyColumnSeparator(dinaExport, builder);
     return builder.build();
@@ -402,18 +400,23 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   /**
-   * Helper to fetch aliases and add them to the master list.
-   * Pads with nulls if aliases are missing to maintain column alignment.
+   * Add aliases from EntitySchema to the accumulator list.
+   * Converts null aliases within the array to empty strings.
+   * This maintains backward compatibility with the previous columnAliases behavior.
+   * The EntitySchema constructor already validates that aliases length matches columns length.
    */
-  private void addAliases(DataExport dinaExport, String entityType, int colCount, List<String> accumulator) {
-    Map<String, List<String>> aliases = dinaExport.getColumnAliases();
-    List<String> foundAliases = aliases != null ? aliases.get(entityType) : null;
+  private void addAliasesFromSchema(EntitySchema schema, List<String> accumulator) {
+    List<String> aliases = schema.aliases();
+    int colCount = schema.columns().size();
 
     for (int i = 0; i < colCount; i++) {
-      if (foundAliases != null && i < foundAliases.size()) {
-        accumulator.add(foundAliases.get(i));
+      if (aliases != null && i < aliases.size()) {
+        String alias = aliases.get(i);
+        // Use empty string for null aliases to signal "use column name"
+        accumulator.add(alias != null ? alias : "");
       } else {
-        accumulator.add(null);
+        // No aliases provided - use empty string to signal "use column name"
+        accumulator.add("");
       }
     }
   }
