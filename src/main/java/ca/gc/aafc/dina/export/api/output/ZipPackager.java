@@ -1,4 +1,4 @@
-package ca.gc.aafc.dina.export.api.generator.helper;
+package ca.gc.aafc.dina.export.api.output;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -18,6 +18,8 @@ import lombok.extern.log4j.Log4j2;
  */
 @Log4j2
 public final class ZipPackager {
+
+  public static final String EXTENSION = ".zip";
 
   private ZipPackager() {
     // utility class

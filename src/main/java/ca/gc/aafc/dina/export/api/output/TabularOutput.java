@@ -56,6 +56,10 @@ public final class TabularOutput<I, T> implements DataOutput<I, T> {
   private final Set<I> trackedIds;
   private final boolean idTrackingEnabled;
 
+  public static String extensionFromSeparator(String columnSeparator) {
+    return ColumnSeparator.TAB.name().equals(columnSeparator) ? ".tsv" : ".csv";
+  }
+
   /**
    * Returns a {@link TabularOutput} instance configured for a specific type without using column aliases.
    * @param tabularOutputArgs headers should match the properties available in the specific type.

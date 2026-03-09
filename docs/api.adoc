@@ -70,9 +70,9 @@ Where the report template would be
 
 Data Exports run asynchronously. Upon creation using POST, an export UUID is returned. Use this UUID to query the export status with a GET request to the same endpoint (`data-export`).
 
-=== Single-Entity Export
+=== Single-Resource Export
 
-For a single entity type, the export generates a single CSV/TSV file. Use the `schema` attribute to define entity types (kebab-case) and their fields:
+For a single resource type, the export generates a single CSV/TSV file. Use the `schema` attribute to define types (kebab-case) and their fields:
 
 POST /data-export
 [source, json]
@@ -101,9 +101,9 @@ POST /data-export
 }
 ----
 
-=== Multi-Entity Export (ZIP Package)
+=== Multi-Resource Export (ZIP Package)
 
-For multiple entity types, enable packaging to generate separate CSV files packaged in a ZIP. Each entity type gets its own file (e.g., `material-sample.csv`, `collecting-event.csv`):
+For multiple resource types, enable packaging to generate separate CSV files packaged in a ZIP. Each type gets its own file (e.g., `material-sample.csv`, `collecting-event.csv`):
 
 [source, json]
 ----
@@ -149,7 +149,7 @@ For multiple entity types, enable packaging to generate separate CSV files packa
 }
 ----
 
-NOTE: Entity type keys use kebab-case (e.g., `material-sample`, `collecting-event`). The `aliases` field is optional:
+NOTE: Resource type keys use kebab-case (e.g., `material-sample`, `collecting-event`). The `aliases` field is optional:
 
 * **Omit entirely** (`aliases: null`): All columns use their field names as headers
 * **Exact length match**: The `aliases` array MUST be the same length as `columns` array
@@ -171,9 +171,9 @@ Example with selective aliases:
 === Export Options
 
 * `columnSeparator`: `COMMA` (default) or `TAB`
-* `enablePackaging`: `true` creates separate files per entity type in a ZIP (requires multiple entities in schema)
+* `enablePackaging`: `true` creates separate files per resource type in a ZIP (requires multiple entities in schema)
 
-NOTE: ID tracking is automatically enabled for multi-entity exports to prevent duplicate related entities across files.
+NOTE: ID tracking is automatically enabled for multi-resource exports to prevent duplicate related entities across files.
 
 === Functions
 

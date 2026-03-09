@@ -18,7 +18,7 @@ import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.entity.DataExportSchemaEntry;
 import ca.gc.aafc.dina.export.api.generator.helper.ExportFunctionHandler;
 import ca.gc.aafc.dina.export.api.generator.helper.RelationshipFlattener;
-import ca.gc.aafc.dina.export.api.generator.helper.ZipPackager;
+import ca.gc.aafc.dina.export.api.output.ZipPackager;
 import ca.gc.aafc.dina.export.api.output.CompositeDataOutput;
 import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.output.TabularOutput;
@@ -50,7 +50,7 @@ import lombok.extern.log4j.Log4j2;
 /**
  * Generates tabular (CSV/TSV) exports
  *
- * Supports single-entity exports (one CSV file) and multi-entity exports
+ * Supports single-resource exports (one CSV file) and multi-resource exports
  * (multiple CSVs packaged in a ZIP). The output layer ({@link DataOutput} / {@link CompositeDataOutput})
  * handles record routing and type filtering.
  */
@@ -83,11 +83,11 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     LinkedHashMap<String, DataExportSchemaEntry> schema = getEffectiveSchema(dinaExport);
 
     if (isMultiEntityExport(dinaExport, schema)) {
-      return dinaExport.getUuid().toString() + ".zip";
+      return dinaExport.getUuid().toString() + ZipPackager.EXTENSION;
     }
 
     String separator = getColumnSeparatorOption(dinaExport);
-    return DataExportConfig.DATA_EXPORT_TABULAR_FILENAME + extensionFromSeparator(separator);
+    return DataExportConfig.DATA_EXPORT_TABULAR_FILENAME + TabularOutput.extensionFromSeparator(separator);
   }
 
   @Async(DataExportConfig.DINA_THREAD_POOL_BEAN_NAME)
@@ -157,7 +157,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
                                   Path exportPath) throws IOException {
     Path tempDir = Files.createTempDirectory("dina-export-" + dinaExport.getUuid());
     try {
-      String fileExtension = extensionFromSeparator(getColumnSeparatorOption(dinaExport));
+      String fileExtension = TabularOutput.extensionFromSeparator(getColumnSeparatorOption(dinaExport));
       Map<String, TabularOutput<UUID, JsonNode>> outputsByType = new HashMap<>();
       Map<String, Writer> writersByType = new HashMap<>();
 
@@ -278,7 +278,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       return;
     }
 
-    ObjectNode attributes = (ObjectNode) attrsNode.deepCopy();
+    ObjectNode attributes = attrsNode.deepCopy();
     attributes.put(JSONApiDocumentStructure.ID, entityId);
 
     // 1. Merge Relationships if source exists
@@ -314,10 +314,6 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     return MapUtils.isNotEmpty(dinaExport.getExportOptions())
       ? dinaExport.getExportOptions().get(DataExportOption.OPTION_COLUMN_SEPARATOR)
       : null;
-  }
-
-  private static String extensionFromSeparator(String columnSeparator) {
-    return "TAB".equals(columnSeparator) ? ".tsv" : ".csv";
   }
 
   private boolean isMultiEntityExport(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema) {
