@@ -5,6 +5,11 @@
                    objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
 
   <changeSet id="13-add-schema-columns" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="data_export" columnName="schema"/>
+      </not>
+    </preConditions>
     <addColumn tableName="data_export">
       <column name="schema" type="jsonb">
         <constraints nullable="true"/>
@@ -18,6 +23,9 @@
   </changeSet>
 
   <changeSet id="13-migrate-data-export-to-schema" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="data_export" columnName="columns"/>
+    </preConditions>
     <sql>
       UPDATE data_export
       SET schema = jsonb_build_object(
@@ -41,6 +49,9 @@
   </changeSet>
 
   <changeSet id="13-migrate-data-export-template-to-schema" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="data_export_template" columnName="columns"/>
+    </preConditions>
     <sql>
       UPDATE data_export_template
       SET schema = jsonb_build_object(
@@ -64,6 +75,9 @@
   </changeSet>
 
   <changeSet id="13-fix-column-aliases-type" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="data_export" columnName="column_aliases"/>
+    </preConditions>
     <sql>
       ALTER TABLE data_export
         ALTER COLUMN column_aliases TYPE jsonb USING NULL;
@@ -73,6 +87,9 @@
   </changeSet>
 
   <changeSet id="13-drop-legacy-columns-data-export" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="data_export" columnName="columns"/>
+    </preConditions>
     <sql>
       ALTER TABLE data_export
         DROP COLUMN IF EXISTS columns,
@@ -82,6 +99,9 @@
   </changeSet>
 
   <changeSet id="13-drop-legacy-columns-data-export-template" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="data_export_template" columnName="columns"/>
+    </preConditions>
     <sql>
       ALTER TABLE data_export_template
         DROP COLUMN IF EXISTS columns,
