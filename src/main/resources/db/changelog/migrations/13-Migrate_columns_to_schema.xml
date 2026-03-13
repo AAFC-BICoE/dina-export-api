@@ -1,0 +1,113 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://local.xsd/dbchangelog-4.4.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+  <changeSet id="13-add-schema-columns" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="data_export" columnName="schema"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="data_export">
+      <column name="schema" type="jsonb">
+        <constraints nullable="true"/>
+      </column>
+    </addColumn>
+    <addColumn tableName="data_export_template">
+      <column name="schema" type="jsonb">
+        <constraints nullable="true"/>
+      </column>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="13-migrate-data-export-to-schema" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="data_export" columnName="columns"/>
+    </preConditions>
+    <sql>
+      UPDATE data_export
+      SET schema = jsonb_build_object(
+          source,
+          CASE
+              WHEN column_aliases IS NOT NULL
+                   AND array_length(column_aliases, 1) > 0
+                   AND array_to_string(column_aliases, '') != ''
+              THEN jsonb_build_object(
+                       'columns', to_jsonb(columns),
+                       'aliases', to_jsonb(column_aliases)
+                   )
+              ELSE jsonb_build_object(
+                       'columns', to_jsonb(columns)
+                   )
+          END
+      )
+      WHERE columns IS NOT NULL
+        AND array_length(columns, 1) > 0;
+    </sql>
+  </changeSet>
+
+  <changeSet id="13-migrate-data-export-template-to-schema" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="data_export_template" columnName="columns"/>
+    </preConditions>
+    <sql>
+      UPDATE data_export_template
+      SET schema = jsonb_build_object(
+          'material-sample',
+          CASE
+              WHEN column_aliases IS NOT NULL
+                   AND array_length(column_aliases, 1) > 0
+                   AND array_to_string(column_aliases, '') != ''
+              THEN jsonb_build_object(
+                       'columns', to_jsonb(columns),
+                       'aliases', to_jsonb(column_aliases)
+                   )
+              ELSE jsonb_build_object(
+                       'columns', to_jsonb(columns)
+                   )
+          END
+      )
+      WHERE columns IS NOT NULL
+        AND array_length(columns, 1) > 0;
+    </sql>
+  </changeSet>
+
+  <changeSet id="13-fix-column-aliases-type" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="data_export" columnName="column_aliases"/>
+    </preConditions>
+    <sql>
+      ALTER TABLE data_export
+        ALTER COLUMN column_aliases TYPE jsonb USING NULL;
+      ALTER TABLE data_export_template
+        ALTER COLUMN column_aliases TYPE jsonb USING NULL;
+    </sql>
+  </changeSet>
+
+  <changeSet id="13-drop-legacy-columns-data-export" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="data_export" columnName="columns"/>
+    </preConditions>
+    <sql>
+      ALTER TABLE data_export
+        DROP COLUMN IF EXISTS columns,
+        DROP COLUMN IF EXISTS column_aliases,
+        DROP COLUMN IF EXISTS column_functions;
+    </sql>
+  </changeSet>
+
+  <changeSet id="13-drop-legacy-columns-data-export-template" author="hdosprazeres" context="schema-change">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="data_export_template" columnName="columns"/>
+    </preConditions>
+    <sql>
+      ALTER TABLE data_export_template
+        DROP COLUMN IF EXISTS columns,
+        DROP COLUMN IF EXISTS column_aliases,
+        DROP COLUMN IF EXISTS column_functions;
+    </sql>
+  </changeSet>
+
+</databaseChangeLog>

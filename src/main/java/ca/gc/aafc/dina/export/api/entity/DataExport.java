@@ -2,7 +2,6 @@ package ca.gc.aafc.dina.export.api.entity;
 
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.persistence.Column;
@@ -43,9 +42,6 @@ public class DataExport implements DinaEntity {
 
   public enum ExportStatus { NEW, RUNNING, COMPLETED, EXPIRED, ERROR }
   public enum ExportType { TABULAR_DATA, OBJECT_ARCHIVE }
-
-  // to be replaced by DataExportFunction
-  public enum FunctionName { CONCAT, CONVERT_COORDINATES_DD }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -98,20 +94,6 @@ public class DataExport implements DinaEntity {
   @Column
   private Map<String, Object> query;
 
-  // will be removed in 0.19
-  @Type(type = "string-array")
-  @Column
-  private String[] columns;
-
-  /**
-   * Column aliases for headers.
-   * @deprecated Use {@link #schema} with aliases embedded in EntitySchema instead. Will be removed in 0.20.
-   */
-  @Deprecated(since = "0.19", forRemoval = true)
-  @Type(type = "jsonb")
-  @Column
-  private Map<String, List<String>> columnAliases;
-
   /**
    * Schema-based column configuration for exports.
    * Unified field that handles multi-entity exports with columns and optional aliases per entity.
@@ -134,11 +116,6 @@ public class DataExport implements DinaEntity {
   @Column
   private LinkedHashMap<String, DataExportSchemaEntry> schema;
 
-  // to be removed in 0.18
-  @Type(type = "jsonb")
-  @Column
-  private Map<String, FunctionDef> columnFunctions;
-
   // functions by column
   @Type(type = "jsonb")
   @Column
@@ -152,6 +129,4 @@ public class DataExport implements DinaEntity {
   @Transient
   private Map<String, String> transitiveData;
 
-  public record FunctionDef(FunctionName functionName, List<String> params) {
-  }
 }

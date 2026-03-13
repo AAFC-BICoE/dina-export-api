@@ -12,7 +12,6 @@ import ca.gc.aafc.dina.export.api.entity.DataExportTemplate;
 
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -46,16 +45,6 @@ public class DataExportTemplateDto implements JsonApiResource {
   private DataExport.ExportType exportType;
   private Map<String, String> exportOptions;
 
-  // will be removed in 0.19
-  private String[] columns;
-  
-  /**
-   * Column aliases for headers.
-   * @deprecated Use {@link #schema} with aliases embedded in EntitySchemaDto instead. Will be removed in 0.20.
-   */
-  @Deprecated(since = "0.19", forRemoval = true)
-  private Map<String, List<String>> columnAliases;
-
   /**
    * Schema-based column configuration for exports.
    * See {@link DataExportDto#schema} for format details.
@@ -63,9 +52,6 @@ public class DataExportTemplateDto implements JsonApiResource {
   private LinkedHashMap<String, DataExportSchemaEntryDto> schema;
 
   private Map<String, DataExportFunction> functions;
-
-  // will be removed in 0.18
-  private Map<String, DataExport.FunctionDef> columnFunctions;
 
   @Override
   @JsonIgnore
