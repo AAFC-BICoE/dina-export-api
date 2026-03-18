@@ -68,10 +68,11 @@ Where the report template would be
 
 == Data Export Request
 
-Data Exports are running asynchronously. Upon creation using a POST, an export UUID will be returned. The UUID can
-be used to query the state using the same (`data-export`) with a GET. An optional `columnAliases` attribute can also be submitted
-as long as the length of the array is the same as `columns`. If aliases are only required for some column the others should have an empty string so the real
-header name will be used.
+Data Exports run asynchronously. Upon creation using POST, an export UUID is returned. Use this UUID to query the export status with a GET request to the same endpoint (`data-export`).
+
+=== Single-Resource Export
+
+For a single resource type, the export generates a single CSV/TSV file. Use the `schema` attribute to define types (kebab-case) and their fields:
 
 POST /data-export
 [source, json]
@@ -80,29 +81,150 @@ POST /data-export
   "data": {
     "type": "data-export",
     "attributes": {
-        "source": "dina_material_sample_index",
-        "query": "{\"query\": {\"match_all\": {}}, \"sort\": [{\"data.attributes.createdOn\": \"asc\"}]}",
-        "columns": ["materialSampleName", "collectingEvent.dwcVerbatimLocality"]
+      "name": "Material Sample Export",
+      "source": "dina_material_sample_index",
+      "query": "{\"query\": {\"match_all\": {}}}",
+      "schema": {
+        "material-sample": {
+          "columns": [
+            "id",
+            "materialSampleName",
+            "collectingEvent.dwcVerbatimLocality"
+          ]
+        }
+      },
+      "exportOptions": {
+        "columnSeparator": "COMMA"
+      }
     }
   }
 }
 ----
 
-Optionally, some functions can be used on columns to create new calculated columns that can then be added to the `columns`.
+=== Multi-Resource Export (ZIP Package)
+
+For multiple resource types, enable packaging to generate separate CSV files packaged in a ZIP. Each type gets its own file (e.g., `material-sample.csv`, `collecting-event.csv`):
 
 [source, json]
 ----
 {
-  "functions": {"latLong": {"functionDef": "CONVERT_COORDINATES_DD","params": {"column": "collectingEvent.eventGeom"}}}
+  "data": {
+    "type": "data-export",
+    "attributes": {
+      "name": "Multi-Entity Export",
+      "source": "dina_material_sample_index",
+      "query": "{\"query\": {\"match_all\": {}}}",
+      "schema": {
+        "material-sample": {
+          "columns": [
+            "id",
+            "materialSampleName",
+            "group"
+          ],
+          "aliases": [
+            "Sample ID",
+            "Sample Name",
+            "Group"
+          ]
+        },
+        "collecting-event": {
+          "columns": [
+            "id",
+            "dwcVerbatimElevation",
+            "createdBy"
+          ],
+          "aliases": [
+            "Event ID",
+            "Elevation",
+            "Created By"
+          ]
+        }
+      },
+      "exportOptions": {
+        "enablePackaging": "true",
+        "columnSeparator": "COMMA"
+      }
+    }
+  }
 }
 ----
+
+NOTE: Resource type keys use kebab-case (e.g., `material-sample`, `collecting-event`). The `aliases` field is optional:
+
+* **Omit entirely** (`aliases: null`): All columns use their field names as headers
+* **Exact length match**: The `aliases` array MUST be the same length as `columns` array
+* **Empty strings or null**: Use `""` or `null` in specific positions to keep that column's field name while aliasing others
+
+IMPORTANT: If `aliases` is provided with a different length than `columns`, the request will fail with a validation error.
+
+Example with selective aliases:
+[source, json]
+----
+"schema": {
+  "material-sample": {
+    "columns": ["id", "name", "group"],
+    "aliases": ["Sample ID", "", "Group"]  // name uses field name
+  }
+}
+----
+
+=== Export Options
+
+* `columnSeparator`: `COMMA` (default) or `TAB`
+* `enablePackaging`: `true` creates separate files per resource type in a ZIP (requires multiple entities in schema)
+
+NOTE: ID tracking is automatically enabled for multi-resource exports to prevent duplicate related entities across files.
+
+=== Functions
+
+Functions create calculated columns. Add the function name to your schema and define it in `functions`:
 
 [source, json]
 ----
 {
-  "functions": {"link": {"functionDef": "CONCAT","params": {"items": ["url", "id"], "constants": {"url": "http://localhost/entry"}, "separator": "/"}}}
+  "schema": {
+    "material-sample": {
+      "columns": ["id", "materialSampleName", "latLong"]
+    }
+  },
+  "functions": {
+    "latLong": {
+      "functionDef": "CONVERT_COORDINATES_DD",
+      "params": {
+        "column": "collectingEvent.eventGeom"
+      }
+    }
+  }
 }
 ----
+
+Available functions:
+
+* `CONVERT_COORDINATES_DD`: Converts geometry to decimal degrees format
+** Parameters: `column` (field path to geometry)
+
+* `CONCAT`: Combines multiple fields with a separator
+** Parameters: `items` (list of field names), `constants` (map of constant values), `separator` (delimiter)
+
+[source, json]
+----
+{
+  "functions": {
+    "link": {
+      "functionDef": "CONCAT",
+      "params": {
+        "items": ["url", "id"],
+        "constants": {"url": "http://localhost/entry"},
+        "separator": "/"
+      }
+    }
+  }
+}
+----
+
+=== Deprecated Format (columns)
+
+The `columns` attribute is deprecated and will be removed in version 0.19. Use `schema` instead
 
 == Download File
 

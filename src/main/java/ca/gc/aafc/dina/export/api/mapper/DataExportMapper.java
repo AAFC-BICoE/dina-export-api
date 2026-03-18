@@ -1,5 +1,6 @@
 package ca.gc.aafc.dina.export.api.mapper;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -18,7 +19,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.gc.aafc.dina.export.api.dto.DataExportDto;
+import ca.gc.aafc.dina.export.api.dto.DataExportSchemaEntryDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
+import ca.gc.aafc.dina.export.api.entity.DataExportSchemaEntry;
 import ca.gc.aafc.dina.mapper.DinaMapperV2;
 
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPEREF;
@@ -32,23 +35,65 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
 
   @Override
   @Mappings({
-    @Mapping(source = "query", target = "query", qualifiedByName = "mapToJson")
+    @Mapping(source = "query", target = "query", qualifiedByName = "mapToJson"),
+    @Mapping(source = "schema", target = "schema", qualifiedByName = "schemaToDto")
   })
   DataExportDto toDto(DataExport entity, @Context Set<String> provided, @Context String scope);
 
   @Override
   @Mappings({
-    @Mapping(source = "query", target = "query", qualifiedByName = "jsonToMap")
+    @Mapping(source = "query", target = "query", qualifiedByName = "jsonToMap"),
+    @Mapping(source = "schema", target = "schema", qualifiedByName = "schemaToEntity")
   })
   DataExport toEntity(DataExportDto dto, @Context Set<String> provided, @Context String scope);
 
   @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
   @Mappings({
-    @Mapping(source = "query", target = "query", qualifiedByName = "jsonToMap")
+    @Mapping(source = "query", target = "query", qualifiedByName = "jsonToMap"),
+    @Mapping(source = "schema", target = "schema", qualifiedByName = "schemaToEntity")
   })
   void patchEntity(@MappingTarget DataExport entity, DataExportDto dto,
                    @Context Set<String> provided, @Context String scope);
 
+  @Named("schemaToDto")
+  static LinkedHashMap<String, DataExportSchemaEntryDto> schemaToDto(LinkedHashMap<String, DataExportSchemaEntry> schema) {
+    if (schema == null) {
+      return null;
+    }
+    LinkedHashMap<String, DataExportSchemaEntryDto> result = new LinkedHashMap<>();
+    for (var entry : schema.entrySet()) {
+      DataExportSchemaEntry entitySchema = entry.getValue();
+      result.put(entry.getKey(), DataExportSchemaEntryDto.builder()
+        .columns(entitySchema.columns())
+        .aliases(entitySchema.aliases())
+        .build());
+    }
+    return result;
+  }
+
+  /**
+   * Converts schema from DTO to entity format.
+   * @param schema the DTO schema map
+   * @return the entity schema map
+   */
+  @Named("schemaToEntity")
+  static LinkedHashMap<String, DataExportSchemaEntry> schemaToEntity(LinkedHashMap<String, DataExportSchemaEntryDto> schema) {
+    if (schema == null) {
+      return null;
+    }
+    LinkedHashMap<String, DataExportSchemaEntry> result = new LinkedHashMap<>();
+    for (var entry : schema.entrySet()) {
+      DataExportSchemaEntryDto dto = entry.getValue();
+      result.put(entry.getKey(), new DataExportSchemaEntry(dto.getColumns(), dto.getAliases()));
+    }
+    return result;
+  }
+
+  /**
+   * Converts a map to JSON string.
+   * @param query the map to convert
+   * @return the JSON string representation
+   */
   @Named("mapToJson")
   static String mapToJsonString(Map<String, Object> query) {
     try {

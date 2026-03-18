@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.entity;
 
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -89,23 +90,19 @@ public class DataExportTemplate implements DinaEntity {
   @Type(type = "jsonb")
   private Map<String, String> exportOptions;
 
-  @Type(type = "string-array")
+  /**
+   * Schema-based column configuration for exports.
+   * Unified field that handles multi-entity exports with columns and optional aliases per entity.
+   * See {@link DataExport#schema} for format details.
+   */
+  @Type(type = "jsonb")
   @Column
-  private String[] columns;
-
-  @Type(type = "string-array")
-  @Column
-  private String[] columnAliases;
+  private LinkedHashMap<String, DataExportSchemaEntry> schema;
 
   // functions by column
   @Type(type = "jsonb")
   @Column
   private Map<String, DataExportFunction> functions;
-
-  // to be removed in 0.18
-  @Type(type = "jsonb")
-  @Column
-  private Map<String, DataExport.FunctionDef> columnFunctions;
 
   @Column(name = "created_on", insertable = false, updatable = false)
   @Generated(value = GenerationTime.INSERT)

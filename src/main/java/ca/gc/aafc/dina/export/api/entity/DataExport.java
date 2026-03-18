@@ -1,7 +1,7 @@
 package ca.gc.aafc.dina.export.api.entity;
 
 import java.time.OffsetDateTime;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.persistence.Column;
@@ -42,9 +42,6 @@ public class DataExport implements DinaEntity {
 
   public enum ExportStatus { NEW, RUNNING, COMPLETED, EXPIRED, ERROR }
   public enum ExportType { TABULAR_DATA, OBJECT_ARCHIVE }
-
-  // to be replaced by DataExportFunction
-  public enum FunctionName { CONCAT, CONVERT_COORDINATES_DD }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -97,18 +94,27 @@ public class DataExport implements DinaEntity {
   @Column
   private Map<String, Object> query;
 
-  @Type(type = "string-array")
-  @Column
-  private String[] columns;
-
-  @Type(type = "string-array")
-  @Column
-  private String[] columnAliases;
-
-  // to be removed in 0.18
+  /**
+   * Schema-based column configuration for exports.
+   * Unified field that handles multi-entity exports with columns and optional aliases per entity.
+   * Example:
+   * <pre>
+   * {
+   *   "material-sample": {
+   *     "columns": ["id", "materialSampleName"],
+   *     "aliases": ["Sample ID", "Sample Name"]
+   *   },
+   *   "collecting-event": {
+   *     "columns": ["dwcVerbatimLocality"],
+   *     "aliases": ["Location"]
+   *   }
+   * }
+   * </pre>
+   * Uses LinkedHashMap to preserve entity order - first entity is primary.
+   */
   @Type(type = "jsonb")
   @Column
-  private Map<String, FunctionDef> columnFunctions;
+  private LinkedHashMap<String, DataExportSchemaEntry> schema;
 
   // functions by column
   @Type(type = "jsonb")
@@ -123,6 +129,4 @@ public class DataExport implements DinaEntity {
   @Transient
   private Map<String, String> transitiveData;
 
-  public record FunctionDef(FunctionName functionName, List<String> params) {
-  }
 }

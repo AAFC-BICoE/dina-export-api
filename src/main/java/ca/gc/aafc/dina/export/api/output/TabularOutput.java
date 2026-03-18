@@ -24,9 +24,6 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
  */
 public final class TabularOutput<I, T> implements DataOutput<I, T> {
 
-  public static final String OPTION_COLUMN_SEPARATOR = "columnSeparator";
-  public static final String OPTION_ENABLE_ID_TRACKING = "enableIdTracking";
-
   public enum ColumnSeparator {
     COMMA(","), TAB("\t");
     private final String separatorChar;
@@ -58,6 +55,10 @@ public final class TabularOutput<I, T> implements DataOutput<I, T> {
   private final SequenceWriter sw;
   private final Set<I> trackedIds;
   private final boolean idTrackingEnabled;
+
+  public static String extensionFromSeparator(String columnSeparator) {
+    return ColumnSeparator.TAB.name().equals(columnSeparator) ? ".tsv" : ".csv";
+  }
 
   /**
    * Returns a {@link TabularOutput} instance configured for a specific type without using column aliases.
