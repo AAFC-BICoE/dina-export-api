@@ -5,16 +5,15 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
+import ca.gc.aafc.dina.export.api.config.UserNotificationQueueProperties;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileDownloader;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
-import ca.gc.aafc.dina.messaging.message.MessageParam;
 import ca.gc.aafc.dina.messaging.message.UserMessageNotification;
 import ca.gc.aafc.dina.messaging.producer.DinaMessageProducer;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -88,13 +87,10 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
   private UserMessageNotification buildUserMessageNotification(DataExport dinaExport) {
     return UserMessageNotification
       .builder()
-      .title("Export ready")
-      .message("${download}")
-      .messageParams(Map.of("download", List.of(
-        new MessageParam(MessageParam.MessageParamType.URL,
-          dinaExport.getUuid().toString()),
-        new MessageParam(MessageParam.MessageParamType.TEXT,
-          "Download"))))
+      .username(dinaExport.getCreatedBy())
+      .title("Object Export Ready")
+      .notificationType(UserNotificationQueueProperties.NotificationType.OBJECT_EXPORT_READY.name())
+      .notificationParams(Map.of("id", dinaExport.getUuid().toString()))
       .build();
   }
 

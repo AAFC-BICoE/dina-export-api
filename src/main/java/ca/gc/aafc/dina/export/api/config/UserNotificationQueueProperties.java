@@ -11,5 +11,8 @@ import ca.gc.aafc.dina.messaging.config.RabbitMQQueueProperties;
 @Component
 @Named("userNotificationQueueProperties")
 public class UserNotificationQueueProperties extends RabbitMQQueueProperties {
+
+  public enum NotificationType {OBJECT_EXPORT_READY}
+
 }
 
