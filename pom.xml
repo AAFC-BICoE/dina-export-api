@@ -47,6 +47,7 @@
     <tomcat.version>9.0.113</tomcat.version>
     <snakeyaml.version>1.33</snakeyaml.version>
     <postgresql.version>42.4.4</postgresql.version>
+    <commons-lang3.version>3.18.0</commons-lang3.version>
 
     <!-- test-related properties-->
     <mockserver.version>5.15.0</mockserver.version>
