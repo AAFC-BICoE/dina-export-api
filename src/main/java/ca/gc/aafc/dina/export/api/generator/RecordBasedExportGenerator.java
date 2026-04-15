@@ -40,6 +40,8 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -140,6 +142,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       .title("Data Export Ready")
       .notificationType(UserNotificationQueueProperties.NotificationType.DATA_EXPORT_READY.name())
       .notificationParams(Map.of("id", dinaExport.getUuid().toString()))
+      .expiresOn(LocalDateTime.now().plusWeeks(2).atZone(ZoneId.systemDefault()).toOffsetDateTime())
       .build();
   }
 

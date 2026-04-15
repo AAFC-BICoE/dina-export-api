@@ -14,6 +14,8 @@ import ca.gc.aafc.dina.messaging.producer.DinaMessageProducer;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -91,6 +93,7 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
       .title("Object Export Ready")
       .notificationType(UserNotificationQueueProperties.NotificationType.OBJECT_EXPORT_READY.name())
       .notificationParams(Map.of("id", dinaExport.getUuid().toString()))
+      .expiresOn(LocalDateTime.now().plusWeeks(2).atZone(ZoneId.systemDefault()).toOffsetDateTime())
       .build();
   }
 
