@@ -5,12 +5,18 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
+import ca.gc.aafc.dina.export.api.config.UserNotificationQueueProperties;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileDownloader;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
+import ca.gc.aafc.dina.messaging.message.UserMessageNotification;
+import ca.gc.aafc.dina.messaging.producer.DinaMessageProducer;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.log4j.Log4j2;
@@ -21,15 +27,18 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
 
   private final FileDownloader fileDownloader;
   private final DataExportConfig dataExportConfig;
+  private final DinaMessageProducer messageProducer;
 
   public ObjectStoreExportGenerator(DataExportConfig dataExportConfig,
                                     FileDownloader fileDownloader,
-                                    DataExportStatusService dataExportStatusService) {
+                                    DataExportStatusService dataExportStatusService,
+                                    DinaMessageProducer messageProducer) {
 
     super(dataExportStatusService);
 
     this.fileDownloader = fileDownloader;
     this.dataExportConfig = dataExportConfig;
+    this.messageProducer = messageProducer;
   }
 
   @Override
@@ -64,6 +73,8 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
         // call download
         fileDownloader.downloadFile(downloadUrl, filename -> exportPath);
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
+
+        messageProducer.send(buildUserMessageNotification(dinaExport));
       } catch (IOException | IllegalStateException ex) {
         updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
         throw ex;
@@ -73,6 +84,17 @@ public class ObjectStoreExportGenerator extends DataExportGenerator {
     }
 
     return CompletableFuture.completedFuture(dinaExport.getUuid());
+  }
+
+  private UserMessageNotification buildUserMessageNotification(DataExport dinaExport) {
+    return UserMessageNotification
+      .builder()
+      .username(dinaExport.getCreatedBy())
+      .title("Object Export Ready")
+      .notificationType(UserNotificationQueueProperties.NotificationType.OBJECT_EXPORT_READY.name())
+      .notificationParams(Map.of("id", dinaExport.getUuid().toString()))
+      .expiresOn(LocalDateTime.now().plusWeeks(2).atZone(ZoneId.systemDefault()).toOffsetDateTime())
+      .build();
   }
 
   @Override

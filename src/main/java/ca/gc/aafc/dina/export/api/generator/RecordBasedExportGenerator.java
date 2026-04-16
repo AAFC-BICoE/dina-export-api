@@ -14,6 +14,7 @@ import com.jayway.jsonpath.Configuration;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.config.DataExportOption;
+import ca.gc.aafc.dina.export.api.config.UserNotificationQueueProperties;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.entity.DataExportSchemaEntry;
 import ca.gc.aafc.dina.export.api.generator.helper.ExportFunctionHandler;
@@ -26,6 +27,8 @@ import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
 import ca.gc.aafc.dina.json.JsonHelper;
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
+import ca.gc.aafc.dina.messaging.message.UserMessageNotification;
+import ca.gc.aafc.dina.messaging.producer.DinaMessageProducer;
 
 import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPEREF;
 
@@ -37,6 +40,8 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -62,13 +67,15 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   private final ElasticSearchDataSource elasticSearchDataSource;
   private final DataExportConfig dataExportConfig;
   private final Configuration jsonPathConfiguration;
+  private final DinaMessageProducer messageProducer;
 
   public RecordBasedExportGenerator(
     DataExportStatusService dataExportStatusService,
     DataExportConfig dataExportConfig,
     Configuration jsonPathConfiguration,
     ElasticSearchDataSource elasticSearchDataSource,
-    ObjectMapper objectMapper) {
+    ObjectMapper objectMapper,
+    DinaMessageProducer messageProducer) {
 
     super(dataExportStatusService);
 
@@ -76,6 +83,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     this.objectMapper = objectMapper;
     this.dataExportConfig = dataExportConfig;
     this.jsonPathConfiguration = jsonPathConfiguration;
+    this.messageProducer = messageProducer;
   }
 
   @Override
@@ -118,12 +126,24 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
         exportSingleEntity(dinaExport, schema, exportPath);
       }
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
+      messageProducer.send(buildUserMessageNotification(dinaExport));
     } catch (IOException ioEx) {
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.ERROR);
       throw ioEx;
     }
 
     return CompletableFuture.completedFuture(dinaExport.getUuid());
+  }
+
+  private UserMessageNotification buildUserMessageNotification(DataExport dinaExport) {
+    return UserMessageNotification
+      .builder()
+      .username(dinaExport.getCreatedBy())
+      .title("Data Export Ready")
+      .notificationType(UserNotificationQueueProperties.NotificationType.DATA_EXPORT_READY.name())
+      .notificationParams(Map.of("id", dinaExport.getUuid().toString()))
+      .expiresOn(LocalDateTime.now().plusWeeks(2).atZone(ZoneId.systemDefault()).toOffsetDateTime())
+      .build();
   }
 
   @Override
