@@ -48,4 +48,8 @@
         <notes>Keycloak Server related</notes>
         <cve>CVE-2024-1132</cve>
     </suppress>
+    <suppress>
+        <notes>Not applicable, no header set</notes>
+        <cve>CVE-2026-22732</cve>
+    </suppress>
 </suppressions>
