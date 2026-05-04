@@ -6,8 +6,8 @@ import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.entity.DataExportTemplate;
 import ca.gc.aafc.dina.export.api.testsupport.factories.DataExportTemplateFactory;
 
-import javax.inject.Inject;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 public class DataExportTemplateServiceIT extends BaseIntegrationTest {
 

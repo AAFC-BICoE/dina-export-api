@@ -1,7 +1,7 @@
 package ca.gc.aafc.dina.export.api.service;
 
-import javax.inject.Inject;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 
 import org.junit.jupiter.api.Test;

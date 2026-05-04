@@ -2,8 +2,8 @@ package ca.gc.aafc.dina.export.api.messaging;
 
 import java.io.IOException;
 import java.util.Map;
-import javax.inject.Named;
-import javax.transaction.Transactional;
+import jakarta.inject.Named;
+import jakarta.transaction.Transactional;
 import lombok.extern.log4j.Log4j2;
 
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
