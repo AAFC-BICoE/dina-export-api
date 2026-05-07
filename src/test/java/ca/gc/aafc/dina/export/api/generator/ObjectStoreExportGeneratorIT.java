@@ -7,7 +7,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.Test;

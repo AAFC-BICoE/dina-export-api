@@ -3,7 +3,7 @@ package ca.gc.aafc.dina.export.api.generator;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

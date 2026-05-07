@@ -20,9 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.UUID;
-import javax.inject.Inject;
-import javax.transaction.Transactional;
-import javax.validation.ValidationException;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import jakarta.validation.ValidationException;
 
 @SpringBootTest(properties = "keycloak.enabled: true")
 @Transactional

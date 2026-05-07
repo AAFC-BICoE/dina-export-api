@@ -10,7 +10,7 @@ import freemarker.template.Configuration;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2

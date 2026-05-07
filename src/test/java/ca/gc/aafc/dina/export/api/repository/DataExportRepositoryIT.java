@@ -44,7 +44,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @ContextConfiguration(initializers = { ElasticSearchTestContainerInitializer.class })
 public class DataExportRepositoryIT extends BaseIntegrationTest {

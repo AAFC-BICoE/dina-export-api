@@ -6,20 +6,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.DinaExportModuleApiLauncher;
-import ca.gc.aafc.dina.export.api.generator.FreemarkerReportGenerator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import freemarker.core._MiscTemplateException;
-import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;

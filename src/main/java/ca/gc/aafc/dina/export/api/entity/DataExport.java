@@ -1,20 +1,21 @@
 package ca.gc.aafc.dina.export.api.entity;
 
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Transient;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Transient;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -79,8 +80,8 @@ public class DataExport implements DinaEntity {
   /**
    * Options specific to the type
    */
-  @Column
-  @Type(type = "jsonb")
+  @Type(JsonType.class)
+  @Column(columnDefinition = "jsonb")
   private Map<String, String> exportOptions;
 
   /**
@@ -90,8 +91,8 @@ public class DataExport implements DinaEntity {
   @Size(max = 100)
   private String source;
 
-  @Type(type = "jsonb")
-  @Column
+  @Type(JsonType.class)
+  @Column(columnDefinition = "jsonb")
   private Map<String, Object> query;
 
   /**
@@ -112,13 +113,13 @@ public class DataExport implements DinaEntity {
    * </pre>
    * Uses LinkedHashMap to preserve entity order - first entity is primary.
    */
-  @Type(type = "jsonb")
-  @Column
+  @Type(JsonType.class)
+  @Column(columnDefinition = "jsonb")
   private LinkedHashMap<String, DataExportSchemaEntry> schema;
 
   // functions by column
-  @Type(type = "jsonb")
-  @Column
+  @Type(JsonType.class)
+  @Column(columnDefinition = "jsonb")
   private Map<String, DataExportFunction> functions;
 
   @Enumerated(EnumType.STRING)

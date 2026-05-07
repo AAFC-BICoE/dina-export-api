@@ -1,31 +1,31 @@
 package ca.gc.aafc.dina.export.api.entity;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.GenerationTime;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.Type;
 
-import javax.persistence.Id;
+import ca.gc.aafc.dina.entity.DinaEntity;
+import ca.gc.aafc.dina.i18n.MultilingualDescription;
+
+import io.hypersistence.utils.hibernate.type.json.JsonType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-
-import ca.gc.aafc.dina.entity.DinaEntity;
-import ca.gc.aafc.dina.i18n.MultilingualDescription;
 
 @Entity
 @AllArgsConstructor
@@ -67,8 +67,8 @@ public class ReportTemplate implements DinaEntity {
   @NotNull
   private ReportType reportType;
 
-  @Type(type = "jsonb")
-  @Column(name = "multilingual_description")
+  @Type(JsonType.class)
+  @Column(name = "multilingual_description", columnDefinition = "jsonb")
   private MultilingualDescription multilingualDescription;
 
   @NotBlank
@@ -88,7 +88,6 @@ public class ReportTemplate implements DinaEntity {
   @Builder.Default
   private Boolean includesBarcode = false;
 
-  @Type(type = "string-array")
   @Column
   private String[] reportVariables;
 
