@@ -279,7 +279,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
    * Transforms a single JSON:API entity node and writes it to the output.
    * The output layer decides whether to accept or skip based on entity type.
    */
-  private void processEntity(JsonNode entity, String fallbackId, 
+  protected void processEntity(JsonNode entity, String fallbackId,
                             JsonNode relationshipSource,
                             Map<String, DataExportFunction> functions,
                             DataOutput<UUID, JsonNode> output) throws IOException {
@@ -409,7 +409,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   // ── JSON transformation helpers ────────────────────────────────────────
 
-  private static String extractText(JsonNode node, String field, String fallback) {
+  protected static String extractText(JsonNode node, String field, String fallback) {
     JsonNode child = node.get(field);
     return child != null ? child.asText() : fallback;
   }

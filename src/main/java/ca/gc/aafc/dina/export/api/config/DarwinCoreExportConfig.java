@@ -14,7 +14,7 @@ import lombok.Data;
  * From darwincore-mapping.yaml
  */
 @Component
-@PropertySource("classpath:config/darwincore-mapping.yaml")
+@PropertySource("classpath:dwc/darwincore-mapping.yaml")
 @ConfigurationProperties(prefix = "dwc")
 @Validated
 @Data
@@ -43,6 +43,7 @@ public class DarwinCoreExportConfig {
   @Data
   public static class ResourceContext {
     private boolean root;             // true if this is materialSample (the root)
+    private String context;           // Parent context to navigate from (null for materialSample)
     private String path;              // Path from root to reach this entity (null for root)
     private String filter;            // Filter to select from array (e.g., "isPrimary == true")
   }
@@ -54,7 +55,6 @@ public class DarwinCoreExportConfig {
     private String source;            // JSONPath relative to context
     private String filter;            // Filter condition (e.g., "isPrimary == true")
     private String path;              // Additional path after filtering (optional)
-    private String transformer;       // Custom transformer name (optional)
     private String staticValue;       // Static value (optional)
     private boolean required;
   }

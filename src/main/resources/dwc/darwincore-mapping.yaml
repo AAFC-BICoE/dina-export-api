@@ -1,23 +1,27 @@
 dwc:
   occurrence:
-    # Define resource hierarchy and how to navigate to them
     resourceContexts:
       materialSample:
         root: true
 
       organism:
+        context: "materialSample"
         path: "organism"
+        filter: "isPrimary == true"
 
       collectingEvent:
+        context: "materialSample"
         path: "collectingEvent"
 
       geoReferenceAssertions:
-        path: "collectingEvent.geoReferenceAssertions"
-        filter: "isPrimary == true"  # Select the primary one
+        context: "collectingEvent"
+        path: "geoReferenceAssertions"
+        filter: "isPrimary == true"
 
       determination:
-        path: "organism.determination"
-        filter: "isPrimary == true"  # Select the primary one
+        context: "organism"
+        path: "determination"
+        filter: "isPrimary == true"
 
     columns:
       # From organism
@@ -54,7 +58,6 @@ dwc:
       - dwcTerm: "decimalLatitude"
         context: "collectingEvent"
         source: "eventGeom.coordinates"
-        transformer: "extractLatitude"
 
       # From geoReferenceAssertions (already filtered in context)
       - dwcTerm: "stateProvince"
