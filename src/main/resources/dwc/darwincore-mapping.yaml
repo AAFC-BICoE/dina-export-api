@@ -1,0 +1,70 @@
+dwc:
+  occurrence:
+    # Define resource hierarchy and how to navigate to them
+    resourceContexts:
+      materialSample:
+        root: true
+
+      organism:
+        path: "organism"
+
+      collectingEvent:
+        path: "collectingEvent"
+
+      geoReferenceAssertions:
+        path: "collectingEvent.geoReferenceAssertions"
+        filter: "isPrimary == true"  # Select the primary one
+
+      determination:
+        path: "organism.determination"
+        filter: "isPrimary == true"  # Select the primary one
+
+    columns:
+      # From organism
+      - dwcTerm: "occurrenceID"
+        context: "organism"
+        source: "id"
+
+      - dwcTerm: "scientificName"
+        context: "organism"
+        source: "targetOrganismPrimaryScientificName"
+
+      - dwcTerm: "kingdom"
+        context: "determination"
+        source: "kingdom"
+
+      # From materialSample
+      - dwcTerm: "catalogNumber"
+        context: "materialSample"
+        source: "materialSampleId"
+
+      - dwcTerm: "collectionCode"
+        context: "materialSample"
+        source: "collection.code"
+
+      # From collectingEvent
+      - dwcTerm: "eventDate"
+        context: "collectingEvent"
+        source: "startEventDateTime"
+
+      - dwcTerm: "locality"
+        context: "collectingEvent"
+        source: "locality"
+
+      - dwcTerm: "decimalLatitude"
+        context: "collectingEvent"
+        source: "eventGeom.coordinates"
+        transformer: "extractLatitude"
+
+      # From geoReferenceAssertions (already filtered in context)
+      - dwcTerm: "stateProvince"
+        context: "geoReferenceAssertions"
+        source: "stateProvince"
+
+      - dwcTerm: "county"
+        context: "geoReferenceAssertions"
+        source: "county"
+
+      # Static value
+      - dwcTerm: "basisOfRecord"
+        staticValue: "PreservedSpecimen"
