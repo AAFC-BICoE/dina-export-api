@@ -40,7 +40,7 @@ dwc:
       # From materialSample
       - dwcTerm: "catalogNumber"
         context: "materialSample"
-        source: "materialSampleId"
+        source: "materialSampleName"
 
       - dwcTerm: "collectionCode"
         context: "materialSample"
