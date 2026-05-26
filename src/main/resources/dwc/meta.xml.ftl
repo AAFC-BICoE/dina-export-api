@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <archive xmlns="http://rs.tdwg.org/dwc/text/" metadata="eml.xml">
-  <core encoding="UTF-8" fieldsTerminatedBy="," linesTerminatedBy="\n" quoteCharacter="&quot;" ignoreHeaderLines="1">
+  <core encoding="UTF-8" rowType="http://rs.tdwg.org/dwc/terms/Occurrence"
+    fieldsTerminatedBy="," linesTerminatedBy="\n" quoteCharacter="&quot;" ignoreHeaderLines="1">
     <files>
       <location>occurrence.csv</location>
     </files>
