@@ -2,7 +2,7 @@
 <archive xmlns="http://rs.tdwg.org/dwc/text/" metadata="eml.xml">
   <core encoding="UTF-8" fieldsTerminatedBy="," linesTerminatedBy="\n" quoteCharacter="&quot;" ignoreHeaderLines="1">
     <files>
-      <location>occurrence.txt</location>
+      <location>occurrence.csv</location>
     </files>
     <id index="0"/>
     <#list columns as column>
