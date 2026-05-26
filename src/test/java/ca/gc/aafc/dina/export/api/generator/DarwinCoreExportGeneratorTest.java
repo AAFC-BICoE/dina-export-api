@@ -1,59 +1,53 @@
 package ca.gc.aafc.dina.export.api.generator;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 import ca.gc.aafc.dina.export.api.generator.helper.DarwinCoreContextBuilder;
 import ca.gc.aafc.dina.export.api.generator.helper.DarwinCoreMapper;
-import ca.gc.aafc.dina.export.api.output.TabularOutput;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit test for DarwinCore mapping logic.
+ * Unit tests for DarwinCore context building, field mapping, and CSV generation.
  *
- * Verifies that given an Elasticsearch JSON:API source document,
- * the context builder and mapper produce the expected DwC record.
- *
- * Input: the full JSON:API document (data + included), denormalized so that
- * organism, collectingEvent and collection are embedded as direct fields
- * in the materialSample entity node — matching what buildContextMap expects.
+ * Generated files are written to target/test-output/dwc/ for local inspection after the run.
  */
 public class DarwinCoreExportGeneratorTest {
 
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-  private static final String EXPECTED_OCCURRENCE_ID  = "019e6085-f541-71ae-a15a-f7e971049c6b";
-  private static final String EXPECTED_CATALOG_NUMBER = "TEST_COL";
+  private static final String EXPECTED_OCCURRENCE_ID   = "019e6085-f541-71ae-a15a-f7e971049c6b";
+  private static final String EXPECTED_CATALOG_NUMBER  = "TEST_COL";
   private static final String EXPECTED_COLLECTION_CODE = "TEST_COL";
   private static final String EXPECTED_EVENT_DATE      = "2025-05-10T12:30:11";
   private static final String EXPECTED_BASIS_OF_RECORD = "PreservedSpecimen";
-  private static final String EXPECTED_SCIENTIFIC_NAME_FROM_DET = "Procavia capensis (Pallas, 1766)";
-  private static final String EXPECTED_KINGDOM = "Animalia";
+  private static final String EXPECTED_SCIENTIFIC_NAME = "Procavia capensis (Pallas, 1766)";
 
   private static DarwinCoreExportConfig config;
   private static DarwinCoreContextBuilder contextBuilder;
   private static DarwinCoreMapper mapper;
-  private static JsonNode esSource;  // full JSON:API document as stored in Elasticsearch
+  private static DarwinCoreExportGenerator generator;
+  private static JsonNode esSource;
 
   // -------------------------------------------------------------------------
   // Setup
@@ -64,6 +58,9 @@ public class DarwinCoreExportGeneratorTest {
     config = loadConfigFromYaml();
     contextBuilder = new DarwinCoreContextBuilder(config);
     mapper = new DarwinCoreMapper();
+    generator = new DarwinCoreExportGenerator(
+        null, null, null, null, null, null,
+        config, contextBuilder, mapper);
 
     try (InputStream is = DarwinCoreExportGeneratorTest.class
         .getResourceAsStream("/elasticsearch/material_sample_response.json")) {
@@ -76,46 +73,29 @@ public class DarwinCoreExportGeneratorTest {
   // -------------------------------------------------------------------------
 
   @Test
-  void contextMap_allExpectedContextsArePresent() {
+  void contextMap_isPrimarySelectionsAndPresenceCorrect() {
     ObjectNode entity = buildDenormalizedEntity(esSource);
     Map<String, JsonNode> ctx = contextBuilder.buildContextMap(entity);
 
+    // All expected context keys are present
     assertNotNull(ctx.get("materialSample"),        "materialSample context missing");
     assertNotNull(ctx.get("organism"),              "organism context missing");
     assertNotNull(ctx.get("collectingEvent"),        "collectingEvent context missing");
     assertNotNull(ctx.get("geoReferenceAssertions"), "geoReferenceAssertions context missing");
     assertNotNull(ctx.get("determination"),          "determination context missing");
-  }
 
-  @Test
-  void contextMap_organism_isPrimaryOrganismSelected() {
-    ObjectNode entity = buildDenormalizedEntity(esSource);
-    Map<String, JsonNode> ctx = contextBuilder.buildContextMap(entity);
-
+    // isPrimary organism is selected
     JsonNode organism = ctx.get("organism");
-    assertNotNull(organism);
     assertEquals(EXPECTED_OCCURRENCE_ID, organism.get("id").asText());
     assertEquals("true", organism.get("isPrimary").asText());
-  }
 
-  @Test
-  void contextMap_determination_isPrimaryDeterminationSelected() {
-    ObjectNode entity = buildDenormalizedEntity(esSource);
-    Map<String, JsonNode> ctx = contextBuilder.buildContextMap(entity);
-
+    // isPrimary determination is selected
     JsonNode det = ctx.get("determination");
-    assertNotNull(det);
     assertEquals("true", det.get("isPrimary").asText());
-    assertEquals(EXPECTED_SCIENTIFIC_NAME_FROM_DET, det.get("scientificName").asText());
-  }
+    assertEquals(EXPECTED_SCIENTIFIC_NAME, det.get("scientificName").asText());
 
-  @Test
-  void contextMap_geoReferenceAssertions_isPrimarySelected() {
-    ObjectNode entity = buildDenormalizedEntity(esSource);
-    Map<String, JsonNode> ctx = contextBuilder.buildContextMap(entity);
-
+    // isPrimary geoReferenceAssertion is selected
     JsonNode geoRef = ctx.get("geoReferenceAssertions");
-    assertNotNull(geoRef);
     assertEquals("true", geoRef.get("isPrimary").asText());
     assertEquals("52.0", geoRef.get("dwcDecimalLatitude").asText());
   }
@@ -124,26 +104,58 @@ public class DarwinCoreExportGeneratorTest {
   // DwC record mapping tests
   // -------------------------------------------------------------------------
 
-  /**
-   * Verifies all DwC field mappings in a single pass.
-   */
   @Test
   void dwcRecord_allExpectedFieldsMapped() {
     Map<String, String> record = buildDwcRecord(esSource);
 
-    assertEquals(EXPECTED_OCCURRENCE_ID,            record.get("occurrenceID"));
-    assertEquals(EXPECTED_SCIENTIFIC_NAME_FROM_DET, record.get("scientificName"));
-    assertEquals(EXPECTED_KINGDOM,                  record.get("kingdom"));
-    assertEquals(EXPECTED_CATALOG_NUMBER,           record.get("catalogNumber"));
-    assertEquals(EXPECTED_COLLECTION_CODE,          record.get("collectionCode"));
-    assertEquals(EXPECTED_EVENT_DATE,               record.get("eventDate"));
-    assertEquals("Test locality",                   record.get("locality"));
-    assertEquals("52.0",                            record.get("decimalLatitude"));
-    assertEquals("Ontario",                         record.get("stateProvince"));
+    assertEquals(EXPECTED_OCCURRENCE_ID,   record.get("occurrenceID"));
+    assertEquals(EXPECTED_SCIENTIFIC_NAME, record.get("scientificName"));
+    assertEquals(EXPECTED_CATALOG_NUMBER,  record.get("catalogNumber"));
+    assertEquals(EXPECTED_COLLECTION_CODE, record.get("collectionCode"));
+    assertEquals(EXPECTED_EVENT_DATE,      record.get("eventDate"));
+    assertEquals("Test locality",          record.get("locality"));
+    assertEquals("52.0",                   record.get("decimalLatitude"));
+    assertEquals("Ontario",                record.get("stateProvince"));
     assertEquals("Stormont, Dundas and Glengarry Counties", record.get("county"));
-    assertEquals(EXPECTED_BASIS_OF_RECORD,          record.get("basisOfRecord"));
+    assertEquals(EXPECTED_BASIS_OF_RECORD, record.get("basisOfRecord"));
   }
 
+
+  // -------------------------------------------------------------------------
+  // CSV generation test
+  // -------------------------------------------------------------------------
+
+  @Test
+  void generateOccurrenceCsv_writesValidCsv(@TempDir Path tempDir) throws Exception {
+    ObjectNode entity = buildDenormalizedEntity(esSource);
+    Path csvPath = tempDir.resolve("occurrence.csv");
+
+    generator.generateOccurrenceCsv(List.of(entity), csvPath);
+
+    CsvMapper csvMapper = new CsvMapper();
+    CsvSchema schema = CsvSchema.emptySchema().withHeader();
+    com.fasterxml.jackson.databind.MappingIterator<Map<String, String>> it = csvMapper
+        .<Map<String, String>>readerForMapOf(String.class)
+        .with(schema)
+        .readValues(csvPath.toFile());
+    List<Map<String, String>> records = it.readAll();
+
+    assertEquals(1, records.size(), "Expected exactly one data row");
+    Map<String, String> row = records.get(0);
+
+    // All configured DwC terms appear as headers
+    for (DarwinCoreExportConfig.ColumnMapping col : config.getOccurrence().getColumns()) {
+      assertTrue(row.containsKey(col.getDwcTerm()), "Missing column: " + col.getDwcTerm());
+    }
+
+    // Spot-check values (full field coverage in dwcRecord_allExpectedFieldsMapped)
+    assertEquals(EXPECTED_OCCURRENCE_ID,   row.get("occurrenceID"));
+    assertEquals(EXPECTED_SCIENTIFIC_NAME, row.get("scientificName"));
+    assertEquals(EXPECTED_CATALOG_NUMBER,  row.get("catalogNumber"));
+    assertEquals(EXPECTED_COLLECTION_CODE, row.get("collectionCode"));
+    assertEquals(EXPECTED_EVENT_DATE,      row.get("eventDate"));
+    assertEquals(EXPECTED_BASIS_OF_RECORD, row.get("basisOfRecord"));
+  }
 
   // -------------------------------------------------------------------------
   // Helpers

@@ -33,12 +33,6 @@ dwc:
         context: "determination"
         source: "scientificName"
 
-      # kingdom is not a direct field on determination; it is extracted from
-      # scientificNameDetails.classificationPath using classificationRanks as a positional index.
-      - dwcTerm: "kingdom"
-        context: "determination"
-        classificationRank: "kingdom"
-
       # From materialSample
       - dwcTerm: "catalogNumber"
         context: "materialSample"

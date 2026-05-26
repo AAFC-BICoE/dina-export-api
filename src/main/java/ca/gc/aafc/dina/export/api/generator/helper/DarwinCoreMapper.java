@@ -59,12 +59,7 @@ public class DarwinCoreMapper {
       return null;
     }
 
-    // 3. Classification-path extraction (e.g., kingdom from scientificNameDetails)
-    if (mapping.getClassificationRank() != null) {
-      return extractClassificationRank(contextNode, mapping.getClassificationRank());
-    }
-
-    // 4. Filter + optional subpath (JSONPath filter syntax, e.g. @.placeType == 'county')
+    // 3. Filter + optional subpath (JSONPath filter syntax, e.g. @.placeType == 'county')
     if (mapping.getFilter() != null) {
       String expression = "$." + mapping.getSource() + "[?(" + mapping.getFilter() + ")]"
           + (mapping.getPath() != null ? "." + mapping.getPath() : "");
@@ -77,46 +72,4 @@ public class DarwinCoreMapper {
     return value != null ? value.asText() : null;
   }
 
-  /**
-   * Extract a classification rank value from a determination node.
-   *
-   * Uses {@link JsonHelper#findOneInJsonNode} to reach the two parallel pipe-delimited strings
-   * in {@code scientificNameDetails}, then resolves the rank positionally.
-   *
-   * Example for rankName="kingdom" given:
-   *   classificationRanks: "domain|kingdom|phylum|..."
-   *   classificationPath:  "Eukaryota|Animalia|Chordata|..."
-   * → "Animalia"
-   *
-   * @param contextNode the determination JsonNode
-   * @param rankName    the rank to look up (e.g., "kingdom")
-   * @return the rank value, or null if the rank is absent
-   */
-  private String extractClassificationRank(JsonNode contextNode, String rankName) {
-    JsonNode details = JsonHelper.findOneInJsonNode(contextNode, "$.scientificNameDetails");
-    if (details == null) {
-      log.debug("scientificNameDetails missing for rank: {}", rankName);
-      return null;
-    }
-
-    JsonNode ranksNode = details.get("classificationRanks");
-    JsonNode pathNode  = details.get("classificationPath");
-
-    if (ranksNode == null || ranksNode.isNull() || pathNode == null || pathNode.isNull()) {
-      log.debug("classificationRanks or classificationPath missing for rank: {}", rankName);
-      return null;
-    }
-
-    String[] rankArray  = ranksNode.asText().split("\\|", -1);
-    String[] valueArray = pathNode.asText().split("\\|", -1);
-
-    for (int i = 0; i < rankArray.length; i++) {
-      if (rankName.equals(rankArray[i].trim()) && i < valueArray.length) {
-        return valueArray[i];
-      }
-    }
-
-    log.debug("Rank '{}' not found in classificationRanks: {}", rankName, ranksNode.asText());
-    return null;
-  }
 }

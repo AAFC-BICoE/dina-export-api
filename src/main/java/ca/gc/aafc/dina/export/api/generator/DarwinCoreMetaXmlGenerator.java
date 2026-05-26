@@ -46,7 +46,7 @@ public class DarwinCoreMetaXmlGenerator {
   public void generateMetaXml(Path metaXmlPath) throws IOException {
     try {
       List<DarwinCoreExportConfig.ColumnMapping> columns = config.getOccurrence().getColumns();
-      List<ColumnData> columnData = buildColumnData(columns);
+      List<Map<String, Object>> columnData = buildColumnData(columns);
 
       // Prepare template data
       Map<String, Object> data = new HashMap<>();
@@ -67,18 +67,17 @@ public class DarwinCoreMetaXmlGenerator {
   }
 
   /**
-   * Build column data for template
+   * Build column data maps for template
    */
-  private List<ColumnData> buildColumnData(List<DarwinCoreExportConfig.ColumnMapping> columns) {
+  private List<Map<String, Object>> buildColumnData(List<DarwinCoreExportConfig.ColumnMapping> columns) {
     return IntStream.range(0, columns.size())
       .mapToObj(i -> {
         DarwinCoreExportConfig.ColumnMapping mapping = columns.get(i);
-        return new ColumnData(
-          i,
-          mapping.getDwcTerm(),
-          getDwCUri(mapping.getDwcTerm()),
-          getXsdDataType(mapping.getDataType())
-        );
+        Map<String, Object> col = new HashMap<>();
+        col.put("dwcTerm",  mapping.getDwcTerm());
+        col.put("uri",      getDwCUri(mapping.getDwcTerm()));
+        col.put("dataType", getXsdDataType(mapping.getDataType()));
+        return col;
       })
       .toList();
   }
@@ -111,18 +110,4 @@ public class DarwinCoreMetaXmlGenerator {
     };
   }
 
-  /**
-   * Column data for meta.xml template
-   *
-   * @param index Column index (0-based)
-   * @param dwcTerm DarwinCore term name
-   * @param uri Full URI for the term
-   * @param dataType XSD data type (nullable)
-   */
-  private record ColumnData(
-    int index,
-    String dwcTerm,
-    String uri,
-    String dataType
-  ) {}
 }

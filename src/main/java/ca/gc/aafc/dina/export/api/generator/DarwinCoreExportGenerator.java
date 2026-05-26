@@ -18,7 +18,14 @@ import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
 import ca.gc.aafc.dina.messaging.producer.DinaMessageProducer;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import ca.gc.aafc.dina.export.api.output.TabularOutput;
+
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +33,14 @@ import java.util.UUID;
 
 public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
 
+  private static final TypeReference<Map<String, String>> MAP_STRING_TYPEREF = new TypeReference<>() {};
+
   private final DarwinCoreExportConfig darwinCoreConfig;
   private final DarwinCoreContextBuilder contextBuilder;
   private final DarwinCoreMapper darwinCoreMapper;
+
+  // Set by generateOccurrenceCsv; written to by processEntity
+  private TabularOutput<UUID, Map<String, String>> csvOutput;
 
   public DarwinCoreExportGenerator(
     DataExportStatusService dataExportStatusService,
@@ -87,7 +99,36 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     Map<String, String> dwcRecord = buildDwcRecord(entitiesContext);
 
     // Write to output
-    // TODO using TabularOutput
+    if (csvOutput != null) {
+      csvOutput.addRecord(UUID.fromString(entityId), dwcRecord);
+    }
+  }
+
+  /**
+   * @param entities    denormalized JSON:API entities (relationships embedded as direct fields)
+   * @param outputPath  path to write the CSV file to
+   */
+  public void generateOccurrenceCsv(List<JsonNode> entities, Path outputPath) throws IOException {
+    List<String> headers = darwinCoreConfig.getOccurrence().getColumns().stream()
+        .map(DarwinCoreExportConfig.ColumnMapping::getDwcTerm)
+        .toList();
+
+    try (FileWriter writer = new FileWriter(outputPath.toFile(), StandardCharsets.UTF_8);
+         TabularOutput<UUID, Map<String, String>> out = TabularOutput.create(
+           TabularOutput.TabularOutputArgs.builder()
+             .headers(headers)
+             .columnSeparator(TabularOutput.ColumnSeparator.COMMA)
+             .build(),
+           MAP_STRING_TYPEREF, writer)) {
+      this.csvOutput = out;
+      try {
+        for (JsonNode entity : entities) {
+          processEntity(entity, null, null, null, null);
+        }
+      } finally {
+        this.csvOutput = null;
+      }
+    }
   }
 
   /**

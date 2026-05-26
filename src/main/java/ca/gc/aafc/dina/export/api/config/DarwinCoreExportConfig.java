@@ -56,7 +56,6 @@ public class DarwinCoreExportConfig {
     private String filter;            // Filter condition (e.g., "isPrimary == true")
     private String path;              // Additional path after filtering (optional)
     private String staticValue;       // Static value (optional)
-    private String classificationRank;// If set, extract this rank from scientificNameDetails.classificationPath
     private String dataType = "string";
     private boolean required;}
 }
