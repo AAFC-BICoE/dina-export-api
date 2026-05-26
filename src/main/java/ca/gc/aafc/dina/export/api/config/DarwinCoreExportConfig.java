@@ -56,6 +56,6 @@ public class DarwinCoreExportConfig {
     private String filter;            // Filter condition (e.g., "isPrimary == true")
     private String path;              // Additional path after filtering (optional)
     private String staticValue;       // Static value (optional)
-    private boolean required;
-  }
+    private String dataType = "string";
+    private boolean required;}
 }
