@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
+import ca.gc.aafc.dina.json.JsonHelper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -98,91 +99,28 @@ public class DarwinCoreContextBuilder {
   }
 
   /**
-   * Navigate from a parent context and apply filter if needed
+   * Navigate from a parent context and apply filter if needed.
+   *
+   * Builds a JSONPath expression from {@code path} and the optional {@code filter}
+   * (which must already be in JSONPath predicate syntax, e.g. {@code @.isPrimary == true})
+   * and delegates to {@link JsonHelper#findOneInJsonNode}.
    *
    * @param parentContext The parent context node
-   * @param path The path to navigate from parent (e.g., "determination")
-   * @param filter Optional filter to apply (e.g., "isPrimary == true")
-   * @return The resolved and filtered JsonNode, or null if not found
+   * @param path          Dot-notation path from parent (e.g., "determination")
+   * @param filter        Optional JSONPath predicate (e.g., "@.isPrimary == true")
+   * @return The first matching JsonNode, or null if not found
    */
   private JsonNode navigateAndFilter(JsonNode parentContext, String path, String filter) {
-    if (path == null || path.isEmpty()) {
-      return parentContext;
-    }
-
-    // Navigate through path segments
-    JsonNode current = parentContext;
-    String[] segments = path.split("\\.");
-
-    for (String segment : segments) {
-      if (current == null) {
-        return null;
-      }
-      current = current.get(segment);
-    }
-
-    if (current == null) {
-      return null;
-    }
-
-    // Apply filter if this is an array
-    if (current.isArray() && filter != null) {
-      current = applyFilter(current, filter);
-    }
-
-    return current;
-  }
-
-  /**
-   * Apply filter to an array to select a specific element
-   *
-   * @param arrayNode The array JsonNode
-   * @param filter Filter condition (e.g., "isPrimary == true")
-   * @return The first matching element, or null if no match
-   */
-  private JsonNode applyFilter(JsonNode arrayNode, String filter) {
-    if (!arrayNode.isArray()) {
-      return arrayNode;
-    }
-
-    for (JsonNode item : arrayNode) {
-      if (evaluateFilter(item, filter)) {
+    if (filter != null) {
+      String expression = "$." + path + "[?(" + filter + ")]";
+      JsonNode result = JsonHelper.findOneInJsonNode(parentContext, expression);
+      if (result != null) {
         log.debug("Filter '{}' matched", filter);
-        return item;
+      } else {
+        log.debug("No match for path '{}' with filter '{}'", path, filter);
       }
+      return result;
     }
-
-    log.debug("No array element matched filter: {}", filter);
-    return null;
-  }
-
-  /**
-   * Evaluate a filter condition on a JsonNode
-   *
-   * @param node The node to evaluate
-   * @param filter Filter expression (e.g., "isPrimary == true")
-   * @return true if filter matches, false otherwise
-   */
-  private boolean evaluateFilter(JsonNode node, String filter) {
-    if (node == null || !node.isObject()) {
-      return false;
-    }
-
-    String[] parts = filter.split("==");
-    if (parts.length != 2) {
-      log.warn("Invalid filter format: {}", filter);
-      return false;
-    }
-
-    String field = parts[0].trim();
-    String expectedValue = parts[1].trim();
-
-    JsonNode fieldValue = node.get(field);
-    if (fieldValue == null || fieldValue.isNull()) {
-      return false;
-    }
-
-    String actualValue = fieldValue.asText();
-    return expectedValue.equals(actualValue);
+    return JsonHelper.findOneInJsonNode(parentContext, "$." + path);
   }
 }

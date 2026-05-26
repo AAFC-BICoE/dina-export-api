@@ -1,0 +1,414 @@
+{
+    "data": {
+        "id": "019e6085-f66e-7059-b179-7d7f0091e522",
+        "type": "material-sample",
+        "attributes": {
+            "version": 0,
+            "group": "aafc",
+            "createdOn": "2026-05-25T19:04:12.638603Z",
+            "createdBy": "dosprazeresfonsecah",
+            "dwcCatalogNumber": null,
+            "dwcOtherCatalogNumbers": [
+                "test catalogNumber"
+            ],
+            "materialSampleName": "TEST_COL",
+            "identifiers": {},
+            "materialSampleType": null,
+            "preparationDate": null,
+            "preservationType": null,
+            "preparationFixative": null,
+            "preparationMaterials": null,
+            "preparationSubstrate": null,
+            "managedAttributes": {},
+            "preparationManagedAttributes": {},
+            "extensionValues": {},
+            "preparationRemarks": null,
+            "dwcDegreeOfEstablishment": null,
+            "hierarchy": [
+                {
+                    "uuid": "019e6085-f66e-7059-b179-7d7f0091e522",
+                    "name": "TEST_COL",
+                    "rank": 1,
+                    "organismPrimaryDetermination": [
+                        {
+                            "verbatimScientificName": "Procavia capensis",
+                            "scientificName": "Procavia capensis (Pallas, 1766)",
+                            "scientificNameDetails": {
+                                "currentName": "Procavia capensis (Pallas, 1766)",
+                                "isSynonym": false
+                            }
+                        }
+                    ]
+                }
+            ],
+            "targetOrganismPrimaryScientificName": "Procavia capensis (Pallas, 1766)|Procavia capensis (Pallas, 1766)",
+            "effectiveScientificName": "Procavia capensis (Pallas, 1766)",
+            "barcode": null,
+            "publiclyReleasable": null,
+            "notPubliclyReleasableReason": null,
+            "tags": null,
+            "materialSampleState": null,
+            "materialSampleRemarks": null,
+            "stateChangedOn": null,
+            "stateChangeRemarks": null,
+            "allowDuplicateName": false,
+            "restrictionFieldsExtension": {},
+            "isRestricted": false,
+            "restrictionRemarks": null,
+            "sourceSet": null,
+            "isBaseForSplitByType": null
+        },
+        "relationships": {
+            "collectingEvent": {
+                "data": {
+                    "id": "019e6085-f454-7572-a836-bf932b1d4695",
+                    "type": "collecting-event"
+                }
+            },
+            "projects": {
+                "data": []
+            },
+            "organism": {
+                "data": [
+                    {
+                        "id": "019e6085-f541-71ae-a15a-f7e971049c6b",
+                        "type": "organism"
+                    },
+                    {
+                        "id": "019e6085-f5cb-74e4-8a58-3752e4816448",
+                        "type": "organism"
+                    }
+                ]
+            },
+            "collection": {
+                "data": {
+                    "id": "019e607e-d063-732d-998a-644347c2d4b2",
+                    "type": "collection"
+                }
+            },
+            "assemblages": {
+                "data": []
+            }
+        },
+        "meta": {
+            "permissionsProvider": "GroupAuthorizationService",
+            "permissions": [
+                "create",
+                "update",
+                "delete"
+            ]
+        }
+    },
+    "included": [
+        {
+            "id": "019e6085-f541-71ae-a15a-f7e971049c6b",
+            "type": "organism",
+            "attributes": {
+                "group": "aafc",
+                "isTarget": null,
+                "lifeStage": null,
+                "sex": null,
+                "remarks": null,
+                "dwcVernacularName": null,
+                "managedAttributes": {},
+                "determination": [
+                    {
+                        "verbatimScientificName": "Procavia capensis",
+                        "verbatimDeterminer": null,
+                        "verbatimDate": null,
+                        "scientificName": "Procavia capensis (Pallas, 1766)",
+                        "transcriberRemarks": null,
+                        "verbatimRemarks": null,
+                        "determinationRemarks": null,
+                        "typeStatus": null,
+                        "typeStatusEvidence": null,
+                        "determiner": null,
+                        "determinedOn": "2026-05-25",
+                        "qualifier": null,
+                        "scientificNameSource": "GNA",
+                        "scientificNameDetails": {
+                            "labelHtml": "Procaviidae: <b>Procavia</b> <b>capensis</b> (Pallas, 1766)",
+                            "classificationPath": "Eukaryota|Animalia|Chordata|Vertebrata|Gnathostomata|Osteichthyes|Tetrapoda|Mammalia|Theria|Eutheria|Hyracoidea|Procaviidae|Procavia|Procavia capensis",
+                            "classificationRanks": "domain|kingdom|phylum|subphylum|infraphylum|parvphylum|megaclass|class|subclass|infraclass|order|family|genus|species",
+                            "sourceUrl": "https://www.catalogueoflife.org/data/taxon/4MMMH",
+                            "recordedOn": "2026-04-20",
+                            "currentName": "Procavia capensis (Pallas, 1766)",
+                            "isSynonym": false
+                        },
+                        "isPrimary": true,
+                        "isFiledAs": null,
+                        "managedAttributes": null
+                    },
+                    {
+                        "verbatimScientificName": "Andrena erigeniae",
+                        "verbatimDeterminer": null,
+                        "verbatimDate": null,
+                        "scientificName": "Andrena erigeniae",
+                        "transcriberRemarks": null,
+                        "verbatimRemarks": null,
+                        "determinationRemarks": null,
+                        "typeStatus": null,
+                        "typeStatusEvidence": null,
+                        "determiner": null,
+                        "determinedOn": "2026-05-25",
+                        "qualifier": null,
+                        "scientificNameSource": null,
+                        "scientificNameDetails": {
+                            "labelHtml": null,
+                            "classificationPath": "Andrenidae|Andrena",
+                            "classificationRanks": "family|genus",
+                            "sourceUrl": "https://doi.org/10.5883/BOLD:AAF0962",
+                            "recordedOn": null,
+                            "currentName": null,
+                            "isSynonym": null
+                        },
+                        "isPrimary": false,
+                        "isFiledAs": null,
+                        "managedAttributes": null
+                    }
+                ],
+                "createdOn": "2026-05-25T19:04:12.36801Z",
+                "createdBy": "dosprazeresfonsecah"
+            }
+        },
+        {
+            "id": "019e607e-d063-732d-998a-644347c2d4b2",
+            "type": "collection",
+            "attributes": {
+                "createdOn": "2026-05-25T18:56:24.234769Z",
+                "createdBy": "dosprazeresfonsecah",
+                "group": "aafc",
+                "name": "Test collection DWC",
+                "code": "TEST_COL",
+                "multilingualDescription": {
+                    "descriptions": []
+                },
+                "webpage": null,
+                "contact": null,
+                "address": null,
+                "remarks": null
+            }
+        },
+        {
+            "id": "019e6085-f5cb-74e4-8a58-3752e4816448",
+            "type": "organism",
+            "attributes": {
+                "group": "aafc",
+                "isTarget": null,
+                "lifeStage": null,
+                "sex": null,
+                "remarks": null,
+                "dwcVernacularName": null,
+                "managedAttributes": {},
+                "determination": [
+                    {
+                        "verbatimScientificName": "Procavia capensis",
+                        "verbatimDeterminer": null,
+                        "verbatimDate": null,
+                        "scientificName": "Procavia capensis (Pallas, 1766)",
+                        "transcriberRemarks": null,
+                        "verbatimRemarks": null,
+                        "determinationRemarks": null,
+                        "typeStatus": null,
+                        "typeStatusEvidence": null,
+                        "determiner": null,
+                        "determinedOn": "2026-05-25",
+                        "qualifier": null,
+                        "scientificNameSource": "GNA",
+                        "scientificNameDetails": {
+                            "labelHtml": "Procaviidae: <b>Procavia</b> <b>capensis</b> (Pallas, 1766)",
+                            "classificationPath": "Eukaryota|Animalia|Chordata|Vertebrata|Gnathostomata|Osteichthyes|Tetrapoda|Mammalia|Theria|Eutheria|Hyracoidea|Procaviidae|Procavia|Procavia capensis",
+                            "classificationRanks": "domain|kingdom|phylum|subphylum|infraphylum|parvphylum|megaclass|class|subclass|infraclass|order|family|genus|species",
+                            "sourceUrl": "https://www.catalogueoflife.org/data/taxon/4MMMH",
+                            "recordedOn": "2026-04-20",
+                            "currentName": "Procavia capensis (Pallas, 1766)",
+                            "isSynonym": false
+                        },
+                        "isPrimary": true,
+                        "isFiledAs": null,
+                        "managedAttributes": null
+                    },
+                    {
+                        "verbatimScientificName": "Andrena erigeniae",
+                        "verbatimDeterminer": null,
+                        "verbatimDate": null,
+                        "scientificName": "Andrena erigeniae",
+                        "transcriberRemarks": null,
+                        "verbatimRemarks": null,
+                        "determinationRemarks": null,
+                        "typeStatus": null,
+                        "typeStatusEvidence": null,
+                        "determiner": null,
+                        "determinedOn": "2026-05-25",
+                        "qualifier": null,
+                        "scientificNameSource": null,
+                        "scientificNameDetails": {
+                            "labelHtml": null,
+                            "classificationPath": "Andrenidae|Andrena",
+                            "classificationRanks": "family|genus",
+                            "sourceUrl": "https://doi.org/10.5883/BOLD:AAF0962",
+                            "recordedOn": null,
+                            "currentName": null,
+                            "isSynonym": null
+                        },
+                        "isPrimary": false,
+                        "isFiledAs": null,
+                        "managedAttributes": null
+                    }
+                ],
+                "createdOn": "2026-05-25T19:04:12.36801Z",
+                "createdBy": "dosprazeresfonsecah"
+            }
+        },
+        {
+            "id": "019e6085-f454-7572-a836-bf932b1d4695",
+            "type": "collecting-event",
+            "attributes": {
+                "version": 0,
+                "dwcFieldNumber": null,
+                "dwcRecordNumber": null,
+                "otherRecordNumbers": null,
+                "group": "aafc",
+                "createdBy": "dosprazeresfonsecah",
+                "createdOn": "2026-05-25T19:04:12.167031Z",
+                "geoReferenceAssertions": [
+                    {
+                        "dwcDecimalLatitude": 52.0,
+                        "dwcDecimalLongitude": 5.0,
+                        "dwcCoordinateUncertaintyInMeters": null,
+                        "createdOn": "2026-05-25T19:04:12.117119496Z",
+                        "dwcGeoreferencedDate": null,
+                        "georeferencedBy": null,
+                        "literalGeoreferencedBy": null,
+                        "dwcGeoreferenceProtocol": null,
+                        "dwcGeoreferenceSources": null,
+                        "dwcGeoreferenceRemarks": null,
+                        "dwcGeodeticDatum": null,
+                        "isPrimary": true,
+                        "dwcGeoreferenceVerificationStatus": null
+                    },
+                    {
+                        "dwcDecimalLatitude": 45.0,
+                        "dwcDecimalLongitude": -75.0,
+                        "dwcCoordinateUncertaintyInMeters": null,
+                        "createdOn": "2026-05-25T19:04:12.117122824Z",
+                        "dwcGeoreferencedDate": null,
+                        "georeferencedBy": null,
+                        "literalGeoreferencedBy": null,
+                        "dwcGeoreferenceProtocol": null,
+                        "dwcGeoreferenceSources": null,
+                        "dwcGeoreferenceRemarks": null,
+                        "dwcGeodeticDatum": null,
+                        "isPrimary": false,
+                        "dwcGeoreferenceVerificationStatus": null
+                    }
+                ],
+                "eventGeom": {
+                    "type": "Point",
+                    "crs": {
+                        "type": "name",
+                        "properties": {
+                            "name": "EPSG:4326"
+                        }
+                    },
+                    "coordinates": [
+                        5.0,
+                        52.0
+                    ]
+                },
+                "dwcVerbatimCoordinates": null,
+                "dwcRecordedBy": null,
+                "startEventDateTime": "2025-05-10T12:30:11",
+                "endEventDateTime": null,
+                "verbatimEventDateTime": "2025-05-09",
+                "dwcVerbatimLocality": "Test locality",
+                "host": null,
+                "managedAttributes": {},
+                "dwcVerbatimLatitude": "52°",
+                "dwcVerbatimLongitude": "5°",
+                "dwcVerbatimCoordinateSystem": "decimal degrees",
+                "dwcVerbatimSRS": "WGS84 (EPSG:4326)",
+                "dwcVerbatimElevation": null,
+                "dwcVerbatimDepth": null,
+                "dwcCountry": "Canada",
+                "dwcCountryCode": "ca",
+                "dwcStateProvince": "Ontario",
+                "habitat": null,
+                "dwcMinimumElevationInMeters": null,
+                "dwcMinimumDepthInMeters": null,
+                "dwcMaximumElevationInMeters": null,
+                "dwcMaximumDepthInMeters": null,
+                "substrate": null,
+                "remarks": null,
+                "publiclyReleasable": true,
+                "notPubliclyReleasableReason": null,
+                "tags": null,
+                "geographicPlaceNameSource": "OSM",
+                "geographicPlaceNameSourceDetail": {
+                    "sourceUrl": "https://nominatim.openstreetmap.org/ui/details.html?osmtype=W&osmid=34153846",
+                    "customGeographicPlace": null,
+                    "selectedGeographicPlace": {
+                        "id": "34153846",
+                        "element": "W",
+                        "placeType": "road",
+                        "name": "Ault Drive"
+                    },
+                    "higherGeographicPlaces": [
+                        {
+                            "id": "34153846",
+                            "element": "W",
+                            "placeType": "town",
+                            "name": "Ingleside"
+                        },
+                        {
+                            "id": "34153846",
+                            "element": "W",
+                            "placeType": "city",
+                            "name": "South Stormont"
+                        },
+                        {
+                            "id": "34153846",
+                            "element": "W",
+                            "placeType": "county",
+                            "name": "Stormont, Dundas and Glengarry Counties"
+                        },
+                        {
+                            "id": "34153846",
+                            "element": "W",
+                            "placeType": "state_district",
+                            "name": "Eastern Ontario"
+                        },
+                        {
+                            "id": "34153846",
+                            "element": "W",
+                            "placeType": "ISO3166-2-lvl4",
+                            "name": "CA-ON"
+                        },
+                        {
+                            "id": "34153846",
+                            "element": "W",
+                            "placeType": "postcode",
+                            "name": "K0C 1M0"
+                        }
+                    ],
+                    "stateProvince": {
+                        "id": "34153846",
+                        "element": "way",
+                        "placeType": "state",
+                        "name": "Ontario"
+                    },
+                    "country": {
+                        "code": "ca",
+                        "name": "Canada"
+                    },
+                    "recordedOn": "2026-05-25T19:04:12.116985789Z"
+                },
+                "geographicThesaurus": null,
+                "extensionValues": {}
+            }
+        }
+    ],
+    "meta": {
+        "moduleVersion": "0.120"
+    }
+}

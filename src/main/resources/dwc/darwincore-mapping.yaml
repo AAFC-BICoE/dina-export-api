@@ -7,7 +7,7 @@ dwc:
       organism:
         context: "materialSample"
         path: "organism"
-        filter: "isPrimary == true"
+        filter: "@.isPrimary == true"
 
       collectingEvent:
         context: "materialSample"
@@ -16,12 +16,12 @@ dwc:
       geoReferenceAssertions:
         context: "collectingEvent"
         path: "geoReferenceAssertions"
-        filter: "isPrimary == true"
+        filter: "@.isPrimary == true"
 
       determination:
         context: "organism"
         path: "determination"
-        filter: "isPrimary == true"
+        filter: "@.isPrimary == true"
 
     columns:
       # From organism
@@ -30,12 +30,14 @@ dwc:
         source: "id"
 
       - dwcTerm: "scientificName"
-        context: "organism"
-        source: "targetOrganismPrimaryScientificName"
+        context: "determination"
+        source: "scientificName"
 
+      # kingdom is not a direct field on determination; it is extracted from
+      # scientificNameDetails.classificationPath using classificationRanks as a positional index.
       - dwcTerm: "kingdom"
         context: "determination"
-        source: "kingdom"
+        classificationRank: "kingdom"
 
       # From materialSample
       - dwcTerm: "catalogNumber"
@@ -53,20 +55,22 @@ dwc:
 
       - dwcTerm: "locality"
         context: "collectingEvent"
-        source: "locality"
+        source: "dwcVerbatimLocality"
 
       - dwcTerm: "decimalLatitude"
-        context: "collectingEvent"
-        source: "eventGeom.coordinates"
-
-      # From geoReferenceAssertions (already filtered in context)
-      - dwcTerm: "stateProvince"
         context: "geoReferenceAssertions"
-        source: "stateProvince"
+        source: "dwcDecimalLatitude"
+
+      # stateProvince/county come from collectingEvent directly, not from the geoRef assertion object
+      - dwcTerm: "stateProvince"
+        context: "collectingEvent"
+        source: "dwcStateProvince"
 
       - dwcTerm: "county"
-        context: "geoReferenceAssertions"
-        source: "county"
+        context: "collectingEvent"
+        source: "geographicPlaceNameSourceDetail.higherGeographicPlaces"
+        filter: "@.placeType == 'county'"
+        path: "name"
 
       # Static value
       - dwcTerm: "basisOfRecord"

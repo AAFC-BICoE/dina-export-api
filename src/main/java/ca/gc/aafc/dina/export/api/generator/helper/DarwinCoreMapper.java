@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
+import ca.gc.aafc.dina.json.JsonHelper;
 
 import java.util.Map;
 import lombok.extern.log4j.Log4j2;
@@ -58,144 +59,64 @@ public class DarwinCoreMapper {
       return null;
     }
 
-    // 3. Path with filter (for arrays like determinations, geoReferenceAssertions)
-    if (mapping.getFilter() != null) {
-      JsonNode filtered = filterAndExtract(
-        contextNode,
-        mapping.getSource(),
-        mapping.getFilter(),
-        mapping.getPath()
-      );
-      return filtered != null ? filtered.asText() : null;
+    // 3. Classification-path extraction (e.g., kingdom from scientificNameDetails)
+    if (mapping.getClassificationRank() != null) {
+      return extractClassificationRank(contextNode, mapping.getClassificationRank());
     }
 
-    // 4. Simple path navigation
-    JsonNode value = navigateToSource(contextNode, mapping.getSource());
+    // 4. Filter + optional subpath (JSONPath filter syntax, e.g. @.placeType == 'county')
+    if (mapping.getFilter() != null) {
+      String expression = "$." + mapping.getSource() + "[?(" + mapping.getFilter() + ")]"
+          + (mapping.getPath() != null ? "." + mapping.getPath() : "");
+      JsonNode result = JsonHelper.findOneInJsonNode(contextNode, expression);
+      return result != null ? result.asText() : null;
+    }
+
+    // 5. Simple definite-path navigation
+    JsonNode value = JsonHelper.findOneInJsonNode(contextNode, "$." + mapping.getSource());
     return value != null ? value.asText() : null;
   }
 
   /**
-   * Navigate a dot-notation path within a JsonNode
+   * Extract a classification rank value from a determination node.
    *
-   * Handles paths like:
-   * - "id" (direct field)
-   * - "collection.code" (nested object)
+   * Uses {@link JsonHelper#findOneInJsonNode} to reach the two parallel pipe-delimited strings
+   * in {@code scientificNameDetails}, then resolves the rank positionally.
    *
-   * Returns the node itself if path is null/empty.
+   * Example for rankName="kingdom" given:
+   *   classificationRanks: "domain|kingdom|phylum|..."
+   *   classificationPath:  "Eukaryota|Animalia|Chordata|..."
+   * → "Animalia"
    *
-   * @param root The root JsonNode
-   * @param path Dot-notation path (e.g., "collection.code")
-   * @return The JsonNode at the path, or null if not found
+   * @param contextNode the determination JsonNode
+   * @param rankName    the rank to look up (e.g., "kingdom")
+   * @return the rank value, or null if the rank is absent
    */
-  private JsonNode navigateToSource(JsonNode root, String path) {
-    if (path == null || path.isEmpty() || root == null) {
-      return root;
-    }
-
-    JsonNode current = root;
-    String[] segments = path.split("\\.");
-
-    for (String segment : segments) {
-      if (current == null) {
-        return null;
-      }
-      current = current.get(segment);
-    }
-
-    return current;
-  }
-
-  /**
-   * Extract from an array by filtering and optionally getting nested field
-   *
-   * Process:
-   * 1. Navigate to source (should be an array)
-   * 2. Find first element matching filter
-   * 3. If path specified, navigate to that field within the matched element
-   * 4. Otherwise return the matched element itself
-   *
-   * Example:
-   * - source: "determination" (array)
-   * - filter: "isPrimary == true" (find primary)
-   * - path: null (return the whole determination object)
-   * Result: The primary determination object
-   *
-   * Another example:
-   * - source: "geoReferenceAssertions" (array)
-   * - filter: "isPrimary == true"
-   * - path: "stateProvince" (get stateProvince from matched element)
-   * Result: "Ontario"
-   *
-   * @param root The context node (usually pointing to an array)
-   * @param source The field name containing the array
-   * @param filter Filter condition (e.g., "isPrimary == true")
-   * @param path Optional nested path within matched element
-   * @return The extracted value, or null if no match
-   */
-  private JsonNode filterAndExtract(JsonNode root, String source, String filter, String path) {
-    // Navigate to the array
-    JsonNode sourceArray = navigateToSource(root, source);
-
-    if (sourceArray == null || !sourceArray.isArray()) {
-      log.debug("Source is not an array or not found: {}", source);
+  private String extractClassificationRank(JsonNode contextNode, String rankName) {
+    JsonNode details = JsonHelper.findOneInJsonNode(contextNode, "$.scientificNameDetails");
+    if (details == null) {
+      log.debug("scientificNameDetails missing for rank: {}", rankName);
       return null;
     }
 
-    // Find first element matching filter
-    for (JsonNode item : sourceArray) {
-      if (evaluateFilter(item, filter)) {
-        // If path specified, navigate to it within the filtered item
-        if (path != null && !path.isEmpty()) {
-          return navigateToSource(item, path);
-        }
-        // Otherwise return the filtered item itself
-        return item;
+    JsonNode ranksNode = details.get("classificationRanks");
+    JsonNode pathNode  = details.get("classificationPath");
+
+    if (ranksNode == null || ranksNode.isNull() || pathNode == null || pathNode.isNull()) {
+      log.debug("classificationRanks or classificationPath missing for rank: {}", rankName);
+      return null;
+    }
+
+    String[] rankArray  = ranksNode.asText().split("\\|", -1);
+    String[] valueArray = pathNode.asText().split("\\|", -1);
+
+    for (int i = 0; i < rankArray.length; i++) {
+      if (rankName.equals(rankArray[i].trim()) && i < valueArray.length) {
+        return valueArray[i];
       }
     }
 
-    log.debug("No array element matched filter: {}", filter);
+    log.debug("Rank '{}' not found in classificationRanks: {}", rankName, ranksNode.asText());
     return null;
-  }
-
-  /**
-   * Evaluate a filter condition on a JsonNode
-   *
-   * Supports: "fieldName == value"
-   *
-   * Comparison is done as text (asText()).
-   *
-   * Examples:
-   * - "isPrimary == true" → true/false boolean
-   * - "status == active" → string
-   * - "rank == species" → string
-   *
-   * @param node The node to evaluate
-   * @param filter Filter expression (e.g., "isPrimary == true")
-   * @return true if filter matches, false otherwise
-   */
-  private boolean evaluateFilter(JsonNode node, String filter) {
-    if (node == null || !node.isObject()) {
-      return false;
-    }
-
-    // Parse filter: "fieldName == value"
-    String[] parts = filter.split("==");
-    if (parts.length != 2) {
-      log.warn("Invalid filter format (expected 'field == value'): {}", filter);
-      return false;
-    }
-
-    String fieldName = parts[0].trim();
-    String expectedValue = parts[1].trim();
-
-    // Get field value from node
-    JsonNode fieldValue = node.get(fieldName);
-    if (fieldValue == null || fieldValue.isNull()) {
-      return false;
-    }
-
-    // Compare as text
-    String actualValue = fieldValue.asText();
-    return expectedValue.equals(actualValue);
   }
 }
