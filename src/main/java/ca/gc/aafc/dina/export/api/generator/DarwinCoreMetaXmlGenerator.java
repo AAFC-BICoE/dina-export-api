@@ -29,8 +29,6 @@ public class DarwinCoreMetaXmlGenerator {
   private final DarwinCoreExportConfig config;
   private final Configuration freemarkerConfig;
 
-  private static final String DWC_NS = "http://rs.tdwg.org/dwc/terms/";
-
   public DarwinCoreMetaXmlGenerator(DarwinCoreExportConfig config, Configuration freemarkerConfig) {
     this.config = config;
     this.freemarkerConfig = freemarkerConfig;
@@ -74,18 +72,11 @@ public class DarwinCoreMetaXmlGenerator {
         DarwinCoreExportConfig.ColumnMapping mapping = columns.get(i);
         Map<String, Object> col = new HashMap<>();
         col.put("dwcTerm",  mapping.getDwcTerm());
-        col.put("uri",      getDwCUri(mapping.getDwcTerm()));
+        col.put("uri",      mapping.getTermUri());
         col.put("dataType", getXsdDataType(mapping.getDataType()));
         return col;
       })
       .toList();
-  }
-
-  /**
-   * Get DwC URI for a term
-   */
-  private String getDwCUri(String dwcTerm) {
-    return DWC_NS + dwcTerm;
   }
 
   /**

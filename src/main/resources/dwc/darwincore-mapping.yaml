@@ -26,41 +26,50 @@ dwc:
     columns:
       # From organism
       - dwcTerm: "occurrenceID"
+        termUri: "http://rs.tdwg.org/dwc/terms/occurrenceID"
         context: "organism"
         source: "id"
 
       - dwcTerm: "scientificName"
+        termUri: "http://rs.tdwg.org/dwc/terms/scientificName"
         context: "determination"
         source: "scientificName"
 
       # From materialSample
       - dwcTerm: "catalogNumber"
+        termUri: "http://rs.tdwg.org/dwc/terms/catalogNumber"
         context: "materialSample"
         source: "materialSampleName"
 
       - dwcTerm: "collectionCode"
+        termUri: "http://rs.tdwg.org/dwc/terms/collectionCode"
         context: "materialSample"
         source: "collection.code"
 
       # From collectingEvent
       - dwcTerm: "eventDate"
+        termUri: "http://rs.tdwg.org/dwc/terms/eventDate"
         context: "collectingEvent"
         source: "startEventDateTime"
 
       - dwcTerm: "locality"
+        termUri: "http://rs.tdwg.org/dwc/terms/locality"
         context: "collectingEvent"
         source: "dwcVerbatimLocality"
 
       - dwcTerm: "decimalLatitude"
+        termUri: "http://rs.tdwg.org/dwc/terms/decimalLatitude"
         context: "geoReferenceAssertions"
         source: "dwcDecimalLatitude"
 
       # stateProvince/county come from collectingEvent directly, not from the geoRef assertion object
       - dwcTerm: "stateProvince"
+        termUri: "http://rs.tdwg.org/dwc/terms/stateProvince"
         context: "collectingEvent"
         source: "dwcStateProvince"
 
       - dwcTerm: "county"
+        termUri: "http://rs.tdwg.org/dwc/terms/county"
         context: "collectingEvent"
         source: "geographicPlaceNameSourceDetail.higherGeographicPlaces"
         filter: "@.placeType == 'county'"
@@ -68,4 +77,5 @@ dwc:
 
       # Static value
       - dwcTerm: "basisOfRecord"
+        termUri: "http://rs.tdwg.org/dwc/terms/basisOfRecord"
         staticValue: "PreservedSpecimen"

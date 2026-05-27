@@ -51,6 +51,7 @@ public class DarwinCoreExportConfig {
   @Data
   public static class ColumnMapping {
     private String dwcTerm;           // DarwinCore term name
+    private String termUri;           // Full URI for the term
     private String context;           // Entity context: "organism", "materialSample"
     private String source;            // JSONPath relative to context
     private String filter;            // Filter condition (e.g., "isPrimary == true")
