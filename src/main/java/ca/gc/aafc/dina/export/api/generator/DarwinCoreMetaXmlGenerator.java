@@ -30,7 +30,6 @@ public class DarwinCoreMetaXmlGenerator {
   private final Configuration freemarkerConfig;
 
   private static final String DWC_NS = "http://rs.tdwg.org/dwc/terms/";
-  private static final String DCTERMS_NS = "http://purl.org/dc/terms/";
 
   public DarwinCoreMetaXmlGenerator(DarwinCoreExportConfig config, Configuration freemarkerConfig) {
     this.config = config;
@@ -86,10 +85,7 @@ public class DarwinCoreMetaXmlGenerator {
    * Get DwC URI for a term
    */
   private String getDwCUri(String dwcTerm) {
-    return switch (dwcTerm) {
-      case "occurrenceID", "informationWithheld", "dataGeneralizations" -> DCTERMS_NS + dwcTerm;
-      default -> DWC_NS + dwcTerm;
-    };
+    return DWC_NS + dwcTerm;
   }
 
   /**

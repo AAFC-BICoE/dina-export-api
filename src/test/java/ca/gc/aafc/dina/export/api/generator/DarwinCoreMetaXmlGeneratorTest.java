@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class DarwinCoreMetaXmlGeneratorTest {
 
   private static final String DWC_NS     = "http://rs.tdwg.org/dwc/terms/";
-  private static final String DCTERMS_NS = "http://purl.org/dc/terms/";
 
   private static DarwinCoreExportConfig config;
   private static Document doc;
@@ -67,8 +66,8 @@ public class DarwinCoreMetaXmlGeneratorTest {
   void generateMetaXml_namespacesAreCorrect() {
     NodeList fields = doc.getElementsByTagName("field");
 
-    // occurrenceID is the first column — must use DCTERMS namespace
-    assertEquals(DCTERMS_NS + "occurrenceID",
+    // occurrenceID is the first column — must use DWC namespace
+    assertEquals(DWC_NS + "occurrenceID",
         ((Element) fields.item(0)).getAttribute("term"));
 
     // scientificName (index 1) — must use DWC namespace
