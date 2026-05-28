@@ -47,6 +47,11 @@ dwc:
         source: "collection.code"
 
       # From collectingEvent
+      - dwcTerm: "verbatimLocality"
+        termUri: "http://rs.tdwg.org/dwc/terms/verbatimLocality"
+        context: "collectingEvent"
+        source: "dwcVerbatimLocality"
+
       - dwcTerm: "eventDate"
         termUri: "http://rs.tdwg.org/dwc/terms/eventDate"
         context: "collectingEvent"
@@ -62,7 +67,11 @@ dwc:
         context: "geoReferenceAssertions"
         source: "dwcDecimalLatitude"
 
-      # stateProvince/county come from collectingEvent directly, not from the geoRef assertion object
+      - dwcTerm: "decimalLongitude"
+        termUri: "http://rs.tdwg.org/dwc/terms/decimalLongitude"
+        context: "geoReferenceAssertions"
+        source: "dwcDecimalLongitude"
+
       - dwcTerm: "stateProvince"
         termUri: "http://rs.tdwg.org/dwc/terms/stateProvince"
         context: "collectingEvent"
@@ -74,6 +83,11 @@ dwc:
         source: "geographicPlaceNameSourceDetail.higherGeographicPlaces"
         filter: "@.placeType == 'county'"
         path: "name"
+
+      - dwcTerm: "countryCode"
+        termUri: "http://rs.tdwg.org/dwc/terms/countryCode"
+        context: "materialSample"
+        source: "dwcCountryCode"
 
       # Static value
       - dwcTerm: "basisOfRecord"

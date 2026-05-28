@@ -84,7 +84,8 @@ public class DarwinCoreExportGeneratorTest {
 
     // Verify every mapped column has a non-blank value
     for (DarwinCoreExportConfig.ColumnMapping col : config.getOccurrence().getColumns()) {
-      assertFalse(row.getOrDefault(col.getDwcTerm(), "").isBlank(),
+      String value = row.get(col.getDwcTerm());
+      assertFalse(value == null || value.isBlank(),
           "Column " + col.getDwcTerm() + " has blank value in CSV");
     }
   }
