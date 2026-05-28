@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import javax.persistence.NoResultException;
+import jakarta.persistence.NoResultException;
 import lombok.extern.log4j.Log4j2;
 
 import org.springframework.retry.support.RetryTemplate;

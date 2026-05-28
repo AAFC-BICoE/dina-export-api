@@ -1,7 +1,7 @@
 package ca.gc.aafc.dina.export.api.service;
 
 import java.util.UUID;
-import javax.persistence.NoResultException;
+import jakarta.persistence.NoResultException;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

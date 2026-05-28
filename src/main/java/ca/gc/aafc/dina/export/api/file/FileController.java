@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import javax.persistence.NoResultException;
+import jakarta.persistence.NoResultException;
 import lombok.extern.log4j.Log4j2;
 
 import org.apache.commons.lang3.StringUtils;
