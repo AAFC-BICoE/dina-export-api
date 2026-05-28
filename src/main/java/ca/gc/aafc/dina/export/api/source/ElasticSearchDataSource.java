@@ -32,7 +32,7 @@ public class ElasticSearchDataSource {
   private static final int ES_DEFAULT_PAGE_SIZE = 10;
   private static final Time KEEP_ALIVE = new Time.Builder().time("60s").build();
   private static final SortOptions DEFAULT_SORT =
-    new SortOptions.Builder().field(fs -> fs.field("_id").order(SortOrder.Asc)).build();
+    new SortOptions.Builder().field(fs -> fs.field("data.id").order(SortOrder.Asc)).build();
 
   private final ElasticsearchClient client;
   private final int esPageSize;
