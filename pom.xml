@@ -5,7 +5,7 @@
 
   <groupId>ca.gc.aafc</groupId>
   <artifactId>dina-export-api</artifactId>
-  <version>0.23-SNAPSHOT</version>
+  <version>0.23</version>
   <packaging>jar</packaging>
 
   <name>DINA export API</name>
@@ -32,7 +32,7 @@
     <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
     <checkstyle.version>10.17.0</checkstyle.version>
 
-    <dina-base-api.version>0.166</dina-base-api.version>
+    <dina-base-api.version>0.169</dina-base-api.version>
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>
     <tika.version>3.2.3</tika.version>
@@ -42,7 +42,7 @@
 
     <!-- versions override-->
     <spring-framework.version>6.0.18</spring-framework.version>
-    <tomcat.version>10.1.53</tomcat.version>
+    <tomcat.version>10.1.55</tomcat.version>
     <jackson-bom.version>2.15.4</jackson-bom.version>
     <postgresql.version>42.4.4</postgresql.version>
     <commons-lang3.version>3.18.0</commons-lang3.version>
@@ -201,17 +201,7 @@
       <version>${mockserver.version}</version>
     </dependency>
   </dependencies>
-
-  <dependencyManagement>
-    <dependencies>
-      <!-- Required by elasticsearch java (from dina-search)-->
-      <dependency>
-        <groupId>jakarta.json</groupId>
-        <artifactId>jakarta.json-api</artifactId>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
+  
   <build>
     <plugins>
       <plugin>

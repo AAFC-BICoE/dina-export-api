@@ -9,7 +9,6 @@ import org.springframework.test.context.ContextConfiguration;
 import ca.gc.aafc.dina.exception.ResourceGoneException;
 import ca.gc.aafc.dina.exception.ResourceNotFoundException;
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
-import ca.gc.aafc.dina.export.api.ElasticSearchTestContainerInitializer;
 import ca.gc.aafc.dina.export.api.async.AsyncConsumer;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
@@ -20,6 +19,7 @@ import ca.gc.aafc.dina.export.api.file.FileController;
 import ca.gc.aafc.dina.export.api.testsupport.jsonapi.JsonApiDocuments;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 import ca.gc.aafc.dina.repository.JsonApiModelAssistant;
+import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchContainerInitializer;
 import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchTestUtils;
 import ca.gc.aafc.dina.testsupport.jsonapi.JsonAPITestHelper;
 
@@ -46,7 +46,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import jakarta.inject.Inject;
 
-@ContextConfiguration(initializers = { ElasticSearchTestContainerInitializer.class })
+@ContextConfiguration(initializers = { ElasticSearchContainerInitializer.class })
 public class DataExportRepositoryIT extends BaseIntegrationTest {
 
   private static final String MAT_SAMPLE_INDEX = "dina_material_sample_index";
