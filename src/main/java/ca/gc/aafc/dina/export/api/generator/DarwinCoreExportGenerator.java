@@ -33,7 +33,7 @@ import java.util.UUID;
 
 public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
 
-  private static final TypeReference<Map<String, String>> MAP_STRING_TYPEREF = new TypeReference<>() {};
+  private static final TypeReference<Map<String, String>> MAP_STRING_TYPEREF = new TypeReference<>() { };
 
   private final DarwinCoreExportConfig darwinCoreConfig;
   private final DarwinCoreContextBuilder contextBuilder;
@@ -54,7 +54,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     DarwinCoreContextBuilder contextBuilder,
     DarwinCoreMapper darwinCoreMapper,
     DarwinCoreMetaXmlGenerator metaXmlGenerator
-    ) {
+  ) {
 
     super(
       dataExportStatusService,
