@@ -95,7 +95,7 @@ public class DataExportConfig {
    */
   public static boolean isExportTypeUsesDirectory(DataExport.ExportType type) {
     return switch (type) {
-      case TABULAR_DATA -> true;
+      case TABULAR_DATA, DWCA -> true;
       case OBJECT_ARCHIVE -> false;
     };
   }

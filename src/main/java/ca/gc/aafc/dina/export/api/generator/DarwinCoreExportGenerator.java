@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.generator;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,8 +11,10 @@ import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
+import ca.gc.aafc.dina.export.api.entity.DataExportSchemaEntry;
 import ca.gc.aafc.dina.export.api.generator.helper.DarwinCoreContextBuilder;
 import ca.gc.aafc.dina.export.api.generator.helper.DarwinCoreMapper;
+import ca.gc.aafc.dina.export.api.generator.helper.RelationshipFlattener;
 import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
@@ -25,22 +28,28 @@ import ca.gc.aafc.dina.export.api.output.TabularOutput;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import ca.gc.aafc.dina.export.api.output.ZipPackager;
+
+@Service
 public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
 
   private static final TypeReference<Map<String, String>> MAP_STRING_TYPEREF = new TypeReference<>() { };
 
+  private final ObjectMapper objectMapper;
   private final DarwinCoreExportConfig darwinCoreConfig;
   private final DarwinCoreContextBuilder contextBuilder;
   private final DarwinCoreMapper darwinCoreMapper;
   private final DarwinCoreMetaXmlGenerator metaXmlGenerator;
 
-  // Set by generateOccurrenceCsv; written to by processEntity
+  // Opened in preRecordWrite, written by processEntity, closed in postRecordWrite
+  private FileWriter csvWriter;
   private TabularOutput<UUID, Map<String, String>> csvOutput;
 
   public DarwinCoreExportGenerator(
@@ -64,6 +73,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
       objectMapper,
       messageProducer);
 
+    this.objectMapper = objectMapper;
     this.darwinCoreConfig = darwinCoreConfig;
     this.contextBuilder = contextBuilder;
     this.darwinCoreMapper = darwinCoreMapper;
@@ -74,16 +84,55 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   public String generateFilename(DataExport dinaExport) {
     return "occurrence.zip";
   }
+
+  @Override
+  protected void preRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
+    exportWorkDir = Files.createTempDirectory("dwc-archive-");
+    Path csvPath = exportWorkDir.resolve(darwinCoreConfig.getCore().getFileLocations().get(0));
+    List<String> headers = darwinCoreConfig.getCore().getColumns().stream()
+        .map(DarwinCoreExportConfig.ColumnMapping::getDwcTerm)
+        .toList();
+    csvWriter = new FileWriter(csvPath.toFile(), StandardCharsets.UTF_8);
+    csvOutput = TabularOutput.create(
+        TabularOutput.TabularOutputArgs.builder()
+            .headers(headers)
+            .columnSeparator(TabularOutput.ColumnSeparator.COMMA)
+            .build(),
+        MAP_STRING_TYPEREF, csvWriter);
+  }
+
+  @Override
+  protected void exportSingleEntity(DataExport dinaExport,
+                                    LinkedHashMap<String, DataExportSchemaEntry> schema,
+                                    Path exportPath) throws IOException {
+    queryAndProcess(dinaExport, null, false);
+  }
+
   @Override
   protected void postRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
-    Path metaXmlPath = exportPath.resolveSibling("meta.xml");
-    metaXmlGenerator.generateMetaXml(metaXmlPath);
+    if (csvOutput != null) {
+      csvOutput.close();
+      csvOutput = null;
+    }
+    if (csvWriter != null) {
+      csvWriter.close();
+      csvWriter = null;
+    }
+    metaXmlGenerator.generateMetaXml(exportWorkDir.resolve("meta.xml"));
+    super.postRecordWrite(dinaExport, exportPath);
   }
+
+  @Override
+  public void deleteExport(DataExport dinaExport) throws IOException {
+    if (dinaExport.getExportType() != DataExport.ExportType.DWCA) {
+      throw new IllegalArgumentException("Should only be used for ExportType DWCA");
+    }
+    doDeleteExport(dinaExport);
+  }
+
   /**
-   * Override processEntity to handle DarwinCore-specific logic
-   *
-   * Instead of flattening relationships into the entity,
-   * we extract organism from the JSON:API document and build DwC records
+   * Override processEntity to build DwC records from JSON:API entities.
+   * Ignores the tabular output parameter; writes directly to {@code csvOutput}.
    */
   @Override
   protected void processEntity(JsonNode entity, String fallbackId,
@@ -94,53 +143,51 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
       return;
     }
 
-    String entityId = extractText(entity, JSONApiDocumentStructure.ID, fallbackId);
+    // Flatten to attributes + embedded included relationships before context navigation
+    var denormalized = RelationshipFlattener.toFlatEntity(objectMapper, entity, relationshipSource);
+
+    String entityId = extractText(denormalized, JSONApiDocumentStructure.ID, fallbackId);
     if (StringUtils.isBlank(entityId)) {
       return;
     }
 
-    // Build entity context map
-    Map<String, JsonNode> entitiesContext = contextBuilder.buildContextMap(entity);
-
-    // Build DwC record
+    Map<String, JsonNode> entitiesContext = contextBuilder.buildContextMap(denormalized);
     Map<String, String> dwcRecord = buildDwcRecord(entitiesContext);
 
-    // Write to output
     if (csvOutput != null) {
       csvOutput.addRecord(UUID.fromString(entityId), dwcRecord);
     }
   }
 
   /**
-   * @param entities    denormalized JSON:API entities (relationships embedded as direct fields)
-   * @param outputPath  path to write the CSV file to
+   * Builds a complete DarwinCore Archive ZIP from a list of pre-fetched entities.
+   * Package-private for test use; production exports go through {@link #export(DataExport)}.
+   *
+   * @param entities   denormalized JSON:API entities
+   * @param outputPath path for the output ZIP file
    */
-  public void generateOccurrenceCsv(List<JsonNode> entities, Path outputPath) throws IOException {
-    List<String> headers = darwinCoreConfig.getCore().getColumns().stream()
-        .map(DarwinCoreExportConfig.ColumnMapping::getDwcTerm)
-        .toList();
-
-    try (FileWriter writer = new FileWriter(outputPath.toFile(), StandardCharsets.UTF_8);
-         TabularOutput<UUID, Map<String, String>> out = TabularOutput.create(
-           TabularOutput.TabularOutputArgs.builder()
-             .headers(headers)
-             .columnSeparator(TabularOutput.ColumnSeparator.COMMA)
-             .build(),
-           MAP_STRING_TYPEREF, writer)) {
-      this.csvOutput = out;
-      try {
-        for (JsonNode entity : entities) {
-          processEntity(entity, null, null, null, null);
-        }
-      } finally {
-        this.csvOutput = null;
+  void generateArchive(List<JsonNode> entities, Path outputPath) throws IOException {
+    preRecordWrite(null, outputPath);
+    try {
+      for (JsonNode entity : entities) {
+        processEntity(entity, null, null, null, null);
       }
+    } catch (IOException e) {
+      // clean up on failure; postRecordWrite won't be reached
+      if (exportWorkDir != null) {
+        ZipPackager.deleteDirectoryRecursively(exportWorkDir);
+        exportWorkDir = null;
+      }
+      csvOutput = null;
+      if (csvWriter != null) {
+        csvWriter.close();
+        csvWriter = null;
+      }
+      throw e;
     }
+    postRecordWrite(null, outputPath);
   }
 
-  /**
-   * Build DarwinCore record from entity context
-   */
   private Map<String, String> buildDwcRecord(Map<String, JsonNode> entitiesContext) {
     Map<String, String> record = new LinkedHashMap<>();
     List<DarwinCoreExportConfig.ColumnMapping> columnMappings = darwinCoreConfig.getCore().getColumns();

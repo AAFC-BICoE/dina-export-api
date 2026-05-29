@@ -64,12 +64,12 @@ public class DarwinCoreMapper {
       String expression = "$." + mapping.getSource() + "[?(" + mapping.getFilter() + ")]"
           + (mapping.getPath() != null ? "." + mapping.getPath() : "");
       JsonNode result = JsonHelper.findOneInJsonNode(contextNode, expression);
-      return result != null ? result.asText() : null;
+      return result != null && !result.isNull() ? result.asText() : null;
     }
 
     // 5. Simple definite-path navigation
     JsonNode value = JsonHelper.findOneInJsonNode(contextNode, "$." + mapping.getSource());
-    return value != null ? value.asText() : null;
+    return value != null && !value.isNull() ? value.asText() : null;
   }
 
 }

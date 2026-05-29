@@ -42,7 +42,7 @@ import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 public class DataExport implements DinaEntity {
 
   public enum ExportStatus { NEW, RUNNING, COMPLETED, EXPIRED, ERROR }
-  public enum ExportType { TABULAR_DATA, OBJECT_ARCHIVE }
+  public enum ExportType { TABULAR_DATA, OBJECT_ARCHIVE, DWCA }
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

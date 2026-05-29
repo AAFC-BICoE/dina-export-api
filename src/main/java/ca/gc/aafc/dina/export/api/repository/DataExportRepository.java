@@ -88,8 +88,10 @@ public class DataExportRepository extends DinaRepositoryV2<DataExportDto, DataEx
         // make sure uuid will be auto-generated
         dto.setUuid(null);
 
-        // for now the repository can only create csv
-        dto.setExportType(DataExport.ExportType.TABULAR_DATA);
+        // default to TABULAR_DATA when no exportType is provided
+        if (dto.getExportType() == null) {
+          dto.setExportType(DataExport.ExportType.TABULAR_DATA);
+        }
       }
     });
   }
