@@ -1,7 +1,5 @@
 # Test config:
 spring:
-  config:
-    import: classpath:dwc/darwincore-mapping.yaml
   freemarker:
     template-loader-path: classpath:/templates/, classpath:/
   datasource:

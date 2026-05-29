@@ -88,7 +88,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   @Override
   protected void preRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
     exportWorkDir = Files.createTempDirectory("dwc-archive-");
-    Path csvPath = exportWorkDir.resolve(darwinCoreConfig.getCore().getFileLocations().get(0));
+    Path csvPath = exportWorkDir.resolve(darwinCoreConfig.getCore().getFileLocations().getFirst());
     List<String> headers = darwinCoreConfig.getCore().getColumns().stream()
         .map(DarwinCoreExportConfig.ColumnMapping::getDwcTerm)
         .toList();
