@@ -3,7 +3,8 @@
   <core encoding="UTF-8" rowType="${rowType}"
     fieldsTerminatedBy="," linesTerminatedBy="\n" quoteCharacter="&quot;" ignoreHeaderLines="1">
     <files>
-      <location>${fileLocation}</location>
+      <#list fileLocations as loc><location>${loc}</location>
+      </#list>
     </files>
     <id index="0"/>
     <#list columns as column>

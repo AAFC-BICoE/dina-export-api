@@ -55,7 +55,7 @@ public class DarwinCoreContextBuilder {
    */
   public Map<String, JsonNode> buildContextMap(JsonNode materialSample) {
     Map<String, JsonNode> contextMap = new HashMap<>();
-    Map<String, DarwinCoreExportConfig.ResourceContext> resourceContexts = config.getOccurrence().getResourceContexts();
+    Map<String, DarwinCoreExportConfig.ResourceContext> resourceContexts = config.getResourceContexts();
 
     if (resourceContexts == null || resourceContexts.isEmpty()) {
       log.warn("No resourceContexts defined in DarwinCore config");

@@ -38,18 +38,20 @@ public class DarwinCoreMetaXmlGenerator {
    * Generate meta.xml file from Freemarker template
    *
    * @param metaXmlPath Path where to write meta.xml
+   * @param coreName    Name of the core config to render (e.g. "occurrence")
    * @throws IOException if write fails
    */
-  public void generateMetaXml(Path metaXmlPath) throws IOException {
+  public void generateMetaXml(Path metaXmlPath, String coreName) throws IOException {
     try {
-      List<DarwinCoreExportConfig.ColumnMapping> columns = config.getOccurrence().getColumns();
+      DarwinCoreExportConfig.Core core = config.getCore(coreName);
+      List<DarwinCoreExportConfig.ColumnMapping> columns = core.getColumns();
       List<Map<String, Object>> columnData = buildColumnData(columns);
 
       // Prepare template data
       Map<String, Object> data = new HashMap<>();
       data.put("columns", columnData);
-      data.put("rowType", config.getOccurrence().getRowType());
-      data.put("fileLocation", config.getOccurrence().getFileLocation());
+      data.put("rowType", core.getRowType());
+      data.put("fileLocations", core.getFileLocations());
 
       // Load and process template
       Template template = freemarkerConfig.getTemplate("dwc/meta.xml.ftl");

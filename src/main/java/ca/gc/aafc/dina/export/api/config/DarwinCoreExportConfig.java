@@ -20,22 +20,24 @@ import lombok.Data;
 @Data
 public class DarwinCoreExportConfig {
 
-  // occurrence core
-  private Occurrence occurrence;
+  private Map<String, Core> cores;
+
+  private Map<String, ResourceContext> resourceContexts;
 
   /**
-   * Occurrence export configuration
+   * Returns the Core config for the given name (e.g. "occurrence").
+   */
+  public Core getCore(String name) {
+    return cores == null ? null : cores.get(name);
+  }
+
+  /**
+   * Core export configuration
    */
   @Data
-  public static class Occurrence {
+  public static class Core {
     private String rowType;
-    private String fileLocation;
-
-    /**
-     * Resource context hierarchy definitions
-     * Maps context name to how to navigate to that resource
-     */
-    private Map<String, ResourceContext> resourceContexts;
+    private List<String> fileLocations;
 
     /**
      * Column mappings from DINA attributes to DarwinCore terms
