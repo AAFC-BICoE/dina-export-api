@@ -1,5 +1,7 @@
 dwc:
   occurrence:
+    rowType: "http://rs.tdwg.org/dwc/terms/Occurrence"
+    fileLocation: "occurrence.csv"
     resourceContexts:
       materialSample:
         root: true
@@ -86,7 +88,7 @@ dwc:
 
       - dwcTerm: "countryCode"
         termUri: "http://rs.tdwg.org/dwc/terms/countryCode"
-        context: "materialSample"
+        context: "collectingEvent"
         source: "dwcCountryCode"
 
       # Static value

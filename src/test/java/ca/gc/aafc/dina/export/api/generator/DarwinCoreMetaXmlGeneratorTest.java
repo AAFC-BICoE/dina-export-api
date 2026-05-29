@@ -1,21 +1,22 @@
 package ca.gc.aafc.dina.export.api.generator;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import jakarta.inject.Inject;
 
 import freemarker.template.Configuration;
 
+import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
+import ca.gc.aafc.dina.export.api.DinaExportModuleApiLauncher;
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,19 +29,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * The meta.xml is generated once in setUp() and written to target/test-output/dwc/meta.xml
  * for local inspection after the run.
  */
-public class DarwinCoreMetaXmlGeneratorTest {
+@SpringBootTest(classes = {BaseIntegrationTest.TestConfig.class, DinaExportModuleApiLauncher.class})
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class DarwinCoreMetaXmlGeneratorTest extends BaseIntegrationTest {
 
-  private static DarwinCoreExportConfig config;
-  private static Document doc;
+  @Inject
+  private DarwinCoreExportConfig config;
+
+  @Inject
+  private Configuration freemarkerConfig;
+
+  private Document doc;
 
   @BeforeAll
-  static void setUp() throws Exception {
-    config = loadConfigFromYaml();
-
-    Configuration freemarkerConfig = new Configuration(Configuration.VERSION_2_3_32);
-    freemarkerConfig.setClassLoaderForTemplateLoading(
-        DarwinCoreMetaXmlGeneratorTest.class.getClassLoader(), "/");
-
+  void setUp() throws Exception {
     DarwinCoreMetaXmlGenerator generator = new DarwinCoreMetaXmlGenerator(config, freemarkerConfig);
 
     Path tempFile = Files.createTempFile("meta", ".xml");
@@ -82,20 +84,4 @@ public class DarwinCoreMetaXmlGeneratorTest {
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Helpers
-  // -------------------------------------------------------------------------
-
-  private static DarwinCoreExportConfig loadConfigFromYaml() throws IOException {
-    ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-    try (InputStream is = DarwinCoreMetaXmlGeneratorTest.class
-        .getResourceAsStream("/dwc/darwincore-mapping.yaml")) {
-      JsonNode root = yamlMapper.readTree(is);
-      DarwinCoreExportConfig cfg = new DarwinCoreExportConfig();
-      cfg.setOccurrence(
-          yamlMapper.treeToValue(root.at("/dwc/occurrence"),
-              DarwinCoreExportConfig.Occurrence.class));
-      return cfg;
-    }
-  }
 }

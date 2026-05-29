@@ -38,6 +38,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   private final DarwinCoreExportConfig darwinCoreConfig;
   private final DarwinCoreContextBuilder contextBuilder;
   private final DarwinCoreMapper darwinCoreMapper;
+  private final DarwinCoreMetaXmlGenerator metaXmlGenerator;
 
   // Set by generateOccurrenceCsv; written to by processEntity
   private TabularOutput<UUID, Map<String, String>> csvOutput;
@@ -51,7 +52,8 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     DinaMessageProducer messageProducer,
     DarwinCoreExportConfig darwinCoreConfig,
     DarwinCoreContextBuilder contextBuilder,
-    DarwinCoreMapper darwinCoreMapper
+    DarwinCoreMapper darwinCoreMapper,
+    DarwinCoreMetaXmlGenerator metaXmlGenerator
     ) {
 
     super(
@@ -65,13 +67,18 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     this.darwinCoreConfig = darwinCoreConfig;
     this.contextBuilder = contextBuilder;
     this.darwinCoreMapper = darwinCoreMapper;
+    this.metaXmlGenerator = metaXmlGenerator;
   }
 
   @Override
   public String generateFilename(DataExport dinaExport) {
-    return "occurrence.csv";
+    return "occurrence.zip";
   }
-
+  @Override
+  protected void postRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
+    Path metaXmlPath = exportPath.resolveSibling("meta.xml");
+    metaXmlGenerator.generateMetaXml(metaXmlPath);
+  }
   /**
    * Override processEntity to handle DarwinCore-specific logic
    *

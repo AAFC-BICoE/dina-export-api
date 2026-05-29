@@ -318,6 +318,10 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   // Helpers
 
+  protected void postRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
+    // no-op by default
+  }
+
   private void flattenNestedMaps(ObjectNode node) {
     var result = JSONApiDocumentStructure.extractNestedMapUsingDotNotation(
         objectMapper.convertValue(node, MAP_TYPEREF));

@@ -6,14 +6,18 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import jakarta.inject.Inject;
 
+import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
+import ca.gc.aafc.dina.export.api.DinaExportModuleApiLauncher;
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 import ca.gc.aafc.dina.export.api.generator.helper.DarwinCoreContextBuilder;
 import ca.gc.aafc.dina.export.api.generator.helper.DarwinCoreMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,24 +34,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * Generated files are written to target/test-output/dwc/ for local inspection after the run.
  */
-public class DarwinCoreExportGeneratorTest {
+@SpringBootTest(classes = {BaseIntegrationTest.TestConfig.class, DinaExportModuleApiLauncher.class})
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class DarwinCoreExportGeneratorTest extends BaseIntegrationTest {
 
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-  private static DarwinCoreExportConfig config;
-  private static DarwinCoreExportGenerator generator;
-  private static JsonNode esSource;
+  @Inject
+  private DarwinCoreExportConfig config;
+
+  private DarwinCoreExportGenerator generator;
+
+  private JsonNode esSource;
 
   // -------------------------------------------------------------------------
   // Setup
   // -------------------------------------------------------------------------
 
   @BeforeAll
-  static void setUp() throws IOException {
-    config = loadConfigFromYaml();
+  void setUp() throws IOException {
     generator = new DarwinCoreExportGenerator(
         null, null, null, null, null, null,
-        config, new DarwinCoreContextBuilder(config), new DarwinCoreMapper());
+        config, new DarwinCoreContextBuilder(config), new DarwinCoreMapper(), null);
 
     try (InputStream is = DarwinCoreExportGeneratorTest.class
         .getResourceAsStream("/elasticsearch/material_sample_response.json")) {
@@ -146,19 +154,4 @@ public class DarwinCoreExportGeneratorTest {
     return entity;
   }
 
-  /**
-   * Loads DarwinCoreExportConfig from the classpath YAML using Jackson YAML support.
-   */
-  private static DarwinCoreExportConfig loadConfigFromYaml() throws IOException {
-    ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-    try (InputStream is = DarwinCoreExportGeneratorTest.class
-        .getResourceAsStream("/dwc/darwincore-mapping.yaml")) {
-      JsonNode root = yamlMapper.readTree(is);
-      DarwinCoreExportConfig cfg = new DarwinCoreExportConfig();
-      cfg.setOccurrence(
-          yamlMapper.treeToValue(root.at("/dwc/occurrence"),
-              DarwinCoreExportConfig.Occurrence.class));
-      return cfg;
-    }
-  }
 }

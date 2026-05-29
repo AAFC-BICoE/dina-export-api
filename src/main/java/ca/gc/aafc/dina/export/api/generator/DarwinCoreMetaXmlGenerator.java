@@ -48,6 +48,8 @@ public class DarwinCoreMetaXmlGenerator {
       // Prepare template data
       Map<String, Object> data = new HashMap<>();
       data.put("columns", columnData);
+      data.put("rowType", config.getOccurrence().getRowType());
+      data.put("fileLocation", config.getOccurrence().getFileLocation());
 
       // Load and process template
       Template template = freemarkerConfig.getTemplate("dwc/meta.xml.ftl");

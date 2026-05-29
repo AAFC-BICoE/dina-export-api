@@ -28,6 +28,9 @@ public class DarwinCoreExportConfig {
    */
   @Data
   public static class Occurrence {
+    private String rowType;
+    private String fileLocation;
+
     /**
      * Resource context hierarchy definitions
      * Maps context name to how to navigate to that resource
