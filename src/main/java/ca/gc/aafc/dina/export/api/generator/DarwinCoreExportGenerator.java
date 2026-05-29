@@ -25,21 +25,17 @@ import ca.gc.aafc.dina.export.api.output.TabularOutput;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import ca.gc.aafc.dina.export.api.output.ZipPackager;
-
 public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
 
   private static final TypeReference<Map<String, String>> MAP_STRING_TYPEREF = new TypeReference<>() { };
 
   private final DarwinCoreExportConfig darwinCoreConfig;
-  private final String coreName;
   private final DarwinCoreContextBuilder contextBuilder;
   private final DarwinCoreMapper darwinCoreMapper;
   private final DarwinCoreMetaXmlGenerator metaXmlGenerator;
@@ -55,7 +51,6 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     ObjectMapper objectMapper,
     DinaMessageProducer messageProducer,
     DarwinCoreExportConfig darwinCoreConfig,
-    String coreName,
     DarwinCoreContextBuilder contextBuilder,
     DarwinCoreMapper darwinCoreMapper,
     DarwinCoreMetaXmlGenerator metaXmlGenerator
@@ -70,7 +65,6 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
       messageProducer);
 
     this.darwinCoreConfig = darwinCoreConfig;
-    this.coreName = coreName;
     this.contextBuilder = contextBuilder;
     this.darwinCoreMapper = darwinCoreMapper;
     this.metaXmlGenerator = metaXmlGenerator;
@@ -83,7 +77,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   @Override
   protected void postRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
     Path metaXmlPath = exportPath.resolveSibling("meta.xml");
-    metaXmlGenerator.generateMetaXml(metaXmlPath, coreName);
+    metaXmlGenerator.generateMetaXml(metaXmlPath);
   }
   /**
    * Override processEntity to handle DarwinCore-specific logic
@@ -122,7 +116,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
    * @param outputPath  path to write the CSV file to
    */
   public void generateOccurrenceCsv(List<JsonNode> entities, Path outputPath) throws IOException {
-    List<String> headers = darwinCoreConfig.getCore(coreName).getColumns().stream()
+    List<String> headers = darwinCoreConfig.getCore().getColumns().stream()
         .map(DarwinCoreExportConfig.ColumnMapping::getDwcTerm)
         .toList();
 
@@ -149,7 +143,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
    */
   private Map<String, String> buildDwcRecord(Map<String, JsonNode> entitiesContext) {
     Map<String, String> record = new LinkedHashMap<>();
-    List<DarwinCoreExportConfig.ColumnMapping> columnMappings = darwinCoreConfig.getCore(coreName).getColumns();
+    List<DarwinCoreExportConfig.ColumnMapping> columnMappings = darwinCoreConfig.getCore().getColumns();
 
     for (DarwinCoreExportConfig.ColumnMapping mapping : columnMappings) {
       String value = darwinCoreMapper.extractValue(entitiesContext, mapping);

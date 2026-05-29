@@ -38,12 +38,11 @@ public class DarwinCoreMetaXmlGenerator {
    * Generate meta.xml file from Freemarker template
    *
    * @param metaXmlPath Path where to write meta.xml
-   * @param coreName    Name of the core config to render (e.g. "occurrence")
    * @throws IOException if write fails
    */
-  public void generateMetaXml(Path metaXmlPath, String coreName) throws IOException {
+  public void generateMetaXml(Path metaXmlPath) throws IOException {
     try {
-      DarwinCoreExportConfig.Core core = config.getCore(coreName);
+      DarwinCoreExportConfig.Core core = config.getCore();
       List<DarwinCoreExportConfig.ColumnMapping> columns = core.getColumns();
       List<Map<String, Object>> columnData = buildColumnData(columns);
 

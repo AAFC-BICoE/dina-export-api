@@ -1,99 +1,99 @@
 dwc:
-  resourceContexts:
-    materialSample:
-      root: true
+  core:
+    rowType: "http://rs.tdwg.org/dwc/terms/Occurrence"
+    fileLocations:
+      - "occurrence.csv"
 
-    organism:
-      context: "materialSample"
-      path: "organism"
-      filter: "@.isPrimary == true"
+    resourceContexts:
+      materialSample:
+        root: true
 
-    collectingEvent:
-      context: "materialSample"
-      path: "collectingEvent"
+      organism:
+        context: "materialSample"
+        path: "organism"
+        filter: "@.isPrimary == true"
 
-    geoReferenceAssertions:
-      context: "collectingEvent"
-      path: "geoReferenceAssertions"
-      filter: "@.isPrimary == true"
+      collectingEvent:
+        context: "materialSample"
+        path: "collectingEvent"
 
-    determination:
-      context: "organism"
-      path: "determination"
-      filter: "@.isPrimary == true"
+      geoReferenceAssertions:
+        context: "collectingEvent"
+        path: "geoReferenceAssertions"
+        filter: "@.isPrimary == true"
 
-  cores:
-    occurrence:
-      rowType: "http://rs.tdwg.org/dwc/terms/Occurrence"
-      fileLocations:
-        - "occurrence.csv"
-      columns:
-      # From organism
-      - dwcTerm: "occurrenceID"
-        termUri: "http://rs.tdwg.org/dwc/terms/occurrenceID"
+      determination:
         context: "organism"
-        source: "id"
+        path: "determination"
+        filter: "@.isPrimary == true"
 
-      - dwcTerm: "scientificName"
-        termUri: "http://rs.tdwg.org/dwc/terms/scientificName"
-        context: "determination"
-        source: "scientificName"
+    columns:
+    # From organism
+    - dwcTerm: "occurrenceID"
+      termUri: "http://rs.tdwg.org/dwc/terms/occurrenceID"
+      context: "organism"
+      source: "id"
 
-      # From materialSample
-      - dwcTerm: "catalogNumber"
-        termUri: "http://rs.tdwg.org/dwc/terms/catalogNumber"
-        context: "materialSample"
-        source: "materialSampleName"
+    - dwcTerm: "scientificName"
+      termUri: "http://rs.tdwg.org/dwc/terms/scientificName"
+      context: "determination"
+      source: "scientificName"
 
-      - dwcTerm: "collectionCode"
-        termUri: "http://rs.tdwg.org/dwc/terms/collectionCode"
-        context: "materialSample"
-        source: "collection.code"
+    # From materialSample
+    - dwcTerm: "catalogNumber"
+      termUri: "http://rs.tdwg.org/dwc/terms/catalogNumber"
+      context: "materialSample"
+      source: "materialSampleName"
 
-      # From collectingEvent
-      - dwcTerm: "verbatimLocality"
-        termUri: "http://rs.tdwg.org/dwc/terms/verbatimLocality"
-        context: "collectingEvent"
-        source: "dwcVerbatimLocality"
+    - dwcTerm: "collectionCode"
+      termUri: "http://rs.tdwg.org/dwc/terms/collectionCode"
+      context: "materialSample"
+      source: "collection.code"
 
-      - dwcTerm: "eventDate"
-        termUri: "http://rs.tdwg.org/dwc/terms/eventDate"
-        context: "collectingEvent"
-        source: "startEventDateTime"
+    # From collectingEvent
+    - dwcTerm: "verbatimLocality"
+      termUri: "http://rs.tdwg.org/dwc/terms/verbatimLocality"
+      context: "collectingEvent"
+      source: "dwcVerbatimLocality"
 
-      - dwcTerm: "locality"
-        termUri: "http://rs.tdwg.org/dwc/terms/locality"
-        context: "collectingEvent"
-        source: "dwcVerbatimLocality"
+    - dwcTerm: "eventDate"
+      termUri: "http://rs.tdwg.org/dwc/terms/eventDate"
+      context: "collectingEvent"
+      source: "startEventDateTime"
 
-      - dwcTerm: "decimalLatitude"
-        termUri: "http://rs.tdwg.org/dwc/terms/decimalLatitude"
-        context: "geoReferenceAssertions"
-        source: "dwcDecimalLatitude"
+    - dwcTerm: "locality"
+      termUri: "http://rs.tdwg.org/dwc/terms/locality"
+      context: "collectingEvent"
+      source: "dwcVerbatimLocality"
 
-      - dwcTerm: "decimalLongitude"
-        termUri: "http://rs.tdwg.org/dwc/terms/decimalLongitude"
-        context: "geoReferenceAssertions"
-        source: "dwcDecimalLongitude"
+    - dwcTerm: "decimalLatitude"
+      termUri: "http://rs.tdwg.org/dwc/terms/decimalLatitude"
+      context: "geoReferenceAssertions"
+      source: "dwcDecimalLatitude"
 
-      - dwcTerm: "stateProvince"
-        termUri: "http://rs.tdwg.org/dwc/terms/stateProvince"
-        context: "collectingEvent"
-        source: "dwcStateProvince"
+    - dwcTerm: "decimalLongitude"
+      termUri: "http://rs.tdwg.org/dwc/terms/decimalLongitude"
+      context: "geoReferenceAssertions"
+      source: "dwcDecimalLongitude"
 
-      - dwcTerm: "county"
-        termUri: "http://rs.tdwg.org/dwc/terms/county"
-        context: "collectingEvent"
-        source: "geographicPlaceNameSourceDetail.higherGeographicPlaces"
-        filter: "@.placeType == 'county'"
-        path: "name"
+    - dwcTerm: "stateProvince"
+      termUri: "http://rs.tdwg.org/dwc/terms/stateProvince"
+      context: "collectingEvent"
+      source: "dwcStateProvince"
 
-      - dwcTerm: "countryCode"
-        termUri: "http://rs.tdwg.org/dwc/terms/countryCode"
-        context: "collectingEvent"
-        source: "dwcCountryCode"
+    - dwcTerm: "county"
+      termUri: "http://rs.tdwg.org/dwc/terms/county"
+      context: "collectingEvent"
+      source: "geographicPlaceNameSourceDetail.higherGeographicPlaces"
+      filter: "@.placeType == 'county'"
+      path: "name"
 
-      # Static value
-      - dwcTerm: "basisOfRecord"
-        termUri: "http://rs.tdwg.org/dwc/terms/basisOfRecord"
-        staticValue: "PreservedSpecimen"
+    - dwcTerm: "countryCode"
+      termUri: "http://rs.tdwg.org/dwc/terms/countryCode"
+      context: "collectingEvent"
+      source: "dwcCountryCode"
+
+    # Static value
+    - dwcTerm: "basisOfRecord"
+      termUri: "http://rs.tdwg.org/dwc/terms/basisOfRecord"
+      staticValue: "PreservedSpecimen"

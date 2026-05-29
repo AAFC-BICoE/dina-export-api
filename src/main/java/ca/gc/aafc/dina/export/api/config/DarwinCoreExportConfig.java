@@ -20,16 +20,7 @@ import lombok.Data;
 @Data
 public class DarwinCoreExportConfig {
 
-  private Map<String, Core> cores;
-
-  private Map<String, ResourceContext> resourceContexts;
-
-  /**
-   * Returns the Core config for the given name (e.g. "occurrence").
-   */
-  public Core getCore(String name) {
-    return cores == null ? null : cores.get(name);
-  }
+  private Core core;
 
   /**
    * Core export configuration
@@ -38,6 +29,7 @@ public class DarwinCoreExportConfig {
   public static class Core {
     private String rowType;
     private List<String> fileLocations;
+    private Map<String, ResourceContext> resourceContexts;
 
     /**
      * Column mappings from DINA attributes to DarwinCore terms
