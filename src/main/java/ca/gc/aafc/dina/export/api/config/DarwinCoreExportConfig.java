@@ -2,7 +2,6 @@ package ca.gc.aafc.dina.export.api.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -13,7 +12,6 @@ import lombok.Data;
  * DarwinCore export configuration
  * From darwincore-mapping.yaml
  */
-@Component
 @PropertySource("classpath:dwc/darwincore-mapping.yaml")
 @ConfigurationProperties(prefix = "dwc")
 @Validated

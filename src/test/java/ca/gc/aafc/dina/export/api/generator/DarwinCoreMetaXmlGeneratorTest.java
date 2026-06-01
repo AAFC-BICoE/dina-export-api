@@ -58,14 +58,14 @@ public class DarwinCoreMetaXmlGeneratorTest extends BaseIntegrationTest {
 
   @Test
   void generateMetaXml_fieldCountMatchesColumns() {
-    assertEquals(config.getOccurrence().getColumns().size(),
+    assertEquals(config.getCore().getColumns().size(),
         doc.getElementsByTagName("field").getLength());
   }
 
   @Test
   void generateMetaXml_namespacesAreCorrect() {
     NodeList fields = doc.getElementsByTagName("field");
-    var columns = config.getOccurrence().getColumns();
+    var columns = config.getCore().getColumns();
 
     assertEquals(columns.get(0).getTermUri(),
         ((Element) fields.item(0)).getAttribute("term"));

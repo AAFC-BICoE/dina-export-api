@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.generator;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -24,9 +25,12 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -43,7 +47,8 @@ public class DarwinCoreExportGeneratorTest extends BaseIntegrationTest {
   @Inject
   private DarwinCoreExportConfig config;
 
-  private DarwinCoreExportGenerator generator;
+  @Inject
+  private freemarker.template.Configuration freemarkerConfig;
 
   private JsonNode esSource;
 
@@ -53,10 +58,6 @@ public class DarwinCoreExportGeneratorTest extends BaseIntegrationTest {
 
   @BeforeAll
   void setUp() throws IOException {
-    generator = new DarwinCoreExportGenerator(
-        null, null, null, null, null, null,
-        config, new DarwinCoreContextBuilder(config), new DarwinCoreMapper(), null);
-
     try (InputStream is = DarwinCoreExportGeneratorTest.class
         .getResourceAsStream("/elasticsearch/material_sample_response.json")) {
       esSource = JSON_MAPPER.readTree(is);
@@ -68,30 +69,36 @@ public class DarwinCoreExportGeneratorTest extends BaseIntegrationTest {
   // -------------------------------------------------------------------------
 
   @Test
-  void generateOccurrenceCsv_writesValidCsv(@TempDir Path tempDir) throws Exception {
+  void generateArchive_csvContainsAllMappedColumns(@TempDir Path tempDir) throws Exception {
+    DarwinCoreMetaXmlGenerator metaXmlGenerator = new DarwinCoreMetaXmlGenerator(config, freemarkerConfig);
+    DarwinCoreExportGenerator gen = new DarwinCoreExportGenerator(
+        null, null, null, null, null, null,
+        config, new DarwinCoreContextBuilder(config), new DarwinCoreMapper(), metaXmlGenerator);
+
     ObjectNode entity = buildDenormalizedEntity(esSource);
-    Path csvPath = tempDir.resolve("occurrence.csv");
+    Path zipPath = tempDir.resolve("occurrence.zip");
 
-    generator.generateOccurrenceCsv(List.of(entity), csvPath);
+    gen.generateArchive(List.of(entity), zipPath);
 
-    CsvMapper csvMapper = new CsvMapper();
-    CsvSchema schema = CsvSchema.emptySchema().withHeader();
-    com.fasterxml.jackson.databind.MappingIterator<Map<String, String>> it = csvMapper
-        .<Map<String, String>>readerForMapOf(String.class)
-        .with(schema)
-        .readValues(csvPath.toFile());
-    List<Map<String, String>> records = it.readAll();
+    List<Map<String, String>> records;
+    try (ZipFile zip = new ZipFile(zipPath.toFile())) {
+      ZipEntry csvEntry = zip.getEntry("occurrence.csv");
+      assertNotNull(csvEntry, "occurrence.csv must be present in archive");
+      try (InputStream is = zip.getInputStream(csvEntry)) {
+        CsvMapper csvMapper = new CsvMapper();
+        MappingIterator<Map<String, String>> it = csvMapper
+            .readerForMapOf(String.class)
+            .with(CsvSchema.emptySchema().withHeader())
+            .readValues(is);
+        records = it.readAll();
+      }
+    }
 
     assertEquals(1, records.size(), "Expected exactly one data row");
     Map<String, String> row = records.get(0);
 
-    // All configured DwC terms appear as headers
-    for (DarwinCoreExportConfig.ColumnMapping col : config.getOccurrence().getColumns()) {
+    for (DarwinCoreExportConfig.ColumnMapping col : config.getCore().getColumns()) {
       assertTrue(row.containsKey(col.getDwcTerm()), "Missing column: " + col.getDwcTerm());
-    }
-
-    // Verify every mapped column has a non-blank value
-    for (DarwinCoreExportConfig.ColumnMapping col : config.getOccurrence().getColumns()) {
       String value = row.get(col.getDwcTerm());
       assertFalse(value == null || value.isBlank(),
           "Column " + col.getDwcTerm() + " has blank value in CSV");

@@ -20,11 +20,13 @@ import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 /**
  * Generates meta.xml for DarwinCore Archive using Freemarker templates
  *
- * The template is at: src/main/resources/dwc/meta.xml.ftl
+ * The template is at: src/main/resources/templates/dwc/meta.xml.ftl
  */
 @Component
 @Log4j2
 public class DarwinCoreMetaXmlGenerator {
+
+  private static final String TEMPLATE_NAME = "dwc/meta.xml.ftl";
 
   private final DarwinCoreExportConfig config;
   private final Configuration freemarkerConfig;
@@ -53,7 +55,7 @@ public class DarwinCoreMetaXmlGenerator {
       data.put("fileLocations", core.getFileLocations());
 
       // Load and process template
-      Template template = freemarkerConfig.getTemplate("dwc/meta.xml.ftl");
+      Template template = freemarkerConfig.getTemplate(TEMPLATE_NAME);
 
       try (FileWriter writer = new FileWriter(metaXmlPath.toFile(), StandardCharsets.UTF_8)) {
         template.process(data, writer);
