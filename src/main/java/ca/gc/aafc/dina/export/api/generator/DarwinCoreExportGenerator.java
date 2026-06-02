@@ -46,7 +46,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   private final DarwinCoreMapper darwinCoreMapper;
   private final DarwinCoreMetaXmlGenerator metaXmlGenerator;
 
-  private record DwcExportState(FileWriter csvWriter, TabularOutput<UUID, Map<String, String>> csvOutput) {}
+  private record DwcExportState(FileWriter csvWriter, TabularOutput<UUID, Map<String, String>> csvOutput) { }
 
   // Per-thread export state: populated by preRecordWrite, consumed by postRecordWrite.
   private final ThreadLocal<DwcExportState> exportState = new ThreadLocal<>();
