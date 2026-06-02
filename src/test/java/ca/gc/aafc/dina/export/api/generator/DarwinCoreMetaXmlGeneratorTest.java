@@ -20,8 +20,11 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 /**
  * Unit tests for DarwinCoreMetaXmlGenerator.
@@ -57,31 +60,20 @@ public class DarwinCoreMetaXmlGeneratorTest extends BaseIntegrationTest {
   }
 
   @Test
-  void generateMetaXml_fieldCountMatchesColumns() {
-    assertEquals(config.getCore().getColumns().size(),
-        doc.getElementsByTagName("field").getLength());
-  }
-
-  @Test
-  void generateMetaXml_namespacesAreCorrect() {
+  void generateMetaXml_containsAllConfiguredTermsInOrder() {
     NodeList fields = doc.getElementsByTagName("field");
-    var columns = config.getCore().getColumns();
 
-    assertEquals(columns.get(0).getTermUri(),
-        ((Element) fields.item(0)).getAttribute("term"));
+    List<String> expectedTerms = config.getCore().getColumns().stream()
+        .map(DarwinCoreExportConfig.ColumnMapping::getTermUri)
+        .toList();
 
-    assertEquals(columns.get(1).getTermUri(),
-        ((Element) fields.item(1)).getAttribute("term"));
-  }
-
-  @Test
-  void generateMetaXml_fieldIndicesAreSequential() {
-    NodeList fields = doc.getElementsByTagName("field");
+    List<String> actualTerms = new ArrayList<>();
     for (int i = 0; i < fields.getLength(); i++) {
-      assertEquals(String.valueOf(i),
-          ((Element) fields.item(i)).getAttribute("index"),
-          "Field at position " + i + " should have index=" + i);
+      actualTerms.add(((Element) fields.item(i)).getAttribute("term"));
     }
+
+    assertIterableEquals(expectedTerms, actualTerms,
+        "meta.xml field terms should exactly match darwincore-mapping terms in order");
   }
 
 }

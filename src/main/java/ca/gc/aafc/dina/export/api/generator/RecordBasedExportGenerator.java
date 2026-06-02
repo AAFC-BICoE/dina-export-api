@@ -71,9 +71,9 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   /**
    * Temporary working directory used by subclasses and exportMultiEntity.
-   * Set in preRecordWrite (or exportMultiEntity); consumed and cleaned up in postRecordWrite.
+   * Stored per-thread so concurrent async exports do not share state.
    */
-  protected Path exportWorkDir;
+  protected final ThreadLocal<Path> exportWorkDir = new ThreadLocal<>();
 
   public RecordBasedExportGenerator(
     DataExportStatusService dataExportStatusService,
@@ -186,7 +186,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   private void exportMultiEntity(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema,
                                   Path exportPath) throws IOException {
-    exportWorkDir = Files.createTempDirectory("dina-export-" + dinaExport.getUuid());
+    exportWorkDir.set(Files.createTempDirectory("dina-export-" + dinaExport.getUuid()));
     try {
       String fileExtension = TabularOutput.extensionFromSeparator(getColumnSeparatorOption(dinaExport));
       Map<String, TabularOutput<UUID, JsonNode>> outputsByType = new HashMap<>();
@@ -195,7 +195,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       for (var entry : schema.entrySet()) {
         String entityType = entry.getKey();
         Writer writer = new FileWriter(
-          exportWorkDir.resolve(entityType + fileExtension).toFile(), StandardCharsets.UTF_8);
+          exportWorkDir.get().resolve(entityType + fileExtension).toFile(), StandardCharsets.UTF_8);
         writersByType.put(entityType, writer);
 
         TabularOutput.TabularOutputArgs args = buildOutputArgsForEntity(
@@ -212,8 +212,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       }
       // ZIP and cleanup happen in postRecordWrite
     } catch (IOException e) {
-      ZipPackager.deleteDirectoryRecursively(exportWorkDir);
-      exportWorkDir = null;
+      ZipPackager.deleteDirectoryRecursively(exportWorkDir.get());
+      exportWorkDir.remove();
       throw e;
     }
   }
@@ -335,12 +335,13 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   protected void postRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
-    if (exportWorkDir != null) {
+    Path workDir = exportWorkDir.get();
+    if (workDir != null) {
       try {
-        ZipPackager.createZipPackage(exportWorkDir, exportPath);
+        ZipPackager.createZipPackage(workDir, exportPath);
       } finally {
-        ZipPackager.deleteDirectoryRecursively(exportWorkDir);
-        exportWorkDir = null;
+        ZipPackager.deleteDirectoryRecursively(workDir);
+        exportWorkDir.remove();
       }
     }
   }

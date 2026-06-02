@@ -3,8 +3,6 @@ package ca.gc.aafc.dina.export.api.generator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import jakarta.inject.Inject;
@@ -72,13 +70,12 @@ public class DarwinCoreExportGeneratorTest extends BaseIntegrationTest {
   void generateArchive_csvContainsAllMappedColumns(@TempDir Path tempDir) throws Exception {
     DarwinCoreMetaXmlGenerator metaXmlGenerator = new DarwinCoreMetaXmlGenerator(config, freemarkerConfig);
     DarwinCoreExportGenerator gen = new DarwinCoreExportGenerator(
-        null, null, null, null, null, null,
+        null, null, null, null, JSON_MAPPER, null,
         config, new DarwinCoreContextBuilder(config), new DarwinCoreMapper(), metaXmlGenerator);
 
-    ObjectNode entity = buildDenormalizedEntity(esSource);
     Path zipPath = tempDir.resolve("occurrence.zip");
 
-    gen.generateArchive(List.of(entity), zipPath);
+    DarwinCoreExportTestSupport.generateArchive(gen, List.of(esSource), zipPath);
 
     List<Map<String, String>> records;
     try (ZipFile zip = new ZipFile(zipPath.toFile())) {
@@ -105,60 +102,5 @@ public class DarwinCoreExportGeneratorTest extends BaseIntegrationTest {
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Helpers
-  // -------------------------------------------------------------------------
-
-  /**
-   * Converts the full JSON:API Elasticsearch source into a flat entity node
-   * that DarwinCoreContextBuilder can navigate.
-   *
-   * The contextBuilder expects:
-   * - attributes accessible at the root level
-   * - organism      → array with isPrimary flag on each element
-   * - collectingEvent → object with startEventDateTime, geoReferenceAssertions, etc.
-   * - collection      → object with code, name, etc.
-   */
-  private static ObjectNode buildDenormalizedEntity(JsonNode source) {
-    JsonNode included = source.get("included");
-
-    // Start from data.attributes so all materialSample fields are at the root level
-    ObjectNode entity = (ObjectNode) source.at("/data/attributes").deepCopy();
-    entity.put("id", source.at("/data/id").asText());
-
-    // Embed organisms (from included), marking the first one as isPrimary
-    ArrayNode organisms = JSON_MAPPER.createArrayNode();
-    boolean firstOrganism = true;
-    for (JsonNode inc : included) {
-      if ("organism".equals(inc.at("/type").asText())) {
-        ObjectNode org = (ObjectNode) inc.get("attributes").deepCopy();
-        org.put("id", inc.at("/id").asText());
-        org.put("isPrimary", firstOrganism);
-        organisms.add(org);
-        firstOrganism = false;
-      }
-    }
-    entity.set("organism", organisms);
-
-    // Embed collectingEvent (first match in included)
-    for (JsonNode inc : included) {
-      if ("collecting-event".equals(inc.at("/type").asText())) {
-        ObjectNode ce = (ObjectNode) inc.get("attributes").deepCopy();
-        ce.put("id", inc.at("/id").asText());
-        entity.set("collectingEvent", ce);
-        break;
-      }
-    }
-
-    // Embed collection (first match in included)
-    for (JsonNode inc : included) {
-      if ("collection".equals(inc.at("/type").asText())) {
-        entity.set("collection", inc.get("attributes").deepCopy());
-        break;
-      }
-    }
-
-    return entity;
-  }
-
 }
+

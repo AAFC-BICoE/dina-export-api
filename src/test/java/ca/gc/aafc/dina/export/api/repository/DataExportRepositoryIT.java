@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.repository;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +67,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
   @Inject
   private AsyncConsumer<Future<UUID>> asyncConsumer;
 
+  @BeforeEach
   @AfterEach
   public void cleanup() throws IOException {
     // Delete the index after each test to ensure test isolation

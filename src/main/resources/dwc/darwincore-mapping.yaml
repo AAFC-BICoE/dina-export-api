@@ -11,7 +11,7 @@ dwc:
       organism:
         context: "materialSample"
         path: "organism"
-        filter: "@.isPrimary == true"
+        filter: "@.determination[?(@.isPrimary == true)]"
 
       collectingEvent:
         context: "materialSample"
