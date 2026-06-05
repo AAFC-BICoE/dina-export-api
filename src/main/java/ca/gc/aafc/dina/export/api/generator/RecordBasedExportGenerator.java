@@ -334,6 +334,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     // no-op by default
   }
 
+  // TODO this should only apply to export that should be zipped
   protected void postRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
     Path workDir = exportWorkDir.get();
     if (workDir != null) {
@@ -353,8 +354,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     result.nestedMapsMap().forEach((k, v) -> node.set(k, objectMapper.valueToTree(v)));
     result.usedKeys().forEach(node::remove);
   }
-  
-  private static LinkedHashMap<String, DataExportSchemaEntry> getEffectiveSchema(DataExport dinaExport) {
+
+  protected LinkedHashMap<String, DataExportSchemaEntry> getEffectiveSchema(DataExport dinaExport) {
     return MapUtils.isNotEmpty(dinaExport.getSchema()) ? dinaExport.getSchema() : new LinkedHashMap<>();
   }
 
