@@ -26,6 +26,7 @@ public class DarwinCoreExportConfig {
   @Data
   public static class Core {
     private String rowType;
+    private String entityType;
     private List<String> fileLocations;
     private Map<String, ResourceContext> resourceContexts;
 

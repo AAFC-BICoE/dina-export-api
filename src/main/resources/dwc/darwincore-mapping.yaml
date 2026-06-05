@@ -1,6 +1,7 @@
 dwc:
   core:
     rowType: "http://rs.tdwg.org/dwc/terms/Occurrence"
+    entityType: "occurrence"
     fileLocations:
       - "occurrence.csv"
 

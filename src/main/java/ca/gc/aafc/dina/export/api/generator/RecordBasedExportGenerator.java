@@ -186,7 +186,9 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   private void exportMultiEntity(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema,
                                   Path exportPath) throws IOException {
-    exportWorkDir.set(Files.createTempDirectory("dina-export-" + dinaExport.getUuid()));
+    Path workDir = Files.createTempDirectory("dina-export-" + dinaExport.getUuid());
+    exportWorkDir.set(workDir);
+
     try {
       String fileExtension = TabularOutput.extensionFromSeparator(getColumnSeparatorOption(dinaExport));
       Map<String, TabularOutput<UUID, JsonNode>> outputsByType = new HashMap<>();
@@ -195,7 +197,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       for (var entry : schema.entrySet()) {
         String entityType = entry.getKey();
         Writer writer = new FileWriter(
-          exportWorkDir.get().resolve(entityType + fileExtension).toFile(), StandardCharsets.UTF_8);
+          workDir.resolve(entityType + fileExtension).toFile(), StandardCharsets.UTF_8);
         writersByType.put(entityType, writer);
 
         TabularOutput.TabularOutputArgs args = buildOutputArgsForEntity(
@@ -212,7 +214,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       }
       // ZIP and cleanup happen in postRecordWrite
     } catch (IOException e) {
-      ZipPackager.deleteDirectoryRecursively(exportWorkDir.get());
+      ZipPackager.deleteDirectoryRecursively(workDir);
       exportWorkDir.remove();
       throw e;
     }
@@ -260,7 +262,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     }
   }
 
-  private void processHit(Hit<JsonNode> hit, Map<String, DataExportFunction> functions,
+  protected void processHit(Hit<JsonNode> hit, Map<String, DataExportFunction> functions,
                            DataOutput<UUID, JsonNode> output, boolean isMultiEntity, 
                            boolean needsRelationships) throws IOException {
     JsonNode source = hit.source();
@@ -334,10 +336,10 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     // no-op by default
   }
 
-  // TODO this should only apply to export that should be zipped
   protected void postRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
     Path workDir = exportWorkDir.get();
-    if (workDir != null) {
+    LinkedHashMap<String, DataExportSchemaEntry> schema = getEffectiveSchema(dinaExport);
+    if (workDir != null && isMultiEntityExport(dinaExport, schema)) {
       try {
         ZipPackager.createZipPackage(workDir, exportPath);
       } finally {
@@ -366,6 +368,10 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   private boolean isMultiEntityExport(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema) {
+    if (dinaExport.getExportType() == DataExport.ExportType.DWCA) {
+      return true;
+    }
+
     // Only create separate files (ZIP) if enablePackaging is true AND there are multiple entities
     boolean packagingEnabled = DataExportOption.getOptionAsBool(dinaExport.getExportOptions(),
       DataExportOption.ENABLE_PACKAGING);

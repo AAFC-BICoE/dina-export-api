@@ -1,6 +1,5 @@
 package ca.gc.aafc.dina.export.api.generator;
 
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -19,14 +18,17 @@ import ca.gc.aafc.dina.export.api.generator.helper.RelationshipFlattener;
 import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
+import ca.gc.aafc.dina.json.JsonHelper;
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
 import ca.gc.aafc.dina.messaging.producer.DinaMessageProducer;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -71,21 +73,21 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     return "dwca.zip";
   }
 
-  // TODO overwrite to return DarwinCore headers
-  protected LinkedHashMap<String, DataExportSchemaEntry> getEffectiveSchema(DataExport dinaExport) {
-    return MapUtils.isNotEmpty(dinaExport.getSchema()) ? dinaExport.getSchema() : new LinkedHashMap<>();
-  }
-
   @Override
-  protected void exportSingleEntity(DataExport dinaExport,
-                                    LinkedHashMap<String, DataExportSchemaEntry> schema,
-                                    Path exportPath) throws IOException {
-    queryAndProcess(dinaExport, null, false);
+  protected LinkedHashMap<String, DataExportSchemaEntry> getEffectiveSchema(DataExport dinaExport) {
+    List<String> headers = darwinCoreConfig.getCore().getColumns().stream()
+      .map(DarwinCoreExportConfig.ColumnMapping::getDwcTerm)
+      .toList();
+
+    LinkedHashMap<String, DataExportSchemaEntry> schema = new LinkedHashMap<>();
+    schema.put(darwinCoreConfig.getCore().getEntityType(), new DataExportSchemaEntry(headers, null));
+    return schema;
   }
 
   @Override
   protected void postRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
-    metaXmlGenerator.generateMetaXml(exportWorkDir.get().resolve("meta.xml"));
+    Path workDir = exportWorkDir.get();
+    metaXmlGenerator.generateMetaXml(workDir.resolve("meta.xml"));
     super.postRecordWrite(dinaExport, exportPath);
   }
 
@@ -95,6 +97,26 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
       throw new IllegalArgumentException("Should only be used for ExportType DWCA");
     }
     doDeleteExport(dinaExport);
+  }
+  
+  @Override
+  protected void processHit(Hit<JsonNode> hit, Map<String, DataExportFunction> functions,
+                            DataOutput<UUID, JsonNode> output, boolean isMultiEntity,
+                            boolean needsRelationships) throws IOException {
+    JsonNode source = hit.source();
+    if (source == null) {
+      return;
+    }
+
+    Optional<JsonNode> dataOpt = JsonHelper.atJsonPtr(source, JSONApiDocumentStructure.DATA_PTR);
+
+    if (dataOpt.isEmpty()) {
+      return;
+    }
+
+    // DWCA only processes the root /data entity with its full relationship context.
+    // /included entities are accessed via RelationshipFlattener, not processed as separate rows.
+    processEntity(dataOpt.get(), hit.id(), source, functions, output);
   }
 
   @Override
@@ -117,8 +139,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     Map<String, JsonNode> entitiesContext = contextBuilder.buildContextMap(denormalized);
     Map<String, String> dwcRecord = buildDwcRecord(entitiesContext);
 
-    // TODO set the type
-    output.addRecord(type, UUID.fromString(entityId), dwcRecord);
+    output.addRecord(darwinCoreConfig.getCore().getEntityType(), UUID.fromString(entityId), objectMapper.valueToTree(dwcRecord));
   }
 
   private Map<String, String> buildDwcRecord(Map<String, JsonNode> entitiesContext) {

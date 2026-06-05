@@ -24,6 +24,9 @@ import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchContainerInitializ
 import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchTestUtils;
 import ca.gc.aafc.dina.testsupport.jsonapi.JsonAPITestHelper;
 
+import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -34,6 +37,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -44,6 +48,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import jakarta.inject.Inject;
 
@@ -364,5 +369,130 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     // Clean up
     dataExportRepository.onDelete(uuid);
+  }
+
+  @Test
+  public void testDwcaExportEndToEnd() throws Exception {
+    ElasticSearchTestUtils.createIndex(esClient, MAT_SAMPLE_INDEX, "elasticsearch/material_sample_index_settings.json");
+
+    String esDocument;
+    try (InputStream is = DataExportRepositoryIT.class.getResourceAsStream("/elasticsearch/material_sample_response.json")) {
+      assertNotNull(is, "Test resource missing: /elasticsearch/material_sample_response.json");
+      esDocument = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+    }
+
+    String docId = "019e6085-f66e-7059-b179-7d7f0091e522";
+    ElasticSearchTestUtils.indexDocument(esClient, MAT_SAMPLE_INDEX, docId, esDocument);
+
+    String query = "{\"query\": {\"ids\": {\"values\": [\"" + docId + "\"]}}}";
+
+    DataExportDto dto = DataExportDto.builder()
+      .source(MAT_SAMPLE_INDEX)
+      .name("dwca export")
+      .exportType(DataExport.ExportType.DWCA)
+      .query(query)
+      .build();
+
+    JsonApiDocument docToCreate = ca.gc.aafc.dina.jsonapi.JsonApiDocuments.createJsonApiDocument(
+      null, DataExportDto.TYPENAME,
+      JsonAPITestHelper.toAttributeMap(dto)
+    );
+
+    var created = dataExportRepository.onCreate(docToCreate);
+    UUID uuid = JsonApiModelAssistant.extractUUIDFromRepresentationModelLink(created);
+    assertNotNull(uuid);
+
+    try {
+      asyncConsumer.getAccepted().getLast().get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    DataExportDto savedDataExportDto = dataExportRepository.getOne(uuid, null).getDto();
+    assertEquals(DataExport.ExportStatus.COMPLETED, savedDataExportDto.getStatus());
+    assertEquals(DataExport.ExportType.DWCA, savedDataExportDto.getExportType());
+
+    ResponseEntity<InputStreamResource>
+      response = fileController.downloadFile(uuid, FileController.DownloadType.DATA_EXPORT);
+
+    String filename = response.getHeaders().getContentDisposition().getFilename();
+    assertNotNull(filename);
+    assertTrue(filename.endsWith(".zip"), "Expected ZIP file but got: " + filename);
+
+    assertNotNull(response.getBody());
+    byte[] zipBytes = response.getBody().getInputStream().readAllBytes();
+
+    // Verify ZIP entries and validate occurrence.csv rows/columns.
+    List<Map<String, String>> rows;
+    String metaXml;
+    try (ZipInputStream zis = new ZipInputStream(new java.io.ByteArrayInputStream(zipBytes))) {
+      boolean hasOccurrenceCsv = false;
+      boolean hasMetaXml = false;
+      ZipEntry entry;
+      while ((entry = zis.getNextEntry()) != null) {
+        if ("occurrence.csv".equals(entry.getName())) {
+          hasOccurrenceCsv = true;
+        } else if ("meta.xml".equals(entry.getName())) {
+          hasMetaXml = true;
+        }
+        zis.closeEntry();
+      }
+      assertTrue(hasOccurrenceCsv, "ZIP should contain occurrence.csv");
+      assertTrue(hasMetaXml, "ZIP should contain meta.xml");
+    }
+
+    java.nio.file.Path tempZip = writeTempZip(zipBytes);
+    try (ZipFile zipFile = new ZipFile(tempZip.toFile())) {
+      ZipEntry csvEntry = zipFile.getEntry("occurrence.csv");
+      assertNotNull(csvEntry, "occurrence.csv should exist in ZIP");
+
+      try (InputStream is = zipFile.getInputStream(csvEntry)) {
+        CsvMapper csvMapper = new CsvMapper();
+        CsvSchema schema = CsvSchema.emptySchema().withHeader();
+        MappingIterator<Map<String, String>> it = csvMapper
+          .readerForMapOf(String.class)
+          .with(schema)
+          .readValues(is);
+        rows = it.readAll();
+      }
+
+      ZipEntry metaEntry = zipFile.getEntry("meta.xml");
+      assertNotNull(metaEntry, "meta.xml should exist in ZIP");
+      try (InputStream is = zipFile.getInputStream(metaEntry)) {
+        metaXml = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+      }
+    } finally {
+      java.nio.file.Files.deleteIfExists(tempZip);
+    }
+
+    assertEquals(1, rows.size(), "Expected exactly one Darwin Core row");
+    Map<String, String> row = rows.get(0);
+
+    assertTrue(row.containsKey("occurrenceID"));
+    assertTrue(row.containsKey("scientificName"));
+    assertTrue(row.containsKey("catalogNumber"));
+    assertTrue(row.containsKey("verbatimLocality"));
+    assertTrue(row.containsKey("decimalLatitude"));
+    assertTrue(row.containsKey("decimalLongitude"));
+    assertTrue(row.containsKey("basisOfRecord"));
+
+    assertFalse(row.get("occurrenceID") == null || row.get("occurrenceID").isBlank());
+    assertTrue(row.get("scientificName").contains("Procavia capensis"));
+    assertEquals("TEST_COL", row.get("catalogNumber"));
+    assertFalse(row.get("verbatimLocality") == null || row.get("verbatimLocality").isBlank());
+    assertTrue(row.get("decimalLatitude").startsWith("52"));
+    assertTrue(row.get("decimalLongitude").startsWith("5"));
+    assertEquals("PreservedSpecimen", row.get("basisOfRecord"));
+
+    assertTrue(metaXml.contains("occurrence.csv"));
+    assertTrue(metaXml.contains("<field"));
+
+    dataExportRepository.onDelete(uuid);
+  }
+
+  private java.nio.file.Path writeTempZip(byte[] zipBytes) throws IOException {
+    java.nio.file.Path tempZip = java.nio.file.Files.createTempFile("dwca-repo-it-", ".zip");
+    java.nio.file.Files.write(tempZip, zipBytes);
+    return tempZip;
   }
 }
