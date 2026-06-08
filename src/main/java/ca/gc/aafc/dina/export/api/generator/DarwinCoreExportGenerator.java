@@ -98,7 +98,8 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     }
     doDeleteExport(dinaExport);
   }
-  
+
+  // TODO do not override. on the processIncluded should be different
   @Override
   protected void processHit(Hit<JsonNode> hit, Map<String, DataExportFunction> functions,
                             DataOutput<UUID, JsonNode> output, boolean isMultiEntity,
@@ -141,7 +142,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
 
     output.addRecord(darwinCoreConfig.getCore().getEntityType(), UUID.fromString(entityId), objectMapper.valueToTree(dwcRecord));
   }
-
+  
   private Map<String, String> buildDwcRecord(Map<String, JsonNode> entitiesContext) {
     Map<String, String> record = new LinkedHashMap<>();
     List<DarwinCoreExportConfig.ColumnMapping> columnMappings = darwinCoreConfig.getCore().getColumns();

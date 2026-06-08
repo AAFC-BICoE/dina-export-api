@@ -288,6 +288,11 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     }
   }
 
+  // TODO
+  protected void processIncluded() {
+
+  }
+
   /**
    * Transforms a single JSON:API entity node and writes it to the output.
    * The output layer decides whether to accept or skip based on entity type.
