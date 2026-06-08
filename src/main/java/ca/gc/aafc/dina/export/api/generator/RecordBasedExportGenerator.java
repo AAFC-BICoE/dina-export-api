@@ -50,10 +50,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import lombok.Builder;
 import lombok.extern.log4j.Log4j2;
 
 /**
- * Generates tabular (CSV/TSV) exports
+ * Generates record-based exports.
  *
  * Supports single-resource exports (one CSV file) and multi-resource exports
  * (multiple CSVs packaged in a ZIP). The output layer ({@link DataOutput} / {@link CompositeDataOutput})
@@ -68,12 +69,6 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   private final DataExportConfig dataExportConfig;
   private final Configuration jsonPathConfiguration;
   private final DinaMessageProducer messageProducer;
-
-  /**
-   * Temporary working directory used by subclasses and exportMultiEntity.
-   * Stored per-thread so concurrent async exports do not share state.
-   */
-  protected final ThreadLocal<Path> exportWorkDir = new ThreadLocal<>();
 
   public RecordBasedExportGenerator(
     DataExportStatusService dataExportStatusService,
@@ -96,7 +91,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   public String generateFilename(DataExport dinaExport) {
     LinkedHashMap<String, DataExportSchemaEntry> schema = getEffectiveSchema(dinaExport);
 
-    if (isMultiEntityExport(dinaExport, schema)) {
+    if (isPackageBased(dinaExport, schema)) {
       return dinaExport.getUuid().toString() + ZipPackager.EXTENSION;
     }
 
@@ -126,13 +121,21 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       ensureDirectoryExists(exportPath.getParent());
       LinkedHashMap<String, DataExportSchemaEntry> schema = getEffectiveSchema(dinaExport);
 
-      preRecordWrite(dinaExport, exportPath);
-      if (isMultiEntityExport(dinaExport, schema)) {
-        exportMultiEntity(dinaExport, schema, exportPath);
+      // Compute context
+      boolean isPackageBased = isPackageBased(dinaExport, schema);
+      var ctxBuilder = RecordExportContext.builder().exportPath(exportPath);
+      if(isPackageBased) {
+        ctxBuilder.exportWorkDir(Files.createTempDirectory("dina-export-" + dinaExport.getUuid()));
+      }
+      RecordExportContext ctx = ctxBuilder.build();
+
+      preRecordWrite(dinaExport, ctx);
+      if (isPackageBased(dinaExport, schema)) {
+        exportMultiEntity(dinaExport, schema, ctx);
       } else {
         exportSingleEntity(dinaExport, schema, exportPath);
       }
-      postRecordWrite(dinaExport, exportPath);
+      postRecordWrite(dinaExport, ctx);
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
       messageProducer.send(buildUserMessageNotification(dinaExport));
     } catch (IOException ioEx) {
@@ -185,10 +188,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   private void exportMultiEntity(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema,
-                                  Path exportPath) throws IOException {
-    Path workDir = Files.createTempDirectory("dina-export-" + dinaExport.getUuid());
-    exportWorkDir.set(workDir);
-
+                                 RecordExportContext ctx) throws IOException {
     try {
       String fileExtension = TabularOutput.extensionFromSeparator(getColumnSeparatorOption(dinaExport));
       Map<String, TabularOutput<UUID, JsonNode>> outputsByType = new HashMap<>();
@@ -197,7 +197,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       for (var entry : schema.entrySet()) {
         String entityType = entry.getKey();
         Writer writer = new FileWriter(
-          workDir.resolve(entityType + fileExtension).toFile(), StandardCharsets.UTF_8);
+          ctx.exportWorkDir().resolve(entityType + fileExtension).toFile(), StandardCharsets.UTF_8);
         writersByType.put(entityType, writer);
 
         TabularOutput.TabularOutputArgs args = buildOutputArgsForEntity(
@@ -214,8 +214,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       }
       // ZIP and cleanup happen in postRecordWrite
     } catch (IOException e) {
-      ZipPackager.deleteDirectoryRecursively(workDir);
-      exportWorkDir.remove();
+      ZipPackager.deleteDirectoryRecursively(ctx.exportWorkDir());
       throw e;
     }
   }
@@ -332,19 +331,18 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   // Helpers
 
-  protected void preRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
+  protected void preRecordWrite(DataExport dinaExport, RecordExportContext ctx) throws IOException {
     // no-op by default
   }
 
-  protected void postRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
-    Path workDir = exportWorkDir.get();
+  protected void postRecordWrite(DataExport dinaExport, RecordExportContext ctx) throws IOException {
+    Path workDir = ctx.exportWorkDir();
     LinkedHashMap<String, DataExportSchemaEntry> schema = getEffectiveSchema(dinaExport);
-    if (workDir != null && isMultiEntityExport(dinaExport, schema)) {
+    if (workDir != null && isPackageBased(dinaExport, schema)) {
       try {
-        ZipPackager.createZipPackage(workDir, exportPath);
+        ZipPackager.createZipPackage(workDir, ctx.exportPath());
       } finally {
         ZipPackager.deleteDirectoryRecursively(workDir);
-        exportWorkDir.remove();
       }
     }
   }
@@ -367,7 +365,14 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       : null;
   }
 
-  private boolean isMultiEntityExport(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema) {
+  /**
+   * Package-based means a temporary directory is required to assemble the package. Then, the result
+   * is zipped for convenience.
+   * @param dinaExport
+   * @param schema
+   * @return
+   */
+  private boolean isPackageBased(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema) {
     if (dinaExport.getExportType() == DataExport.ExportType.DWCA) {
       return true;
     }
@@ -470,6 +475,9 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       }
     }
   }
+
+  @Builder
+  public record RecordExportContext(Path exportPath, Path exportWorkDir){}
 
 }
 

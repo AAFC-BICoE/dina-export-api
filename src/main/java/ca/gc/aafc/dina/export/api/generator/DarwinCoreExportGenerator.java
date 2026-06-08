@@ -85,10 +85,10 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   }
 
   @Override
-  protected void postRecordWrite(DataExport dinaExport, Path exportPath) throws IOException {
-    Path workDir = exportWorkDir.get();
-    metaXmlGenerator.generateMetaXml(workDir.resolve("meta.xml"));
-    super.postRecordWrite(dinaExport, exportPath);
+  protected void postRecordWrite(DataExport dinaExport, RecordExportContext ctx) throws IOException {
+    Path workDir = ctx.exportWorkDir();
+    metaXmlGenerator.generateMetaXml(workDir.resolve(DarwinCoreMetaXmlGenerator.DEFAULT_META_FILENAME));
+    super.postRecordWrite(dinaExport, ctx);
   }
 
   @Override

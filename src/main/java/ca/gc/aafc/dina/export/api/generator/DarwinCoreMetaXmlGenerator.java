@@ -26,6 +26,8 @@ import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 @Log4j2
 public class DarwinCoreMetaXmlGenerator {
 
+  public static final String DEFAULT_META_FILENAME = "meta.xml";
+
   private static final String TEMPLATE_NAME = "dwc/meta.xml.ftl";
 
   private final DarwinCoreExportConfig config;
