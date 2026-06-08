@@ -18,17 +18,14 @@ import ca.gc.aafc.dina.export.api.generator.helper.RelationshipFlattener;
 import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
-import ca.gc.aafc.dina.json.JsonHelper;
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
 import ca.gc.aafc.dina.messaging.producer.DinaMessageProducer;
-import co.elastic.clients.elasticsearch.core.search.Hit;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -99,25 +96,10 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     doDeleteExport(dinaExport);
   }
 
-  // TODO do not override. on the processIncluded should be different
   @Override
-  protected void processHit(Hit<JsonNode> hit, Map<String, DataExportFunction> functions,
-                            DataOutput<UUID, JsonNode> output, boolean isMultiEntity,
-                            boolean needsRelationships) throws IOException {
-    JsonNode source = hit.source();
-    if (source == null) {
-      return;
-    }
-
-    Optional<JsonNode> dataOpt = JsonHelper.atJsonPtr(source, JSONApiDocumentStructure.DATA_PTR);
-
-    if (dataOpt.isEmpty()) {
-      return;
-    }
-
-    // DWCA only processes the root /data entity with its full relationship context.
-    // /included entities are accessed via RelationshipFlattener, not processed as separate rows.
-    processEntity(dataOpt.get(), hit.id(), source, functions, output);
+  protected void processIncluded(JsonNode entity, Map<String, DataExportFunction> functions,
+                                  DataOutput<UUID, JsonNode> output) {
+    // DWCA accesses /included entities via RelationshipFlattener, not as separate rows
   }
 
   @Override

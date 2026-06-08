@@ -124,7 +124,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       // Compute context
       boolean isPackageBased = isPackageBased(dinaExport, schema);
       var ctxBuilder = RecordExportContext.builder().exportPath(exportPath);
-      if(isPackageBased) {
+      if (isPackageBased) {
         ctxBuilder.exportWorkDir(Files.createTempDirectory("dina-export-" + dinaExport.getUuid()));
       }
       RecordExportContext ctx = ctxBuilder.build();
@@ -282,15 +282,16 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       Optional<JsonNode> includedOpt = JsonHelper.atJsonPtr(source, JSONApiDocumentStructure.INCLUDED_PTR);
       if (includedOpt.isPresent() && includedOpt.get().isArray()) {
         for (JsonNode entity : includedOpt.get()) {
-          processEntity(entity, null, null, functions, output);
+          processIncluded(entity, functions, output);
         }
       }
     }
   }
 
-  // TODO
-  protected void processIncluded() {
 
+  protected void processIncluded(JsonNode entity, Map<String, DataExportFunction> functions,
+                                  DataOutput<UUID, JsonNode> output) throws IOException {
+    processEntity(entity, null, null, functions, output);
   }
 
   /**
@@ -482,7 +483,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   @Builder
-  public record RecordExportContext(Path exportPath, Path exportWorkDir){}
+  public record RecordExportContext(Path exportPath, Path exportWorkDir) { }
 
 }
 
