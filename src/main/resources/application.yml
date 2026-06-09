@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: classpath:dwc/darwincore-mapping.yaml
   datasource:
   #   url: jdbc:postgresql://localhost:5532/transaction
   #   username: postgres

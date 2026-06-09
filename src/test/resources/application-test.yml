@@ -1,5 +1,7 @@
 # Test config:
 spring:
+  freemarker:
+    template-loader-path: classpath:/templates/, classpath:/
   datasource:
     username: web_user
     password: test

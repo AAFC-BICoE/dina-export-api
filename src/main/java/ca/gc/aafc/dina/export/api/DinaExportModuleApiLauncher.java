@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
+import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.HttpClientConfig;
 import ca.gc.aafc.dina.export.api.config.ReportTemplateConfig;
@@ -15,7 +16,7 @@ import ca.gc.aafc.dina.export.api.config.ReportTemplateConfig;
 // invisible constructor, ignore the check style error for this case)
 @SpringBootApplication
 @EnableConfigurationProperties(value = {DataExportConfig.class, HttpClientConfig.class,
-  ReportTemplateConfig.class})
+  ReportTemplateConfig.class, DarwinCoreExportConfig.class})
 public class DinaExportModuleApiLauncher {
   public static void main(String[] args) {
     SpringApplication.run(DinaExportModuleApiLauncher.class, args);

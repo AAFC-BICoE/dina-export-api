@@ -11,6 +11,7 @@ import org.apache.commons.collections.CollectionUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
@@ -174,5 +175,89 @@ public class RelationshipFlattener {
     }
     
     return merged;
+  }
+
+  /**
+   * Converts a JSON:API {@code /data} entity node to a flat denormalized ObjectNode
+   * suitable for path-based navigation (e.g. DarwinCore context building).
+   *
+   * <p>If {@code entity} has no {@code attributes} key it is assumed to be already flat
+   * and is returned as-is. Otherwise its {@code attributes} are extracted and each entry
+   * from the {@code included} array in {@code source} is embedded under the corresponding
+   * relationship name — to-one as an ObjectNode, to-many as an ArrayNode, preserving the
+   * full nested structure. Unlike {@link #mergeRelationshipsIntoAttributes}, to-many values
+   * are kept as arrays so JSONPath predicates (e.g. {@code [?(@.isPrimary==true)]}) still work.</p>
+   *
+   * @param objectMapper Jackson mapper used to create new nodes
+   * @param entity       JSON:API {@code /data} node, or a pre-flattened entity
+   * @param source       full Elasticsearch source document (contains {@code included})
+   */
+  public static ObjectNode toFlatEntity(ObjectMapper objectMapper, JsonNode entity, JsonNode source) {
+    JsonNode attrsNode = entity.get(JSONApiDocumentStructure.ATTRIBUTES);
+    if (attrsNode == null || attrsNode.isNull()) {
+      // Already flat (e.g. pre-denormalized in tests)
+      return entity instanceof ObjectNode on ? on : objectMapper.createObjectNode();
+    }
+
+    ObjectNode denormalized = (ObjectNode) attrsNode.deepCopy();
+    denormalized.put(JSONApiDocumentStructure.ID, entity.path(JSONApiDocumentStructure.ID).asText());
+
+    if (source == null) {
+      return denormalized;
+    }
+
+    JsonNode included = source.get(JSONApiDocumentStructure.INCLUDED);
+    if (included == null || !included.isArray() || included.isEmpty()) {
+      return denormalized;
+    }
+
+    // Build lookup index: id -> included node
+    Map<String, JsonNode> includedById = new HashMap<>();
+    for (JsonNode inc : included) {
+      String incId = inc.path(JSONApiDocumentStructure.ID).asText();
+      if (!incId.isEmpty()) {
+        includedById.put(incId, inc);
+      }
+    }
+
+    // Embed each relationship as a nested object (to-one) or array (to-many)
+    JsonNode relationships = entity.get(JSONApiDocumentStructure.RELATIONSHIPS);
+    if (relationships == null || !relationships.isObject()) {
+      return denormalized;
+    }
+
+    relationships.fields().forEachRemaining(relEntry -> {
+      String relName = relEntry.getKey();
+      JsonNode relData = relEntry.getValue().path(JSONApiDocumentStructure.DATA);
+      if (relData.isArray()) {
+        ArrayNode arr = objectMapper.createArrayNode();
+        for (JsonNode ref : relData) {
+          String refId = ref.path(JSONApiDocumentStructure.ID).asText();
+          JsonNode inc = includedById.get(refId);
+          if (inc != null) {
+            JsonNode incAttrs = inc.get(JSONApiDocumentStructure.ATTRIBUTES);
+            if (incAttrs != null && !incAttrs.isNull()) {
+              ObjectNode embedded = (ObjectNode) incAttrs.deepCopy();
+              embedded.put(JSONApiDocumentStructure.ID, refId);
+              arr.add(embedded);
+            }
+          }
+        }
+        denormalized.set(relName, arr);
+      } else if (relData.isObject() && !relData.isNull()) {
+        String refId = relData.path(JSONApiDocumentStructure.ID).asText();
+        JsonNode inc = includedById.get(refId);
+        if (inc != null) {
+          JsonNode incAttrs = inc.get(JSONApiDocumentStructure.ATTRIBUTES);
+          if (incAttrs != null && !incAttrs.isNull()) {
+            ObjectNode embedded = (ObjectNode) incAttrs.deepCopy();
+            embedded.put(JSONApiDocumentStructure.ID, refId);
+            denormalized.set(relName, embedded);
+          }
+        }
+      }
+    });
+
+    return denormalized;
   }
 }

@@ -50,10 +50,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import lombok.Builder;
 import lombok.extern.log4j.Log4j2;
 
 /**
- * Generates tabular (CSV/TSV) exports
+ * Generates record-based exports.
  *
  * Supports single-resource exports (one CSV file) and multi-resource exports
  * (multiple CSVs packaged in a ZIP). The output layer ({@link DataOutput} / {@link CompositeDataOutput})
@@ -90,7 +91,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   public String generateFilename(DataExport dinaExport) {
     LinkedHashMap<String, DataExportSchemaEntry> schema = getEffectiveSchema(dinaExport);
 
-    if (isMultiEntityExport(dinaExport, schema)) {
+    if (isPackageBased(dinaExport, schema)) {
       return dinaExport.getUuid().toString() + ZipPackager.EXTENSION;
     }
 
@@ -120,11 +121,21 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       ensureDirectoryExists(exportPath.getParent());
       LinkedHashMap<String, DataExportSchemaEntry> schema = getEffectiveSchema(dinaExport);
 
-      if (isMultiEntityExport(dinaExport, schema)) {
-        exportMultiEntity(dinaExport, schema, exportPath);
+      // Compute context
+      boolean isPackageBased = isPackageBased(dinaExport, schema);
+      var ctxBuilder = RecordExportContext.builder().exportPath(exportPath);
+      if (isPackageBased) {
+        ctxBuilder.exportWorkDir(Files.createTempDirectory("dina-export-" + dinaExport.getUuid()));
+      }
+      RecordExportContext ctx = ctxBuilder.build();
+
+      preRecordWrite(dinaExport, ctx);
+      if (isPackageBased(dinaExport, schema)) {
+        exportMultiEntity(dinaExport, schema, ctx);
       } else {
         exportSingleEntity(dinaExport, schema, exportPath);
       }
+      postRecordWrite(dinaExport, ctx);
       updateStatus(dinaExport.getUuid(), DataExport.ExportStatus.COMPLETED);
       messageProducer.send(buildUserMessageNotification(dinaExport));
     } catch (IOException ioEx) {
@@ -151,12 +162,15 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     if (dinaExport.getExportType() != DataExport.ExportType.TABULAR_DATA) {
       throw new IllegalArgumentException("Should only be used for ExportType TABULAR_DATA");
     }
+    doDeleteExport(dinaExport);
+  }
 
+  protected void doDeleteExport(DataExport dinaExport) throws IOException {
     Path exportPath = dataExportConfig.getPathForDataExport(dinaExport).orElse(null);
     deleteIfExists(exportPath);
 
     if (exportPath != null
-      && DataExportConfig.isExportTypeUsesDirectory(DataExport.ExportType.TABULAR_DATA)
+      && DataExportConfig.isExportTypeUsesDirectory(dinaExport.getExportType())
       && DataExportConfig.isDataExportDirectory(exportPath.getParent(), dinaExport)) {
       deleteIfExists(exportPath.getParent());
     }
@@ -164,8 +178,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   // Export single/multi entity
 
-  private void exportSingleEntity(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema,
-                                   Path exportPath) throws IOException {
+  protected void exportSingleEntity(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema,
+                                     Path exportPath) throws IOException {
     try (Writer writer = new FileWriter(exportPath.toFile(), StandardCharsets.UTF_8);
          TabularOutput<UUID, JsonNode> output =
            TabularOutput.create(buildOutputArgs(dinaExport, schema), new TypeReference<>() { }, writer)) {
@@ -174,8 +188,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   private void exportMultiEntity(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema,
-                                  Path exportPath) throws IOException {
-    Path tempDir = Files.createTempDirectory("dina-export-" + dinaExport.getUuid());
+                                 RecordExportContext ctx) throws IOException {
     try {
       String fileExtension = TabularOutput.extensionFromSeparator(getColumnSeparatorOption(dinaExport));
       Map<String, TabularOutput<UUID, JsonNode>> outputsByType = new HashMap<>();
@@ -184,7 +197,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       for (var entry : schema.entrySet()) {
         String entityType = entry.getKey();
         Writer writer = new FileWriter(
-          tempDir.resolve(entityType + fileExtension).toFile(), StandardCharsets.UTF_8);
+          ctx.exportWorkDir().resolve(entityType + fileExtension).toFile(), StandardCharsets.UTF_8);
         writersByType.put(entityType, writer);
 
         TabularOutput.TabularOutputArgs args = buildOutputArgsForEntity(
@@ -199,10 +212,10 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       for (Writer writer : writersByType.values()) {
         writer.close();
       }
-
-      ZipPackager.createZipPackage(tempDir, exportPath);
-    } finally {
-      ZipPackager.deleteDirectoryRecursively(tempDir);
+      // ZIP and cleanup happen in postRecordWrite
+    } catch (IOException e) {
+      ZipPackager.deleteDirectoryRecursively(ctx.exportWorkDir());
+      throw e;
     }
   }
 
@@ -217,8 +230,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
    *
    * @param isMultiEntity if true, each /included entity becomes its own row in addition to merging
    */
-  private void queryAndProcess(DataExport dinaExport, DataOutput<UUID, JsonNode> output,
-                                boolean isMultiEntity) throws IOException {
+  protected void queryAndProcess(DataExport dinaExport, DataOutput<UUID, JsonNode> output,
+                                  boolean isMultiEntity) throws IOException {
     String query = objectMapper.writeValueAsString(dinaExport.getQuery());
     Map<String, DataExportFunction> functions = dinaExport.getFunctions();
     
@@ -248,7 +261,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     }
   }
 
-  private void processHit(Hit<JsonNode> hit, Map<String, DataExportFunction> functions,
+  protected void processHit(Hit<JsonNode> hit, Map<String, DataExportFunction> functions,
                            DataOutput<UUID, JsonNode> output, boolean isMultiEntity, 
                            boolean needsRelationships) throws IOException {
     JsonNode source = hit.source();
@@ -269,17 +282,23 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       Optional<JsonNode> includedOpt = JsonHelper.atJsonPtr(source, JSONApiDocumentStructure.INCLUDED_PTR);
       if (includedOpt.isPresent() && includedOpt.get().isArray()) {
         for (JsonNode entity : includedOpt.get()) {
-          processEntity(entity, null, null, functions, output);
+          processIncluded(entity, functions, output);
         }
       }
     }
+  }
+
+
+  protected void processIncluded(JsonNode entity, Map<String, DataExportFunction> functions,
+                                  DataOutput<UUID, JsonNode> output) throws IOException {
+    processEntity(entity, null, null, functions, output);
   }
 
   /**
    * Transforms a single JSON:API entity node and writes it to the output.
    * The output layer decides whether to accept or skip based on entity type.
    */
-  private void processEntity(JsonNode entity, String fallbackId, 
+  protected void processEntity(JsonNode entity, String fallbackId,
                             JsonNode relationshipSource,
                             Map<String, DataExportFunction> functions,
                             DataOutput<UUID, JsonNode> output) throws IOException {
@@ -318,6 +337,22 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   // Helpers
 
+  protected void preRecordWrite(DataExport dinaExport, RecordExportContext ctx) throws IOException {
+    // no-op by default
+  }
+
+  protected void postRecordWrite(DataExport dinaExport, RecordExportContext ctx) throws IOException {
+    Path workDir = ctx.exportWorkDir();
+    LinkedHashMap<String, DataExportSchemaEntry> schema = getEffectiveSchema(dinaExport);
+    if (workDir != null && isPackageBased(dinaExport, schema)) {
+      try {
+        ZipPackager.createZipPackage(workDir, ctx.exportPath());
+      } finally {
+        ZipPackager.deleteDirectoryRecursively(workDir);
+      }
+    }
+  }
+
   private void flattenNestedMaps(ObjectNode node) {
     var result = JSONApiDocumentStructure.extractNestedMapUsingDotNotation(
         objectMapper.convertValue(node, MAP_TYPEREF));
@@ -325,8 +360,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     result.nestedMapsMap().forEach((k, v) -> node.set(k, objectMapper.valueToTree(v)));
     result.usedKeys().forEach(node::remove);
   }
-  
-  private static LinkedHashMap<String, DataExportSchemaEntry> getEffectiveSchema(DataExport dinaExport) {
+
+  protected LinkedHashMap<String, DataExportSchemaEntry> getEffectiveSchema(DataExport dinaExport) {
     return MapUtils.isNotEmpty(dinaExport.getSchema()) ? dinaExport.getSchema() : new LinkedHashMap<>();
   }
 
@@ -336,7 +371,18 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       : null;
   }
 
-  private boolean isMultiEntityExport(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema) {
+  /**
+   * Package-based means a temporary directory is required to assemble the package. Then, the result
+   * is zipped for convenience.
+   * @param dinaExport
+   * @param schema
+   * @return
+   */
+  private boolean isPackageBased(DataExport dinaExport, LinkedHashMap<String, DataExportSchemaEntry> schema) {
+    if (dinaExport.getExportType() == DataExport.ExportType.DWCA) {
+      return true;
+    }
+
     // Only create separate files (ZIP) if enablePackaging is true AND there are multiple entities
     boolean packagingEnabled = DataExportOption.getOptionAsBool(dinaExport.getExportOptions(),
       DataExportOption.ENABLE_PACKAGING);
@@ -409,7 +455,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   // ── JSON transformation helpers ────────────────────────────────────────
 
-  private static String extractText(JsonNode node, String field, String fallback) {
+  protected static String extractText(JsonNode node, String field, String fallback) {
     JsonNode child = node.get(field);
     return child != null ? child.asText() : fallback;
   }
@@ -435,6 +481,9 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       }
     }
   }
+
+  @Builder
+  public record RecordExportContext(Path exportPath, Path exportWorkDir) { }
 
 }
 

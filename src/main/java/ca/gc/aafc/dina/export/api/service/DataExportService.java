@@ -24,6 +24,7 @@ public class DataExportService extends DefaultDinaService<DataExport> {
 
   private final DataExportGenerator recordBasedExportGenerator;
   private final DataExportGenerator objectStoreExportGenerator;
+  private final DataExportGenerator darwinCoreExportGenerator;
 
   private final Consumer<Future<UUID>> asyncConsumer;
 
@@ -33,16 +34,19 @@ public class DataExportService extends DefaultDinaService<DataExport> {
    * @param validator
    * @param recordBasedExportGenerator
    * @param objectStoreExportGenerator
+   * @param darwinCoreExportGenerator
    * @param asyncConsumer optional consumer to get the Future created for the async export
    */
   public DataExportService(BaseDAO baseDAO,
                            SmartValidator validator,
                            DataExportGenerator recordBasedExportGenerator,
                            DataExportGenerator objectStoreExportGenerator,
+                           DataExportGenerator darwinCoreExportGenerator,
                            Optional<Consumer<Future<UUID>>> asyncConsumer) {
     super(baseDAO, validator);
     this.recordBasedExportGenerator = recordBasedExportGenerator;
     this.objectStoreExportGenerator = objectStoreExportGenerator;
+    this.darwinCoreExportGenerator = darwinCoreExportGenerator;
     this.asyncConsumer = asyncConsumer.orElse(null);
   }
 
@@ -102,6 +106,7 @@ public class DataExportService extends DefaultDinaService<DataExport> {
     return switch (type) {
       case TABULAR_DATA -> recordBasedExportGenerator;
       case OBJECT_ARCHIVE -> objectStoreExportGenerator;
+      case DWCA -> darwinCoreExportGenerator;
     };
   }
 }
