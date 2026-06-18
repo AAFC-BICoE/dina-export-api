@@ -175,6 +175,39 @@ Example with selective aliases:
 
 NOTE: ID tracking is automatically enabled for multi-resource exports to prevent duplicate related entities across files.
 
+=== Darwin Core Archive - Occurrence Export
+
+The endpoint also supports Darwin Core Archive (DwC-A) export for occurrence records as a packaged zip file, following the Darwin Core standards. The ZIP will always include:
+
+occurrence.csv — with the exported records (based on your query)
+
+meta.xml — with the Darwin Core archive metadata
+
+For example, to request an occurrence export for a specific record, use:
+
+[source, json]
+
+{
+  "data": {
+    "type": "data-export",
+    "attributes": {
+      "exportType": "DWCA",
+      "name": "My Occurrence Export",
+      "source": "dina_material_sample_index",
+      "query": "{\"query\": {\"match_all\": {}}}"
+    }
+  }
+}
+
+This will export the record matching the ID in the query.
+
+You can substitute the query portion with any valid Elasticsearch Query DSL to define your occurrence subset.
+
+To retrieve the packaged archive, use the fileId returned in the creation response:
+
+[source]
+GET /file/{fileId}?type=DATA_EXPORT
+
 === Functions
 
 Functions create calculated columns. Add the function name to your schema and define it in `functions`:
