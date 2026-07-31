@@ -25,10 +25,16 @@ jobs:
         run: mvn -q spotbugs:check
 
       - name: Run OWASP dependency-check (only on dev)
-        run: mvn -q org.owasp:dependency-check-maven:check
         if: ${{ github.ref == 'refs/heads/dev' }}
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        uses: dependency-check/Dependency-Check_Action@main
+        id: dependency-check
+        with:
+          project: 'test'
+          path: '.'
+          format: 'HTML'
+          args: >
+            --failOnCVSS 8
+            --suppression owasp-suppression.xml
 
       - name: Extract Version
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -36,7 +42,7 @@ jobs:
           mvn help:evaluate -Dexpression=project.version -q -DforceStdout > version.txt
       - name: Store artifacts
         if: ${{ github.ref == 'refs/heads/main' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-artifacts
           path: |
@@ -52,7 +58,7 @@ jobs:
 
     steps:
       - name: Download artifacts from build job
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: build-artifacts
 
@@ -72,9 +78,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Image and Push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: aafcbicoe/dina-export-api:${{ env.VERSION_TAG }}
           provenance: false
+          # Force the builder engine to output standard Docker mediatypes for OKD
+          outputs: type=image,oci-mediatypes=false
