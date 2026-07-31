@@ -1,5 +1,6 @@
 package ca.gc.aafc.dina.export.api.config;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -14,7 +15,7 @@ import java.util.function.Predicate;
  * @implNote Validation is applied on creation
  * Getter methods return empty/safe defaults.
  */
-public record DataExportFunction(FunctionDef functionDef, Map<String, Object> params) {
+public record DataExportFunction(FunctionDef functionDef, Map<String, Object> params) implements Serializable {
 
   public static final String CONCAT_PARAM_ITEMS = "items";
   public static final String CONCAT_PARAM_CONSTANTS = "constants";
