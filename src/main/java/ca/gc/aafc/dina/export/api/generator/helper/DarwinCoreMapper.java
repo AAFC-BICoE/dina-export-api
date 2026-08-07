@@ -61,13 +61,20 @@ public class DarwinCoreMapper {
 
     // 3. Filter + optional subpath (JSONPath filter syntax, e.g. @.placeType == 'county')
     if (mapping.getFilter() != null) {
+
+      //Sanity check. Make sure the source exists.
+      JsonNode checkNode = contextNode.at("/" + mapping.getSource());
+      if (checkNode.isMissingNode() || checkNode.isNull()) {
+        return null;
+      }
+
       String expression = "$." + mapping.getSource() + "[?(" + mapping.getFilter() + ")]"
           + (mapping.getPath() != null ? "." + mapping.getPath() : "");
       JsonNode result = JsonHelper.findOneInJsonNode(contextNode, expression);
       return result != null && !result.isNull() ? result.asText() : null;
     }
 
-    // 5. Simple definite-path navigation
+    // 4. Simple definite-path navigation
     JsonNode value = JsonHelper.findOneInJsonNode(contextNode, "$." + mapping.getSource());
     return value != null && !value.isNull() ? value.asText() : null;
   }
