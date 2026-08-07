@@ -55,7 +55,6 @@ public class DarwinCoreMapperTest {
 
     ObjectMapper objectMapper = new ObjectMapper();
     Map<String, JsonNode > entitiesContext = Map.of("collectingEvent", objectMapper.readTree(json));
-
     assertNull(mapper.extractValue(entitiesContext, mapping));
   }
 }
