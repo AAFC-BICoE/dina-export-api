@@ -1,5 +1,6 @@
 package ca.gc.aafc.dina.export.api.entity;
 
+import java.io.Serializable;
 import java.util.List;
 
 import lombok.NonNull;
@@ -16,7 +17,7 @@ import lombok.NonNull;
  *                Example: columns=["id","name","group"], aliases=["","Created By",""] → headers: "id", "Created By", "group"
  *                Invalid: aliases with different length than columns will throw IllegalArgumentException
  */
-public record DataExportSchemaEntry(@NonNull List<String> columns, List<String> aliases) {
+public record DataExportSchemaEntry(@NonNull List<String> columns, List<String> aliases) implements Serializable {
   
   /**
    * Compact constructor that validates the aliases array length matches columns length.
