@@ -22,11 +22,11 @@ import ca.gc.aafc.dina.exception.ResourceNotFoundException;
 import ca.gc.aafc.dina.export.api.dto.DataExportTemplateDto;
 import ca.gc.aafc.dina.export.api.entity.DataExportTemplate;
 import ca.gc.aafc.dina.export.api.mapper.DataExportTemplateMapper;
+import ca.gc.aafc.dina.export.api.security.ExportTemplateAuthorization;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 import ca.gc.aafc.dina.mapper.DinaMappingRegistry;
 import ca.gc.aafc.dina.repository.DinaRepositoryV2;
 import ca.gc.aafc.dina.security.DinaAuthenticatedUser;
-import ca.gc.aafc.dina.security.auth.ObjectOwnerAuthorizationService;
 import ca.gc.aafc.dina.service.AuditService;
 import ca.gc.aafc.dina.service.DinaService;
 
@@ -48,7 +48,7 @@ public class DataExportTemplateRepository extends DinaRepositoryV2<DataExportTem
 
   public DataExportTemplateRepository(
       @NonNull DinaService<DataExportTemplate> dinaService,
-      @NonNull ObjectOwnerAuthorizationService authorizationService,
+      @NonNull ExportTemplateAuthorization authorizationService,
       Optional<DinaAuthenticatedUser> authenticatedUser,
       @NonNull Optional<AuditService> auditService,
       @NonNull BuildProperties buildProperties,
@@ -85,6 +85,7 @@ public class DataExportTemplateRepository extends DinaRepositoryV2<DataExportTem
   @PostMapping(DataExportTemplateDto.TYPENAME)
   @Transactional
   public ResponseEntity<RepresentationModel<?>> onCreate(@RequestBody JsonApiDocument postedDocument) {
+
     return handleCreate(postedDocument, dto -> {
       if (authenticatedUser != null) {
         dto.setCreatedBy(authenticatedUser.getUsername());
