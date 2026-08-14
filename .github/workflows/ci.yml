@@ -27,9 +27,11 @@ jobs:
       - name: Run OWASP dependency-check (only on dev)
         if: ${{ github.ref == 'refs/heads/dev' }}
         uses: dependency-check/Dependency-Check_Action@main
-        id: dependency-check
+        id: dependency-check-export-api
+        env:
+          JAVA_HOME: /opt/jdk
         with:
-          project: 'test'
+          project: 'dina-export-api'
           path: '.'
           format: 'HTML'
           args: >
