@@ -2,12 +2,15 @@ package ca.gc.aafc.dina.export.api.repository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 
+import ca.gc.aafc.dina.exception.ResourceGoneException;
 import ca.gc.aafc.dina.exception.ResourceNotFoundException;
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
 import ca.gc.aafc.dina.export.api.dto.DataExportTemplateDto;
 import ca.gc.aafc.dina.export.api.entity.DataExportTemplate;
 import ca.gc.aafc.dina.export.api.service.DataExportTemplateService;
+import ca.gc.aafc.dina.export.api.testsupport.factories.DataExportTemplateFactory;
 import ca.gc.aafc.dina.export.api.testsupport.fixtures.DataExportTemplateTestFixture;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocuments;
@@ -19,10 +22,10 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.UUID;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.ValidationException;
+import java.util.UUID;
 
 @SpringBootTest(properties = "keycloak.enabled: true")
 @Transactional
@@ -71,5 +74,45 @@ public class DataExportTemplateRepositoryIT extends BaseIntegrationTest {
       ValidationException.class, 
       () -> dataExportTemplateRepository.onCreate(docToCreate));
     assertEquals("DataExportTemplate can be publiclyReleasable or restricted to createdBy but not both", exception.getMessage());
+  }
+
+  @WithMockKeycloakUser(username = "user", groupRole = DataExportTemplateTestFixture.GROUP + ":USER")
+  @Test
+  void get_differentUserSameGroup() throws ResourceGoneException, ResourceNotFoundException {
+
+    // create using service, so we can set any user/group
+    DataExportTemplate det = DataExportTemplateFactory.newDataExportTemplate()
+      .group(DataExportTemplateTestFixture.GROUP)
+      .restrictToCreatedBy(false)
+      .publiclyReleasable(false)
+      .build();
+
+    UUID uuid = dataExportTemplateService.create(det).getUuid();
+
+    // make sure we can read it
+    dataExportTemplateRepository.onFindOne(uuid, null);
+  }
+
+  @WithMockKeycloakUser(username = "user", groupRole = DataExportTemplateTestFixture.GROUP + ":USER")
+  @Test
+  void get_differentUserDifferentGroup() throws ResourceGoneException, ResourceNotFoundException {
+
+    // create using service, so we can set any user/group
+    DataExportTemplate det = DataExportTemplateFactory.newDataExportTemplate()
+      .group("not-"+DataExportTemplateTestFixture.GROUP)
+      .restrictToCreatedBy(false)
+      .publiclyReleasable(false)
+      .build();
+
+    UUID uuid = dataExportTemplateService.create(det).getUuid();
+
+    // make sure we can NOT read it
+    assertThrows(
+      AuthorizationDeniedException.class, () -> dataExportTemplateRepository.onFindOne(uuid, null));
+
+    // make it public and we should be able to read it
+    det.setPubliclyReleasable(true);
+    dataExportTemplateService.update(det);
+    dataExportTemplateRepository.onFindOne(uuid, null);
   }
 }
