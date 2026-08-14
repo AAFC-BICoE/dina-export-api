@@ -17,8 +17,8 @@ public class ExportTemplateAuthorization extends PermissionAuthorizationService 
   public void authorizeCreate(Object entity) {
   }
 
-  @PreAuthorize("#entity.isPubliclyReleasable().orElse(false) || hasObjectOwnership(@currentUser, #entity) || " +
-   "(!#entity.getRestrictToCreatedBy() && hasMinimumGroupAndRolePermissions(@currentUser, 'READ_ONLY', #entity))")
+  @PreAuthorize("isObjectPubliclyReleasable(#entity) || hasObjectOwnership(@currentUser, #entity) || " +
+    "(!#entity.getRestrictToCreatedBy() && hasMinimumGroupAndRolePermissions(@currentUser, 'READ_ONLY', #entity))")
   public void authorizeRead(Object entity) {
   }
 
