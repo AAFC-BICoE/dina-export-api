@@ -78,6 +78,6 @@ public class DarwinCoreMapperTest {
 
     ObjectMapper objectMapper = new ObjectMapper();
     Map<String, JsonNode> entitiesContext = Map.of("attachment", objectMapper.readTree(json));
-    assertEquals("U34853.1 | GU328060", mapper.extractValue(entitiesContext, mapping));
+    assertEquals("U3485313 | GU328060", mapper.extractValue(entitiesContext, mapping));
   }
 }
