@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jaxb:bindings
     xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
     version="3.0">
 
     <jaxb:globalBindings typesafeEnumMaxMembers="500"/>
@@ -53,5 +54,11 @@
                 name="ca.aafc.eml.generated.text"/>
         </jaxb:schemaBindings>
     </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="../resources/xsd/eml/stmml.xsd"
+      node="//xs:element[@name='object']">
+      <jaxb:class name="StmmlObject"/>
+    </jaxb:bindings>
+
 
 </jaxb:bindings>
