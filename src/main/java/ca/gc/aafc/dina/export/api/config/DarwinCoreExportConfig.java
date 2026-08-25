@@ -54,5 +54,6 @@ public class DarwinCoreExportConfig {
     private String path;              // Additional path after filtering (optional)
     private String staticValue;       // Static value (optional)
     private String dataType = "string";
+    private String separator = " | ";   // Separator for array values
     private boolean required;}
 }

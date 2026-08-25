@@ -3,6 +3,7 @@ package ca.gc.aafc.dina.export.api.generator.helper;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 import ca.gc.aafc.dina.json.JsonHelper;
@@ -74,9 +75,36 @@ public class DarwinCoreMapper {
       return result != null && !result.isNull() ? result.asText() : null;
     }
 
-    // 4. Simple definite-path navigation
+    // 4. Simple path navigation. To-many contexts (arrays) collect the value
+    // from each element and join them with the configured separator.
+    if (contextNode.isArray()) {
+      return joinArrayValues((ArrayNode) contextNode, mapping.getSource(), mapping.getSeparator());
+    }
     JsonNode value = JsonHelper.findOneInJsonNode(contextNode, "$." + mapping.getSource());
     return value != null && !value.isNull() ? value.asText() : null;
+  }
+
+  /**
+   * Extracts a value from each element of a to-many context and joins them.
+   *
+   * @param array to-many context array
+   * @param source dot-notation path relative to each array element
+   * @param separator separator to use between values
+   * @return joined text or null if no non-null value was found
+   */
+  private static String joinArrayValues(ArrayNode array, String source, String separator) {
+    StringBuilder sb = new StringBuilder();
+    for (JsonNode element : array) {
+      JsonNode value = JsonHelper.findOneInJsonNode(element, "$." + source);
+      if (value == null || value.isNull()) {
+        continue;
+      }
+      if (sb.length() > 0) {
+        sb.append(separator);
+      }
+      sb.append(value.asText());
+    }
+    return sb.length() > 0 ? sb.toString() : null;
   }
 
 }

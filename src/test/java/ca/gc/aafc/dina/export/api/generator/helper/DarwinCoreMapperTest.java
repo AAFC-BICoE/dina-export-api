@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class DarwinCoreMapperTest {
@@ -56,5 +57,27 @@ public class DarwinCoreMapperTest {
     ObjectMapper objectMapper = new ObjectMapper();
     Map<String, JsonNode > entitiesContext = Map.of("collectingEvent", objectMapper.readTree(json));
     assertNull(mapper.extractValue(entitiesContext, mapping));
+  }
+
+  @Test
+  public void extractValue_joinsToManyValues() throws JsonProcessingException {
+
+    DarwinCoreMapper mapper = new DarwinCoreMapper();
+
+    DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
+    mapping.setContext("attachment");
+    mapping.setDwcTerm("associatedSequences");
+    mapping.setSource("managedAttributes.ena_run_accession");
+
+    String json = """
+        [
+          { "managedAttributes": { "ena_run_accession": "U3485313" } },
+          { "managedAttributes": { "ena_run_accession": "GU328060" } }
+        ]
+        """;
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    Map<String, JsonNode> entitiesContext = Map.of("attachment", objectMapper.readTree(json));
+    assertEquals("U34853.1 | GU328060", mapper.extractValue(entitiesContext, mapping));
   }
 }
