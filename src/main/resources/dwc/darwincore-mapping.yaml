@@ -98,11 +98,14 @@ dwc:
       context: "collectingEvent"
       source: "dwcCountryCode"
 
-    # From attachment metadata (to-many, values joined with " | ")
+    # From attachment metadata (to-many, values resolved via controlled-vocabulary-item and joined with " | ")
     - dwcTerm: "associatedSequences"
       termUri: "http://rs.tdwg.org/dwc/terms/associatedSequences"
       context: "attachment"
-      source: "managedAttributes.ena_run_accession"
+      source: "managedAttributes"
+      vocabularyValue: "uriTemplate"
+      vocabularyKey: "ena_run_accession"
+      valuePlaceholder: "$1"
 
     # Static value
     - dwcTerm: "basisOfRecord"

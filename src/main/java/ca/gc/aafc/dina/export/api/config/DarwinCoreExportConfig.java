@@ -53,6 +53,9 @@ public class DarwinCoreExportConfig {
     private String filter;            // Filter condition (e.g., "isPrimary == true")
     private String path;              // Additional path after filtering (optional)
     private String staticValue;       // Static value (optional)
+    private String vocabularyValue;   // Field to extract from the controlled-vocabulary-item (e.g. "uriTemplate")
+    private String vocabularyKey;     // Optional: restrict resolution to this managed attribute key (e.g. "ena_run_accession")
+    private String valuePlaceholder = "$1"; // Placeholder in vocabularyValue replaced with the managed attribute value
     private String dataType = "string";
     private String separator = " | ";   // Separator for array values
     private boolean required;}
