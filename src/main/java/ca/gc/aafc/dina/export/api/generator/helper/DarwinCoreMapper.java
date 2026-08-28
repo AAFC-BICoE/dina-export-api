@@ -6,11 +6,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
-import ca.gc.aafc.dina.export.api.service.ObjectStoreApiClient;
+import ca.gc.aafc.dina.export.api.config.DataExportConfig;
+import ca.gc.aafc.dina.export.api.service.DinaApiClient;
 import ca.gc.aafc.dina.json.JsonHelper;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 
 import java.util.Map;
 import lombok.extern.log4j.Log4j2;
+import okhttp3.HttpUrl;
 
 /**
  * Maps DINA resource to DarwinCore terms
@@ -27,10 +30,15 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class DarwinCoreMapper {
 
-  private final ObjectStoreApiClient objectStoreApiClient;
+  private static final String FILTER_KEY_PARAM = "filter[key]";
+  private static final String DINA_COMPONENT_PARAM = "dinaComponent";
 
-  public DarwinCoreMapper(ObjectStoreApiClient objectStoreApiClient) {
-    this.objectStoreApiClient = objectStoreApiClient;
+  private final DinaApiClient dinaApiClient;
+  private final DataExportConfig dataExportConfig;
+
+  public DarwinCoreMapper(DinaApiClient dinaApiClient, DataExportConfig dataExportConfig) {
+    this.dinaApiClient = dinaApiClient;
+    this.dataExportConfig = dataExportConfig;
   }
 
   /**
@@ -83,7 +91,7 @@ public class DarwinCoreMapper {
     }
 
     if (mapping.getVocabularyValue() != null) {
-      return resolveVocabularyValues(contextNode, mapping);
+      return resolveApiReferencedValues(contextNode, mapping);
     }
 
     // Collect the value
@@ -119,22 +127,22 @@ public class DarwinCoreMapper {
   }
 
   /**
-   * Resolves managed attribute values through the controlled-vocabulary-item.
+   * Resolves values referenced by an external DINA API (e.g. a controlled-vocabulary-item).
    *
    * Each element of a to-many context (e.g. an attachment array) holds a map of managed
    * attribute keys to values (the mapping's {@code source}). For each key the matching
-   * controlled-vocabulary-item is fetched (and cached) and the configured
-   * {@code vocabularyValue} field (e.g. uriTemplate) is extracted. The
-   * {@code valuePlaceholder} in that field is replaced with the actual managed attribute
-   * value, and all resolved values are joined with the separator.
+   * document is fetched from the API (and cached) and the configured {@code vocabularyValue}
+   * field (e.g. uriTemplate) is extracted. The {@code valuePlaceholder} in that field is
+   * replaced with the actual managed attribute value, and all resolved values are joined
+   * with the separator.
    *
    * @param contextNode the to-many context node (array)
    * @param mapping the column mapping
    * @return the joined resolved values, or null if none could be resolved
    */
-  private String resolveVocabularyValues(JsonNode contextNode, DarwinCoreExportConfig.ColumnMapping mapping) {
+  private String resolveApiReferencedValues(JsonNode contextNode, DarwinCoreExportConfig.ColumnMapping mapping) {
     if (!contextNode.isArray()) {
-      log.warn("Vocabulary resolution for {} requires an array context, but {} is not an array",
+      log.warn("API referenced value resolution for {} requires an array context, but {} is not an array",
         mapping.getDwcTerm(), mapping.getContext());
       return null;
     }
@@ -155,21 +163,22 @@ public class DarwinCoreMapper {
           return;
         }
 
-        JsonNode item = objectStoreApiClient.getControlledVocabularyItem(entry.getKey());
-        if (item == null) {
-          log.warn("No controlled-vocabulary-item found for managed attribute key '{}' (dwcTerm={})",
+        JsonApiDocument doc = dinaApiClient.fetchDocument(
+          buildReferencedValueUrl(mapping.getVocabularyDocumentType(), mapping.getDinaComponent(), entry.getKey()));
+        if (doc == null || doc.getAttributes() == null) {
+          log.warn("No referenced document found for key '{}' (dwcTerm={})",
             entry.getKey(), mapping.getDwcTerm());
           return;
         }
 
-        JsonNode vocabValue = item.at("/attributes/" + mapping.getVocabularyValue());
-        if (vocabValue.isMissingNode() || vocabValue.isNull()) {
-          log.warn("controlled-vocabulary-item for key '{}' has no '{}' attribute (dwcTerm={})",
+        Object referencedValue = doc.getAttributes().get(mapping.getVocabularyValue());
+        if (referencedValue == null) {
+          log.warn("Referenced document for key '{}' has no '{}' attribute (dwcTerm={})",
             entry.getKey(), mapping.getVocabularyValue(), mapping.getDwcTerm());
           return;
         }
 
-        String resolved = vocabValue.asText()
+        String resolved = String.valueOf(referencedValue)
           .replace(mapping.getValuePlaceholder(), entry.getValue().asText());
 
         if (sb.length() > 0) {
@@ -183,6 +192,42 @@ public class DarwinCoreMapper {
       return null;
     }
     return sb.toString();
+  }
+
+  /**
+   * Builds the URL to fetch a referenced document from the object store API.
+   *
+   * @param type the JSON:API resource type (e.g. "controlled-vocabulary-item")
+   * @param dinaComponent the dinaComponent filter value (e.g. "METADATA"), or null/blank to omit it
+   * @param key the value to filter on, typically a managed attribute key
+   * @return the URL, or null if the resource type is not configured, or the object store API URL
+   *         is not configured or invalid
+   */
+  private HttpUrl buildReferencedValueUrl(String type, String dinaComponent, String key) {
+    if (type == null || type.isBlank()) {
+      log.warn("No vocabularyDocumentType configured for column resolving key {}", key);
+      return null;
+    }
+
+    String baseUrl = dataExportConfig.getObjectStoreApiUrl();
+    if (baseUrl == null || baseUrl.isBlank()) {
+      log.warn("objectStoreApiUrl is not configured, unable to resolve {} for key {}", type, key);
+      return null;
+    }
+
+    HttpUrl url = HttpUrl.parse(baseUrl);
+    if (url == null) {
+      log.warn("Invalid objectStoreApiUrl: {}", baseUrl);
+      return null;
+    }
+
+    HttpUrl.Builder urlBuilder = url.newBuilder()
+      .addPathSegment(type)
+      .addQueryParameter(FILTER_KEY_PARAM, key);
+    if (dinaComponent != null && !dinaComponent.isBlank()) {
+      urlBuilder.addQueryParameter(DINA_COMPONENT_PARAM, dinaComponent);
+    }
+    return urlBuilder.build();
   }
 
 }

@@ -56,7 +56,9 @@ public class DarwinCoreExportConfig {
     private String vocabularyValue;   // Field to extract from the controlled-vocabulary-item (e.g. "uriTemplate")
     private String vocabularyKey;     // Optional: restrict resolution to this managed attribute key (e.g. "ena_run_accession")
     private String valuePlaceholder = "$1"; // Placeholder in vocabularyValue replaced with the managed attribute value
+    private String vocabularyDocumentType; // Document type to fetch for controlled vocabulary resolution
+    private String dinaComponent;     // DINA component to fetch for controlled vocabulary
     private String dataType = "string";
-    private String separator = " | ";   // Separator for array values
+    private String separator = " | "; // Separator for array values
     private boolean required;}
 }

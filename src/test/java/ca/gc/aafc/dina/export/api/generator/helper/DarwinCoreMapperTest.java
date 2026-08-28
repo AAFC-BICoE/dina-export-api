@@ -1,6 +1,7 @@
 package ca.gc.aafc.dina.export.api.generator.helper;
 
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
@@ -9,14 +10,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
-import ca.gc.aafc.dina.export.api.service.ObjectStoreApiClient;
+import ca.gc.aafc.dina.export.api.config.DataExportConfig;
+import ca.gc.aafc.dina.export.api.service.DinaApiClient;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import okhttp3.HttpUrl;
 
 public class DarwinCoreMapperTest {
 
@@ -25,7 +32,7 @@ public class DarwinCoreMapperTest {
   @Test
   public void extractValue() throws JsonProcessingException {
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(ObjectStoreApiClient.class));
+    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(DinaApiClient.class), testDataExportConfig());
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("collectingEvent");
@@ -69,7 +76,7 @@ public class DarwinCoreMapperTest {
   @Test
   public void extractValue_joinsToManyValues() throws JsonProcessingException {
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(ObjectStoreApiClient.class));
+    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(DinaApiClient.class), testDataExportConfig());
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("attachment");
@@ -91,18 +98,10 @@ public class DarwinCoreMapperTest {
   @Test
   public void extractValue_resolvesVocabularyUriTemplate() throws JsonProcessingException {
 
-    ObjectStoreApiClient client = mock(ObjectStoreApiClient.class);
-    when(client.getControlledVocabularyItem("ena_run_accession")).thenReturn(objectMapper.readTree("""
-        {
-          "id": "01a03daf-fe1d-7731-a3b9-6e488ea67d4e",
-          "type": "controlled-vocabulary-item",
-          "attributes": {
-            "uriTemplate": "https://www.ebi.ac.uk/ena/browser/view/$1"
-          }
-        }
-        """));
+    DinaApiClient client = mock(DinaApiClient.class);
+    when(client.fetchDocument(any(HttpUrl.class))).thenReturn(vocabularyItemDocument());
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(client);
+    DarwinCoreMapper mapper = new DarwinCoreMapper(client, testDataExportConfig());
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("attachment");
@@ -127,18 +126,10 @@ public class DarwinCoreMapperTest {
   @Test
   public void extractValue_resolvesVocabularyUriTemplate_onlyConfiguredKey() throws JsonProcessingException {
 
-    ObjectStoreApiClient client = mock(ObjectStoreApiClient.class);
-    when(client.getControlledVocabularyItem("ena_run_accession")).thenReturn(objectMapper.readTree("""
-        {
-          "id": "01a03daf-fe1d-7731-a3b9-6e488ea67d4e",
-          "type": "controlled-vocabulary-item",
-          "attributes": {
-            "uriTemplate": "https://www.ebi.ac.uk/ena/browser/view/$1"
-          }
-        }
-        """));
+    DinaApiClient client = mock(DinaApiClient.class);
+    when(client.fetchDocument(any(HttpUrl.class))).thenReturn(vocabularyItemDocument());
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(client);
+    DarwinCoreMapper mapper = new DarwinCoreMapper(client, testDataExportConfig());
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("attachment");
@@ -158,6 +149,23 @@ public class DarwinCoreMapperTest {
     Map<String, JsonNode> entitiesContext = Map.of("attachment", objectMapper.readTree(json));
     String expected = "https://www.ebi.ac.uk/ena/browser/view/U3485313 | https://www.ebi.ac.uk/ena/browser/view/GU328060";
     assertEquals(expected, mapper.extractValue(entitiesContext, mapping));
-    verify(client, never()).getControlledVocabularyItem("other_key");
+    verify(client, never()).fetchDocument(argThat(url -> url.toString().contains("other_key")));
+  }
+
+  private DataExportConfig testDataExportConfig() {
+    DataExportConfig config = new DataExportConfig();
+    config.setObjectStoreApiUrl("http://localhost:8081/api/v1");
+    return config;
+  }
+
+  private JsonApiDocument vocabularyItemDocument() {
+    return JsonApiDocument.builder()
+      .data(JsonApiDocument.ResourceObject.builder()
+        .id(UUID.fromString("01a03daf-fe1d-7731-a3b9-6e488ea67d4e"))
+        .type("controlled-vocabulary-item")
+        .attributes(Map.of("uriTemplate", "https://www.ebi.ac.uk/ena/browser/view/$1"))
+        .build())
+      .build();
   }
 }
+
