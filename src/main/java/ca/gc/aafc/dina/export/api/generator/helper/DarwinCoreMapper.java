@@ -146,9 +146,6 @@ public class DarwinCoreMapper {
         continue;
       }
 
-      if (managedAttributes.isEmpty()) {
-      }
-
       managedAttributes.properties().forEach(entry -> {
         if (mapping.getVocabularyKey() != null && !mapping.getVocabularyKey().equals(entry.getKey())) {
           return;
