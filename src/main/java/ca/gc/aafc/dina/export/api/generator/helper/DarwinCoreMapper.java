@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
-import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.service.DinaApiClient;
 import ca.gc.aafc.dina.json.JsonHelper;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
@@ -34,11 +33,9 @@ public class DarwinCoreMapper {
   private static final String DINA_COMPONENT_PARAM = "dinaComponent";
 
   private final DinaApiClient dinaApiClient;
-  private final DataExportConfig dataExportConfig;
 
-  public DarwinCoreMapper(DinaApiClient dinaApiClient, DataExportConfig dataExportConfig) {
+  public DarwinCoreMapper(DinaApiClient dinaApiClient) {
     this.dinaApiClient = dinaApiClient;
-    this.dataExportConfig = dataExportConfig;
   }
 
   /**
@@ -163,8 +160,11 @@ public class DarwinCoreMapper {
           return;
         }
 
-        JsonApiDocument doc = dinaApiClient.fetchDocument(
-          buildReferencedValueUrl(mapping.getVocabularyDocumentType(), mapping.getDinaComponent(), entry.getKey()));
+        HttpUrl url = buildReferencedValueUrl(mapping, entry.getKey());
+        if (url == null) {
+          return;
+        }
+        JsonApiDocument doc = dinaApiClient.fetchDocument(url);
         if (doc == null || doc.getAttributes() == null) {
           log.warn("No referenced document found for key '{}' (dwcTerm={})",
             entry.getKey(), mapping.getDwcTerm());
@@ -195,37 +195,34 @@ public class DarwinCoreMapper {
   }
 
   /**
-   * Builds the URL to fetch a referenced document from the object store API.
+   * Builds the URL to fetch a referenced document.
    *
-   * @param type the JSON:API resource type (e.g. "controlled-vocabulary-item")
-   * @param dinaComponent the dinaComponent filter value (e.g. "METADATA"), or null/blank to omit it
+   * The base URL comes from the column mapping's {@code vocabularyUrlTemplate}, e.g.
+   * "${dina.export.objectStoreApiUrl}/controlled-vocabulary-item". The {@code filter[key]} query
+   * parameter is added with the managed attribute key, and the optional {@code dinaComponent}
+   * filter value from the mapping is added when configured.
+   *
+   * @param mapping the column mapping that defines the referenced document URL template
    * @param key the value to filter on, typically a managed attribute key
-   * @return the URL, or null if the resource type is not configured, or the object store API URL
-   *         is not configured or invalid
+   * @return the URL, or null if no URL template is configured or it is invalid
    */
-  private HttpUrl buildReferencedValueUrl(String type, String dinaComponent, String key) {
-    if (type == null || type.isBlank()) {
-      log.warn("No vocabularyDocumentType configured for column resolving key {}", key);
+  private HttpUrl buildReferencedValueUrl(DarwinCoreExportConfig.ColumnMapping mapping, String key) {
+    String urlTemplate = mapping.getVocabularyUrlTemplate();
+    if (urlTemplate == null || urlTemplate.isBlank()) {
+      log.warn("No vocabularyUrlTemplate configured for column resolving key {}", key);
       return null;
     }
 
-    String baseUrl = dataExportConfig.getObjectStoreApiUrl();
-    if (baseUrl == null || baseUrl.isBlank()) {
-      log.warn("objectStoreApiUrl is not configured, unable to resolve {} for key {}", type, key);
-      return null;
-    }
-
-    HttpUrl url = HttpUrl.parse(baseUrl);
+    HttpUrl url = HttpUrl.parse(urlTemplate);
     if (url == null) {
-      log.warn("Invalid objectStoreApiUrl: {}", baseUrl);
+      log.warn("Invalid vocabularyUrlTemplate: {}", urlTemplate);
       return null;
     }
 
     HttpUrl.Builder urlBuilder = url.newBuilder()
-      .addPathSegment(type)
       .addQueryParameter(FILTER_KEY_PARAM, key);
-    if (dinaComponent != null && !dinaComponent.isBlank()) {
-      urlBuilder.addQueryParameter(DINA_COMPONENT_PARAM, dinaComponent);
+    if (mapping.getDinaComponent() != null && !mapping.getDinaComponent().isBlank()) {
+      urlBuilder.addQueryParameter(DINA_COMPONENT_PARAM, mapping.getDinaComponent());
     }
     return urlBuilder.build();
   }

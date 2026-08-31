@@ -10,14 +10,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
-import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.service.DinaApiClient;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -32,7 +30,7 @@ public class DarwinCoreMapperTest {
   @Test
   public void extractValue() throws JsonProcessingException {
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(DinaApiClient.class), testDataExportConfig());
+    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(DinaApiClient.class));
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("collectingEvent");
@@ -76,7 +74,7 @@ public class DarwinCoreMapperTest {
   @Test
   public void extractValue_joinsToManyValues() throws JsonProcessingException {
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(DinaApiClient.class), testDataExportConfig());
+    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(DinaApiClient.class));
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("attachment");
@@ -101,7 +99,7 @@ public class DarwinCoreMapperTest {
     DinaApiClient client = mock(DinaApiClient.class);
     when(client.fetchDocument(any(HttpUrl.class))).thenReturn(vocabularyItemDocument());
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(client, testDataExportConfig());
+    DarwinCoreMapper mapper = new DarwinCoreMapper(client);
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("attachment");
@@ -110,6 +108,8 @@ public class DarwinCoreMapperTest {
     mapping.setVocabularyValue("uriTemplate");
     mapping.setVocabularyKey("ena_run_accession");
     mapping.setValuePlaceholder("$1");
+    mapping.setVocabularyUrlTemplate("http://localhost:8081/api/v1/controlled-vocabulary-item");
+    mapping.setDinaComponent("METADATA");
 
     String json = """
         [
@@ -129,7 +129,7 @@ public class DarwinCoreMapperTest {
     DinaApiClient client = mock(DinaApiClient.class);
     when(client.fetchDocument(any(HttpUrl.class))).thenReturn(vocabularyItemDocument());
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(client, testDataExportConfig());
+    DarwinCoreMapper mapper = new DarwinCoreMapper(client);
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("attachment");
@@ -138,6 +138,8 @@ public class DarwinCoreMapperTest {
     mapping.setVocabularyValue("uriTemplate");
     mapping.setVocabularyKey("ena_run_accession");
     mapping.setValuePlaceholder("$1");
+    mapping.setVocabularyUrlTemplate("http://localhost:8081/api/v1/controlled-vocabulary-item");
+    mapping.setDinaComponent("METADATA");
 
     String json = """
         [
@@ -149,14 +151,9 @@ public class DarwinCoreMapperTest {
     Map<String, JsonNode> entitiesContext = Map.of("attachment", objectMapper.readTree(json));
     String expected = "https://www.ebi.ac.uk/ena/browser/view/U3485313 | https://www.ebi.ac.uk/ena/browser/view/GU328060";
     assertEquals(expected, mapper.extractValue(entitiesContext, mapping));
-    verify(client, never()).fetchDocument(argThat(url -> url.toString().contains("other_key")));
+    verify(client, never()).fetchDocument(any(HttpUrl.class));
   }
 
-  private DataExportConfig testDataExportConfig() {
-    DataExportConfig config = new DataExportConfig();
-    config.setObjectStoreApiUrl("http://localhost:8081/api/v1");
-    return config;
-  }
 
   private JsonApiDocument vocabularyItemDocument() {
     return JsonApiDocument.builder()
@@ -168,4 +165,3 @@ public class DarwinCoreMapperTest {
       .build();
   }
 }
-

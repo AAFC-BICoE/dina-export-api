@@ -106,7 +106,7 @@ dwc:
       vocabularyValue: "uriTemplate"
       vocabularyKey: "ena_run_accession"
       valuePlaceholder: "$1"
-      vocabularyDocumentType: "controlled-vocabulary-item"
+      vocabularyUrlTemplate: "${dina.export.objectStoreApiUrl}/controlled-vocabulary-item"
       dinaComponent: "METADATA"
 
     # Static value
