@@ -16,6 +16,7 @@ import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -151,9 +152,33 @@ public class DarwinCoreMapperTest {
     Map<String, JsonNode> entitiesContext = Map.of("attachment", objectMapper.readTree(json));
     String expected = "https://www.ebi.ac.uk/ena/browser/view/U3485313 | https://www.ebi.ac.uk/ena/browser/view/GU328060";
     assertEquals(expected, mapper.extractValue(entitiesContext, mapping));
-    verify(client, never()).fetchDocument(any(HttpUrl.class));
+    verify(client, never()).fetchDocument(argThat(url -> url.toString().contains("other_key")));
   }
 
+  @Test
+  public void extractValue_resolvesVocabulary_noUrlTemplate_skipsResolution() throws JsonProcessingException {
+    DinaApiClient client = mock(DinaApiClient.class);
+
+    DarwinCoreMapper mapper = new DarwinCoreMapper(client);
+
+    DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
+    mapping.setContext("attachment");
+    mapping.setDwcTerm("associatedSequences");
+    mapping.setSource("managedAttributes");
+    mapping.setVocabularyValue("uriTemplate");
+    mapping.setVocabularyKey("ena_run_accession");
+    // vocabularyUrlTemplate intentionally not set: resolution should be skipped
+
+    String json = """
+        [
+          { "managedAttributes": { "ena_run_accession": "U3485313" } }
+        ]
+        """;
+
+    Map<String, JsonNode> entitiesContext = Map.of("attachment", objectMapper.readTree(json));
+    assertNull(mapper.extractValue(entitiesContext, mapping));
+    verify(client, never()).fetchDocument(any(HttpUrl.class));
+  }
 
   private JsonApiDocument vocabularyItemDocument() {
     return JsonApiDocument.builder()
