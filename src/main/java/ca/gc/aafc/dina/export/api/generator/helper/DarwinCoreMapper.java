@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 import ca.gc.aafc.dina.json.JsonHelper;
 
+import java.util.List;
 import java.util.Map;
 import lombok.extern.log4j.Log4j2;
 
@@ -82,7 +83,8 @@ public class DarwinCoreMapper {
     }
 
     if (mapping.getApiReference() != null) {
-      return apiReferenceResolver.resolveApiReferencedValues(contextNode, mapping.getApiReference(), mapping.getSource(), mapping.getSeparator(), mapping.getDwcTerm());
+      List<String> resolvedValues = apiReferenceResolver.resolveApiReferencedValues(contextNode, mapping.getApiReference(), mapping.getSource());
+      return resolvedValues.isEmpty() ? null : String.join(mapping.getSeparator(), resolvedValues);
     }
 
     // Collect the value

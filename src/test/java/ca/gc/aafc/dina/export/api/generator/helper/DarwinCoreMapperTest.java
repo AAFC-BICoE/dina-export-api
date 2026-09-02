@@ -164,15 +164,17 @@ public class DarwinCoreMapperTest {
   public void extractValue_resolvesVocabulary_noUrlTemplate_skipsResolution() throws JsonProcessingException {
     DinaApiClient client = mock(DinaApiClient.class);
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(client);
+    DarwinCoreMapper mapper = new DarwinCoreMapper(new ApiReferenceResolver(client));
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("attachment");
     mapping.setDwcTerm("associatedSequences");
     mapping.setSource("managedAttributes");
-    mapping.setVocabularyValue("uriTemplate");
-    mapping.setVocabularyKey("ena_run_accession");
-    // vocabularyUrlTemplate intentionally not set: resolution should be skipped
+    ApiReference apiReference = new ApiReference();
+    apiReference.setVocabularyValue("uriTemplate");
+    apiReference.setVocabularyKey("ena_run_accession");
+    // vocabularyUrl intentionally not set: resolution should be skipped
+    mapping.setApiReference(apiReference);
 
     String json = """
         [
