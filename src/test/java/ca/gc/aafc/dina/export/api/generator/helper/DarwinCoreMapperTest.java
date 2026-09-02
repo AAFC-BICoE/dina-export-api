@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import ca.gc.aafc.dina.export.api.config.ApiReference;
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 import ca.gc.aafc.dina.export.api.service.DinaApiClient;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
@@ -31,7 +32,7 @@ public class DarwinCoreMapperTest {
   @Test
   public void extractValue() throws JsonProcessingException {
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(DinaApiClient.class));
+    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(ApiReferenceResolver.class));
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("collectingEvent");
@@ -75,7 +76,7 @@ public class DarwinCoreMapperTest {
   @Test
   public void extractValue_joinsToManyValues() throws JsonProcessingException {
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(DinaApiClient.class));
+    DarwinCoreMapper mapper = new DarwinCoreMapper(mock(ApiReferenceResolver.class));
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("attachment");
@@ -100,17 +101,19 @@ public class DarwinCoreMapperTest {
     DinaApiClient client = mock(DinaApiClient.class);
     when(client.fetchDocument(any(HttpUrl.class))).thenReturn(vocabularyItemDocument());
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(client);
+    DarwinCoreMapper mapper = new DarwinCoreMapper(new ApiReferenceResolver(client));
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("attachment");
     mapping.setDwcTerm("associatedSequences");
     mapping.setSource("managedAttributes");
-    mapping.setVocabularyValue("uriTemplate");
-    mapping.setVocabularyKey("ena_run_accession");
-    mapping.setValuePlaceholder("$1");
-    mapping.setVocabularyUrlTemplate("http://localhost:8081/api/v1/controlled-vocabulary-item");
-    mapping.setDinaComponent("METADATA");
+    ApiReference apiReference = new ApiReference();
+    apiReference.setVocabularyValue("uriTemplate");
+    apiReference.setVocabularyKey("ena_run_accession");
+    apiReference.setValuePlaceholder("$1");
+    apiReference.setVocabularyUrl("http://localhost:8081/api/v1/controlled-vocabulary-item");
+    apiReference.setDinaComponent("METADATA");
+    mapping.setApiReference(apiReference);
 
     String json = """
         [
@@ -130,17 +133,19 @@ public class DarwinCoreMapperTest {
     DinaApiClient client = mock(DinaApiClient.class);
     when(client.fetchDocument(any(HttpUrl.class))).thenReturn(vocabularyItemDocument());
 
-    DarwinCoreMapper mapper = new DarwinCoreMapper(client);
+    DarwinCoreMapper mapper = new DarwinCoreMapper(new ApiReferenceResolver(client));
 
     DarwinCoreExportConfig.ColumnMapping mapping = new DarwinCoreExportConfig.ColumnMapping();
     mapping.setContext("attachment");
     mapping.setDwcTerm("associatedSequences");
     mapping.setSource("managedAttributes");
-    mapping.setVocabularyValue("uriTemplate");
-    mapping.setVocabularyKey("ena_run_accession");
-    mapping.setValuePlaceholder("$1");
-    mapping.setVocabularyUrlTemplate("http://localhost:8081/api/v1/controlled-vocabulary-item");
-    mapping.setDinaComponent("METADATA");
+    ApiReference apiReference = new ApiReference();
+    apiReference.setVocabularyValue("uriTemplate");
+    apiReference.setVocabularyKey("ena_run_accession");
+    apiReference.setValuePlaceholder("$1");
+    apiReference.setVocabularyUrl("http://localhost:8081/api/v1/controlled-vocabulary-item");
+    apiReference.setDinaComponent("METADATA");
+    mapping.setApiReference(apiReference);
 
     String json = """
         [

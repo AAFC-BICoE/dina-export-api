@@ -53,12 +53,10 @@ public class DarwinCoreExportConfig {
     private String filter;            // Filter condition (e.g., "isPrimary == true")
     private String path;              // Additional path after filtering (optional)
     private String staticValue;       // Static value (optional)
-    private String vocabularyValue;   // Field to extract from the referenced document (e.g. "uriTemplate")
-    private String vocabularyKey;     // Optional: restrict resolution to this managed attribute key (e.g. "ena_run_accession")
-    private String valuePlaceholder = "$1"; // Placeholder in vocabularyValue replaced with the managed attribute value
-    private String vocabularyUrlTemplate; // Base URL template of the referenced resource, e.g. "${dina.export.objectStoreApiUrl}/controlled-vocabulary-item"; filter[key] and dinaComponent query params are appended by the mapper
-    private String dinaComponent;     // dinaComponent filter value used when querying the referenced resource
+    private ApiReference apiReference; // Optional: reference to another API resource for value resolution
     private String dataType = "string";
     private String separator = " | "; // Separator for array values
-    private boolean required;}
+    private boolean required;
+  }
+
 }

@@ -103,11 +103,12 @@ dwc:
       termUri: "http://rs.tdwg.org/dwc/terms/associatedSequences"
       context: "attachment"
       source: "managedAttributes"
-      vocabularyValue: "uriTemplate"
-      vocabularyKey: "ena_run_accession"
-      valuePlaceholder: "$1"
-      vocabularyUrlTemplate: "${dina.export.objectStoreApiUrl}/controlled-vocabulary-item"
-      dinaComponent: "METADATA"
+      apiReference:
+        vocabularyValue: "uriTemplate"
+        vocabularyKey: "ena_run_accession"
+        valuePlaceholder: "$1"
+        vocabularyUrl: "${dina.export.objectStoreApiUrl}/controlled-vocabulary-item"
+        dinaComponent: "METADATA"
 
     # Static value
     - dwcTerm: "basisOfRecord"
