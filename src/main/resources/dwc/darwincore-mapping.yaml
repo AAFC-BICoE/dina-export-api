@@ -9,6 +9,10 @@ dwc:
       materialSample:
         root: true
 
+      attachment:
+        context: "materialSample"
+        path: "attachment"
+
       organism:
         context: "materialSample"
         path: "organism"
@@ -93,6 +97,18 @@ dwc:
       termUri: "http://rs.tdwg.org/dwc/terms/countryCode"
       context: "collectingEvent"
       source: "dwcCountryCode"
+
+    # From attachment metadata (to-many, values resolved via controlled-vocabulary-item and joined with " | ")
+    - dwcTerm: "associatedSequences"
+      termUri: "http://rs.tdwg.org/dwc/terms/associatedSequences"
+      context: "attachment"
+      source: "managedAttributes"
+      apiReference:
+        vocabularyValue: "uriTemplate"
+        vocabularyKey: "ena_run_accession"
+        valuePlaceholder: "$1"
+        vocabularyUrl: "${dina.export.objectStoreApiUrl}/controlled-vocabulary-item"
+        dinaComponent: "METADATA"
 
     # Static value
     - dwcTerm: "basisOfRecord"

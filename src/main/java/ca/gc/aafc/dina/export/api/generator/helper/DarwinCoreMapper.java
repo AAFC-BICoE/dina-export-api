@@ -3,10 +3,12 @@ package ca.gc.aafc.dina.export.api.generator.helper;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 import ca.gc.aafc.dina.json.JsonHelper;
 
+import java.util.List;
 import java.util.Map;
 import lombok.extern.log4j.Log4j2;
 
@@ -24,6 +26,12 @@ import lombok.extern.log4j.Log4j2;
 @Component
 @Log4j2
 public class DarwinCoreMapper {
+
+  private final ApiReferenceResolver apiReferenceResolver;
+
+  public DarwinCoreMapper(ApiReferenceResolver apiReferenceResolver) {
+    this.apiReferenceResolver = apiReferenceResolver;
+  }
 
   /**
    * Extract a DarwinCore term value from the entities context
@@ -74,9 +82,41 @@ public class DarwinCoreMapper {
       return result != null && !result.isNull() ? result.asText() : null;
     }
 
-    // 4. Simple definite-path navigation
+    if (mapping.getApiReference() != null) {
+      List<String> resolvedValues = apiReferenceResolver.resolveApiReferencedValues(contextNode, mapping.getApiReference(), mapping.getSource());
+      return resolvedValues.isEmpty() ? null : String.join(mapping.getSeparator(), resolvedValues);
+    }
+
+    // Collect the value
+    // from each element and join them with the configured separator.
+    if (contextNode.isArray()) {
+      return joinArrayValues((ArrayNode) contextNode, mapping.getSource(), mapping.getSeparator());
+    }
     JsonNode value = JsonHelper.findOneInJsonNode(contextNode, "$." + mapping.getSource());
     return value != null && !value.isNull() ? value.asText() : null;
+  }
+
+  /**
+   * Extracts a value from each element of a to-many context and joins them.
+   *
+   * @param array to-many context array
+   * @param source dot-notation path relative to each array element
+   * @param separator separator to use between values
+   * @return joined text or null if no non-null value was found
+   */
+  private static String joinArrayValues(ArrayNode array, String source, String separator) {
+    StringBuilder sb = new StringBuilder();
+    for (JsonNode element : array) {
+      JsonNode value = JsonHelper.findOneInJsonNode(element, "$." + source);
+      if (value == null || value.isNull()) {
+        continue;
+      }
+      if (sb.length() > 0) {
+        sb.append(separator);
+      }
+      sb.append(value.asText());
+    }
+    return sb.length() > 0 ? sb.toString() : null;
   }
 
 }
