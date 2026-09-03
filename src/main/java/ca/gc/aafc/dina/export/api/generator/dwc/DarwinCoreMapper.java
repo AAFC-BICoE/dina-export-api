@@ -1,19 +1,25 @@
-package ca.gc.aafc.dina.export.api.generator.helper;
+package ca.gc.aafc.dina.export.api.generator.dwc;
+
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
+import ca.aafc.eml.generated.eml.Eml;
+import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
+import ca.gc.aafc.dina.export.api.generator.helper.ApiReferenceResolver;
 import ca.gc.aafc.dina.json.JsonHelper;
-
-import java.util.List;
-import java.util.Map;
+import generated.Dataset;
+import generated.I18NString;
+import generated.TextType;
 import lombok.extern.log4j.Log4j2;
 
 /**
- * Maps DINA resource to DarwinCore terms
+ * Maps DINA resource to DarwinCore concepts
  *
  * For each column mapping, extracts the value from the resource context.
  *
@@ -31,6 +37,34 @@ public class DarwinCoreMapper {
 
   public DarwinCoreMapper(ApiReferenceResolver apiReferenceResolver) {
     this.apiReferenceResolver = apiReferenceResolver;
+  }
+
+  public Eml datasetToEml(BaseDatasetDto dataset) {
+    Eml eml = new Eml();
+
+    Dataset emlDataset = new Dataset();
+
+    // Set title (takes the first one for now)
+    I18NString title = new I18NString();
+    title.setLang(dataset.getMultilingualTitle().getTitles().getFirst().getLang());
+    title.setValue(dataset.getMultilingualTitle().getTitles().getFirst().getTitle());
+    emlDataset.getTitle().add(title);
+
+    // Set asbtract
+    TextType _abstract = new TextType();
+    _abstract.setLang(dataset.getMultilingualDescription().getDescriptions().getFirst().getLang());
+    _abstract.getContent().add(dataset.getMultilingualDescription().getDescriptions().getFirst().getDesc());
+    emlDataset.setAbstract(_abstract);
+
+    // Keywords
+
+    // Rights
+    
+
+    eml.setDataset(emlDataset);
+
+
+    return eml;
   }
 
   /**

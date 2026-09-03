@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.gc.aafc.dina.export.api.config.ApiReference;
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
+import ca.gc.aafc.dina.export.api.generator.dwc.DarwinCoreMapper;
 import ca.gc.aafc.dina.export.api.service.DinaApiClient;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 
