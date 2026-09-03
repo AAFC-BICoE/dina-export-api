@@ -1,4 +1,4 @@
-package ca.gc.aafc.dina.export.api.generator;
+package ca.gc.aafc.dina.export.api.generator.dwc;
 
 import java.io.IOException;
 import java.nio.file.Path;
