@@ -60,6 +60,7 @@ dina:
   auditing.enabled: true
   export:
     workingFolder: /tmp/dina-data-export
+    objectStoreApiUrl: ${OBJECTSTORE_API_URL:http://localhost:8081}/api/v1
     objectStoreDownloadUrl: ${OBJECTSTORE_API_URL:http://localhost:8081}/api/v1/toa
 #    expiredExportMaxAge: 12d
 #    expiredExportCronExpression: "0 0 */1 * * *"
