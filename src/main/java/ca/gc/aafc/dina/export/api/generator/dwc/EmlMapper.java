@@ -32,11 +32,8 @@ public final class EmlMapper {
     // utility class
   }
 
-  // take from dina-base 0.179 once available    
-  public static final String CREATOR = "creator";
-  public static final String METADATA_PROVIDER = "metadataProvider";
 
-      /**
+  /**
    * Maps a DINA {@link BaseDatasetDto} resource into a schema derived EML
    * {@link Dataset}.
    *
@@ -132,11 +129,11 @@ public final class EmlMapper {
     }
 
     Optional<AgentType> creator = dataset.getAgentRoles().stream()
-        .filter(agentRole -> hasRole(agentRole, CREATOR))
+        .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_CREATOR))
         .map(EmlMapper::toAgentType)
         .findFirst();
     Optional<AgentType> metadataProvider = dataset.getAgentRoles().stream()
-        .filter(agentRole -> hasRole(agentRole, METADATA_PROVIDER))
+        .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER))
         .map(EmlMapper::toAgentType)
         .findFirst();
 

@@ -136,8 +136,8 @@ public class EmlMapperTest {
 
     BaseDatasetDto dataset = new BaseDatasetDto();
     dataset.setAgentRoles(List.of(
-        AgentRoles.builder().agent(creator).roles(List.of(EmlMapper.CREATOR)).build(),
-        AgentRoles.builder().agent(metadataProvider).roles(List.of(EmlMapper.METADATA_PROVIDER)).build(),
+        AgentRoles.builder().agent(creator).roles(List.of(BaseDatasetDto.AGENT_ROLE_CREATOR)).build(),
+        AgentRoles.builder().agent(metadataProvider).roles(List.of(BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER)).build(),
         AgentRoles.builder().agent(UUID.randomUUID()).roles(List.of("helper", "manager")).build()));
 
     Dataset emlDataset = EmlMapper.datasetToEml(dataset).getDataset();
