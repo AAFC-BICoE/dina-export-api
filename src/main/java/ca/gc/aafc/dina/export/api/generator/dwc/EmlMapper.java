@@ -24,10 +24,13 @@ import ca.gc.aafc.dina.i18n.MultilingualDescription;
 import ca.gc.aafc.dina.i18n.MultilingualTitle;
 
 /**
- * Responsible to map 
- * EmlMapper
+ * Responsible to map Dina {@link BaseDatasetDto} to Eml dataset
  */
-public class EmlMapper {
+public final class EmlMapper {
+
+  private EmlMapper() {
+    // utility class
+  }
 
   // take from dina-base 0.179 once available    
   public static final String CREATOR = "creator";
