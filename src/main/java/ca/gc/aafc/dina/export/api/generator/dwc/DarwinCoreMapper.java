@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -48,11 +49,8 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class DarwinCoreMapper {
 
-  /**
-   * DINA role designating the dataset's responsible party. Agents holding this
-   * role are mapped to the EML creator, metadataProvider and contact fields.
-   */
-  public static final String SUPER_USER_ROLE = "SUPER_USER";
+  public static final String CREATOR = "creator";
+  public static final String METADATA_PROVIDER = "metadataProvider";
 
   private final ApiReferenceResolver apiReferenceResolver;
 
@@ -63,11 +61,6 @@ public class DarwinCoreMapper {
   /**
    * Maps a DINA {@link BaseDatasetDto} resource into a schema derived EML
    * {@link Dataset}.
-   *
-   * <p>Agents holding the {@link #SUPER_USER_ROLE} role are mapped to the EML
-   * creator, metadataProvider and contact fields. Agent details (names, email,
-   * position) are not populated yet since {@link BaseDatasetDto} only holds
-   * agent UUIDs; only the UUID is retained as a reference.</p>
    *
    * @param dataset the DINA dataset to map
    * @return an EML document wrapping the mapped dataset
@@ -160,14 +153,18 @@ public class DarwinCoreMapper {
       return;
     }
 
-    List<AgentType> responsibleParties = dataset.getAgentRoles().stream()
-        .filter(agentRole -> hasRole(agentRole, SUPER_USER_ROLE))
+    Optional<AgentType> creator = dataset.getAgentRoles().stream()
+        .filter(agentRole -> hasRole(agentRole, CREATOR))
         .map(this::toAgentType)
-        .toList();
+        .findFirst();
+    Optional<AgentType> metadataProvider = dataset.getAgentRoles().stream()
+        .filter(agentRole -> hasRole(agentRole, METADATA_PROVIDER))
+        .map(this::toAgentType)
+        .findFirst();
 
-    emlDataset.getCreator().addAll(responsibleParties);
-    emlDataset.getMetadataProvider().addAll(responsibleParties);
-    emlDataset.getContact().addAll(responsibleParties);
+    creator.ifPresent(c -> emlDataset.getCreator().add(c));
+    metadataProvider.ifPresent(mp -> emlDataset.getMetadataProvider().add(mp));
+    // emlDataset.getContact().addAll(responsibleParties);
   }
 
   private static boolean hasRole(AgentRoles agentRoles, String role) {
