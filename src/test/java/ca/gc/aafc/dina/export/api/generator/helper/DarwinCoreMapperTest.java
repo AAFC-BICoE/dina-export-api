@@ -1,8 +1,14 @@
 package ca.gc.aafc.dina.export.api.generator.helper;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -12,32 +18,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import ca.aafc.eml.generated.eml.Coverage;
-import ca.aafc.eml.generated.eml.Dataset;
-import ca.aafc.eml.generated.eml.GeographicCoverage;
-import ca.aafc.eml.generated.eml.TaxonomicCoverage;
-import ca.aafc.eml.generated.eml.TemporalCoverage;
-import ca.gc.aafc.dina.dto.BaseDatasetDto;
-import ca.gc.aafc.dina.entity.AgentRoles;
 import ca.gc.aafc.dina.export.api.config.ApiReference;
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
 import ca.gc.aafc.dina.export.api.generator.dwc.DarwinCoreMapper;
 import ca.gc.aafc.dina.export.api.service.DinaApiClient;
-import ca.gc.aafc.dina.i18n.MultilingualDescription;
-import ca.gc.aafc.dina.i18n.MultilingualTitle;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import okhttp3.HttpUrl;
 
 public class DarwinCoreMapperTest {
