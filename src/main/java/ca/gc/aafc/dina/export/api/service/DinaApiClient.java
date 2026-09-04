@@ -73,20 +73,17 @@ public class DinaApiClient {
         return null;
       }
 
-      ResponseBody body = response.body();
-      if (body == null) {
-        log.warn("No response body from {}", parsedUrl);
-        return null;
-      }
-
-      JsonNode root = objectMapper.readTree(body.string());
-      JsonNode dataNode = root.path("data");
-      if (dataNode.isArray()) {
-        dataNode = dataNode.isEmpty() ? null : dataNode.get(0);
-      }
-      if (dataNode == null || dataNode.isMissingNode() || dataNode.isNull()) {
-        log.warn("No data in response from {}", parsedUrl);
-        return null;
+      JsonNode dataNode;
+      try (ResponseBody body = response.body()) {
+        JsonNode root = objectMapper.readTree(body.string());
+        dataNode = root.path("data");
+        if (dataNode.isArray()) {
+          dataNode = dataNode.isEmpty() ? null : dataNode.get(0);
+        }
+        if (dataNode == null || dataNode.isMissingNode() || dataNode.isNull()) {
+          log.warn("No data in response from {}", parsedUrl);
+          return null;
+        }
       }
 
       JsonApiDocument.ResourceObject resourceObject =
