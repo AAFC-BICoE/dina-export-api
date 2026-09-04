@@ -130,7 +130,7 @@ public class EmlMapperTest {
   }
 
   @Test
-  public void datasetToEml_mapsSuperUserAgentsToCreatorMetadataProviderAndContact() {
+  public void datasetToEml_mapsAgentsToCreatorMetadataProviderAndContact() {
     UUID creator = UUID.randomUUID();
     UUID metadataProvider = UUID.randomUUID();
 
