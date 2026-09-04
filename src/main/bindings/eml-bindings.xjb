@@ -12,4 +12,11 @@
                 name="ca.aafc.eml.generated.eml"/>
         </jaxb:schemaBindings>
     </jaxb:bindings>
+
+    <jaxb:bindings schemaLocation="../resources/xsd/eml/eml-gbif-profile.xsd">
+        <jaxb:schemaBindings>
+            <jaxb:package
+                name="ca.aafc.eml.generated.eml"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
 </jaxb:bindings>

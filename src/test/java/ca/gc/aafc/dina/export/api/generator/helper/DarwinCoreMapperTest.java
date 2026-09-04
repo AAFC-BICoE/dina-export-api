@@ -1,5 +1,14 @@
 package ca.gc.aafc.dina.export.api.generator.helper;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -11,18 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.gc.aafc.dina.export.api.config.ApiReference;
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
+import ca.gc.aafc.dina.export.api.generator.dwc.DarwinCoreMapper;
 import ca.gc.aafc.dina.export.api.service.DinaApiClient;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import okhttp3.HttpUrl;
 
 public class DarwinCoreMapperTest {

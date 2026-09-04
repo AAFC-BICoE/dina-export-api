@@ -1,4 +1,7 @@
-package ca.gc.aafc.dina.export.api.generator.helper;
+package ca.gc.aafc.dina.export.api.generator.dwc;
+
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -6,14 +9,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
+import ca.gc.aafc.dina.export.api.generator.helper.ApiReferenceResolver;
 import ca.gc.aafc.dina.json.JsonHelper;
-
-import java.util.List;
-import java.util.Map;
 import lombok.extern.log4j.Log4j2;
 
 /**
- * Maps DINA resource to DarwinCore terms
+ * Maps DINA resource to DarwinCore concepts
  *
  * For each column mapping, extracts the value from the resource context.
  *
