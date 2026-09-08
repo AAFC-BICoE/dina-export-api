@@ -7,6 +7,7 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 
+import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.exception.ResourceGoneException;
 import ca.gc.aafc.dina.exception.ResourceNotFoundException;
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
@@ -18,6 +19,7 @@ import ca.gc.aafc.dina.export.api.dto.DataExportSchemaEntryDto;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.file.FileController;
 import ca.gc.aafc.dina.export.api.testsupport.jsonapi.JsonApiDocuments;
+import ca.gc.aafc.dina.i18n.MultilingualTitle;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 import ca.gc.aafc.dina.repository.JsonApiModelAssistant;
 import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchContainerInitializer;
@@ -386,10 +388,20 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     String query = "{\"query\": {\"ids\": {\"values\": [\"" + docId + "\"]}}}";
 
+    MultilingualTitle multilingualTitle = new MultilingualTitle();
+    multilingualTitle.setTitles(List.of(
+      MultilingualTitle.MultilingualTitlePair.of("en", "Test DWCA dataset")));
+
+    BaseDatasetDto dataset = new BaseDatasetDto();
+    dataset.setMultilingualTitle(multilingualTitle);
+    dataset.setUsageRights(new BaseDatasetDto.UsageRights(
+      "CC-BY", "https://example.org/license", null));
+
     DataExportDto dto = DataExportDto.builder()
       .source(MAT_SAMPLE_INDEX)
       .name("dwca export")
       .exportType(DataExport.ExportType.DWCA)
+      .dataset(dataset)
       .query(query)
       .build();
 
@@ -425,20 +437,25 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     // Verify ZIP entries and validate occurrence.csv rows/columns.
     List<Map<String, String>> rows;
     String metaXml;
+    String emlXml;
     try (ZipInputStream zis = new ZipInputStream(new java.io.ByteArrayInputStream(zipBytes))) {
       boolean hasOccurrenceCsv = false;
       boolean hasMetaXml = false;
+      boolean hasEmlXml = false;
       ZipEntry entry;
       while ((entry = zis.getNextEntry()) != null) {
         if ("occurrence.csv".equals(entry.getName())) {
           hasOccurrenceCsv = true;
         } else if ("meta.xml".equals(entry.getName())) {
           hasMetaXml = true;
+        } else if ("eml.xml".equals(entry.getName())) {
+          hasEmlXml = true;
         }
         zis.closeEntry();
       }
       assertTrue(hasOccurrenceCsv, "ZIP should contain occurrence.csv");
       assertTrue(hasMetaXml, "ZIP should contain meta.xml");
+      assertTrue(hasEmlXml, "ZIP should contain eml.xml");
     }
 
     java.nio.file.Path tempZip = writeTempZip(zipBytes);
@@ -460,6 +477,12 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       assertNotNull(metaEntry, "meta.xml should exist in ZIP");
       try (InputStream is = zipFile.getInputStream(metaEntry)) {
         metaXml = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+      }
+
+      ZipEntry emlEntry = zipFile.getEntry("eml.xml");
+      assertNotNull(emlEntry, "eml.xml should exist in ZIP");
+      try (InputStream is = zipFile.getInputStream(emlEntry)) {
+        emlXml = new String(is.readAllBytes(), StandardCharsets.UTF_8);
       }
     } finally {
       java.nio.file.Files.deleteIfExists(tempZip);
@@ -486,6 +509,9 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     assertTrue(metaXml.contains("occurrence.csv"));
     assertTrue(metaXml.contains("<field"));
+
+    assertTrue(emlXml.contains("Test DWCA dataset"));
+    assertTrue(emlXml.contains("CC-BY"));
 
     dataExportRepository.onDelete(uuid);
   }

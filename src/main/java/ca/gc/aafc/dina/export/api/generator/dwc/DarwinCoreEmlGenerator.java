@@ -2,6 +2,9 @@ package ca.gc.aafc.dina.export.api.generator.dwc;
 
 import java.io.IOException;
 import java.nio.file.Path;
+
+import org.springframework.stereotype.Component;
+
 import ca.aafc.eml.generated.eml.Eml;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Marshaller;
@@ -10,6 +13,7 @@ import jakarta.xml.bind.JAXBException;
 
 import lombok.extern.log4j.Log4j2;
 
+@Component
 @Log4j2
 public class DarwinCoreEmlGenerator {
 

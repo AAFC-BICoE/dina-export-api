@@ -12,7 +12,9 @@ import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.entity.DataExportSchemaEntry;
+import ca.gc.aafc.dina.export.api.generator.dwc.DarwinCoreEmlGenerator;
 import ca.gc.aafc.dina.export.api.generator.dwc.DarwinCoreMapper;
+import ca.gc.aafc.dina.export.api.generator.dwc.EmlMapper;
 import ca.gc.aafc.dina.export.api.generator.helper.DarwinCoreContextBuilder;
 import ca.gc.aafc.dina.export.api.generator.helper.RelationshipFlattener;
 import ca.gc.aafc.dina.export.api.output.DataOutput;
@@ -36,6 +38,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   private final DarwinCoreContextBuilder contextBuilder;
   private final DarwinCoreMapper darwinCoreMapper;
   private final DarwinCoreMetaXmlGenerator metaXmlGenerator;
+  private final DarwinCoreEmlGenerator emlGenerator;
 
   public DarwinCoreExportGenerator(
     DataExportStatusService dataExportStatusService,
@@ -47,7 +50,8 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     DarwinCoreExportConfig darwinCoreConfig,
     DarwinCoreContextBuilder contextBuilder,
     DarwinCoreMapper darwinCoreMapper,
-    DarwinCoreMetaXmlGenerator metaXmlGenerator
+    DarwinCoreMetaXmlGenerator metaXmlGenerator,
+    DarwinCoreEmlGenerator emlGenerator
   ) {
 
     super(
@@ -63,6 +67,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     this.contextBuilder = contextBuilder;
     this.darwinCoreMapper = darwinCoreMapper;
     this.metaXmlGenerator = metaXmlGenerator;
+    this.emlGenerator = emlGenerator;
   }
 
   @Override
@@ -85,6 +90,11 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   protected void postRecordWrite(DataExport dinaExport, RecordExportContext ctx) throws IOException {
     Path workDir = ctx.exportWorkDir();
     metaXmlGenerator.generateMetaXml(workDir.resolve(DarwinCoreMetaXmlGenerator.DEFAULT_META_FILENAME));
+    if (dinaExport.getDataset() != null) {
+      emlGenerator.generateEml(workDir.resolve(DarwinCoreEmlGenerator.DEFAULT_EML_FILENAME),
+        EmlMapper.datasetToEml(dinaExport.getDataset()));
+    }
+
     super.postRecordWrite(dinaExport, ctx);
   }
 

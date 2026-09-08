@@ -27,6 +27,7 @@ import org.hibernate.annotations.GenerationTime;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.Type;
 
+import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.entity.DinaEntity;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 
@@ -121,6 +122,10 @@ public class DataExport implements DinaEntity {
   @Type(JsonType.class)
   @Column(columnDefinition = "jsonb")
   private Map<String, DataExportFunction> functions;
+
+  @Type(JsonType.class)
+  @Column(columnDefinition = "jsonb")
+  private BaseDatasetDto dataset;
 
   @Enumerated(EnumType.STRING)
   @NotNull
