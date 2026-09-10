@@ -44,6 +44,7 @@ public final class EmlMapper {
   private final String agentApiUrl;
 
   private static final ObjectFactory OBJECT_FACTORY = new ObjectFactory();
+  private static final String EML_SYSTEM = "https://www.dina-project.net";
 
   public EmlMapper(DinaApiClient dinaApiClient,
                    @Value("${dina.export.agentApiUrl}") String agentApiUrl) {
@@ -60,6 +61,10 @@ public final class EmlMapper {
    */
   public Eml datasetToEml(BaseDatasetDto dataset) {
     Eml eml = new Eml();
+
+    eml.setPackageId(dataset.getUuid().toString());
+    eml.getSystem().add(EML_SYSTEM);
+
     Dataset emlDataset = new Dataset();
 
     if (dataset.getUuid() != null) {
@@ -160,9 +165,15 @@ public final class EmlMapper {
         .map(this::toAgentType)
         .findFirst();
 
-    creator.ifPresent(c -> emlDataset.getCreator().add(c));
+    creator.ifPresent(c -> {
+      emlDataset.getCreator().add(c);
+      emlDataset.getContact().add(c);
+    });
     metadataProvider.ifPresent(mp -> emlDataset.getMetadataProvider().add(mp));
-    // emlDataset.getContact().addAll(responsibleParties);
+
+    if (emlDataset.getContact().isEmpty()) {
+      metadataProvider.ifPresent(mp -> emlDataset.getContact().add(mp));
+    }
   }
 
   private static boolean hasRole(AgentRoles agentRoles, String role) {
