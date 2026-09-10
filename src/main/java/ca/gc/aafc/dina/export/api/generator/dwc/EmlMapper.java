@@ -2,7 +2,12 @@ package ca.gc.aafc.dina.export.api.generator.dwc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import ca.aafc.eml.generated.eml.AgentType;
 import ca.aafc.eml.generated.eml.CalendarDate;
@@ -11,6 +16,7 @@ import ca.aafc.eml.generated.eml.Dataset;
 import ca.aafc.eml.generated.eml.Eml;
 import ca.aafc.eml.generated.eml.GeographicCoverage;
 import ca.aafc.eml.generated.eml.I18NString;
+import ca.aafc.eml.generated.eml.IndividualName;
 import ca.aafc.eml.generated.eml.IntellectualRights;
 import ca.aafc.eml.generated.eml.KeywordSet;
 import ca.aafc.eml.generated.eml.Licensed;
@@ -22,19 +28,28 @@ import ca.aafc.eml.generated.eml.TextType;
 import ca.aafc.eml.generated.eml.Ulink;
 import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.entity.AgentRoles;
+import ca.gc.aafc.dina.export.api.service.DinaApiClient;
 import ca.gc.aafc.dina.i18n.MultilingualDescription;
 import ca.gc.aafc.dina.i18n.MultilingualTitle;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
+import okhttp3.HttpUrl;
 
 /**
  * Responsible to map Dina {@link BaseDatasetDto} to Eml dataset
  */
+@Component
 public final class EmlMapper {
 
-  private EmlMapper() {
-    // utility class
-  }
+  private final DinaApiClient dinaApiClient;
+  private final String agentApiUrl;
 
   private static final ObjectFactory OBJECT_FACTORY = new ObjectFactory();
+
+  public EmlMapper(DinaApiClient dinaApiClient,
+                   @Value("${dina.export.agentApiUrl}") String agentApiUrl) {
+    this.dinaApiClient = dinaApiClient;
+    this.agentApiUrl = agentApiUrl;
+  }
 
   /**
    * Maps a DINA {@link BaseDatasetDto} resource into a schema derived EML
@@ -43,7 +58,7 @@ public final class EmlMapper {
    * @param dataset the DINA dataset to map
    * @return an EML document wrapping the mapped dataset
    */
-  public static Eml datasetToEml(BaseDatasetDto dataset) {
+  public Eml datasetToEml(BaseDatasetDto dataset) {
     Eml eml = new Eml();
     Dataset emlDataset = new Dataset();
 
@@ -131,18 +146,18 @@ public final class EmlMapper {
     emlDataset.setIntellectualRights(intellectualRights);
   }
 
-  private static void mapAgents(BaseDatasetDto dataset, Dataset emlDataset) {
+  private void mapAgents(BaseDatasetDto dataset, Dataset emlDataset) {
     if (dataset.getAgentRoles() == null) {
       return;
     }
 
     Optional<AgentType> creator = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_CREATOR))
-        .map(EmlMapper::toAgentType)
+        .map(this::toAgentType)
         .findFirst();
     Optional<AgentType> metadataProvider = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER))
-        .map(EmlMapper::toAgentType)
+        .map(this::toAgentType)
         .findFirst();
 
     creator.ifPresent(c -> emlDataset.getCreator().add(c));
@@ -154,14 +169,67 @@ public final class EmlMapper {
     return agentRoles.getRoles() != null && agentRoles.getRoles().contains(role);
   }
 
-  private static AgentType toAgentType(AgentRoles agentRoles) {
+  private AgentType toAgentType(AgentRoles agentRoles) {
     AgentType agentType = new AgentType();
-    // Agent details (names, email, position) require resolving the referenced agent.
-    // Until that resolution exists, only the DINA agent UUID is retained.
-    if (agentRoles.getAgent() != null) {
-      agentType.getId().add(agentRoles.getAgent().toString());
+
+    UUID agentUuid = agentRoles.getAgent();
+    if (agentUuid != null) {
+      agentType.getId().add(agentUuid.toString());
+    }
+
+    JsonApiDocument agentDoc = resolveAgent(agentUuid);
+    if (agentDoc == null || agentDoc.getAttributes() == null) {
+      return agentType;
+    }
+
+    Map<String, Object> attributes = agentDoc.getAttributes();
+    String displayName = text(attributes.get("displayName"));
+
+    if ("organization".equals(agentDoc.getType())) {
+      if (displayName != null) {
+        agentType.getOrganizationNameOrIndividualNameOrPositionName().add(
+          OBJECT_FACTORY.createAgentTypeOrganizationName(displayName));
+      }
+    } else {
+      String givenName = text(attributes.get("givenNames"));
+      String familyName = text(attributes.get("familyNames"));
+      // EML individualName requires surName; fall back to displayName when familyNames is missing.
+      String surName = familyName != null ? familyName : displayName;
+      if (givenName != null || surName != null) {
+        IndividualName individualName = OBJECT_FACTORY.createIndividualName();
+        individualName.setGivenName(givenName);
+        individualName.setSurName(surName);
+        agentType.getOrganizationNameOrIndividualNameOrPositionName().add(individualName);
+      }
+    }
+
+    String email = text(attributes.get("email"));
+    if (email != null) {
+      agentType.getElectronicMailAddress().add(email);
+    }
+
+    String webpage = text(attributes.get("webpage"));
+    if (webpage != null) {
+      agentType.getOnlineUrl().add(webpage);
     }
     return agentType;
+  }
+
+  private static String text(Object value) {
+    return value == null ? null : value.toString();
+  }
+
+  private JsonApiDocument resolveAgent(UUID agentUuid) {
+    if (agentUuid == null) {
+      return null;
+    }
+    JsonApiDocument person = fetchAgentDocument(agentApiUrl + "/person/" + agentUuid);
+    return person != null ? person : fetchAgentDocument(agentApiUrl + "/organization/" + agentUuid);
+  }
+
+  private JsonApiDocument fetchAgentDocument(String url) {
+    HttpUrl httpUrl = HttpUrl.parse(url);
+    return httpUrl == null ? null : dinaApiClient.fetchDocument(httpUrl);
   }
 
   private static Coverage buildCoverage(BaseDatasetDto.Coverage coverage) {

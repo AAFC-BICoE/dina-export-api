@@ -5,24 +5,34 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import ca.aafc.eml.generated.eml.Ulink;
-import ca.aafc.eml.generated.eml.Para;
+import ca.aafc.eml.generated.eml.AgentType;
 import ca.aafc.eml.generated.eml.Coverage;
 import ca.aafc.eml.generated.eml.Dataset;
 import ca.aafc.eml.generated.eml.GeographicCoverage;
+import ca.aafc.eml.generated.eml.IndividualName;
+import ca.aafc.eml.generated.eml.Para;
 import ca.aafc.eml.generated.eml.TaxonomicCoverage;
 import ca.aafc.eml.generated.eml.TemporalCoverage;
+import ca.aafc.eml.generated.eml.Ulink;
 import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.entity.AgentRoles;
+import ca.gc.aafc.dina.export.api.service.DinaApiClient;
 import ca.gc.aafc.dina.i18n.MultilingualDescription;
 import ca.gc.aafc.dina.i18n.MultilingualTitle;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
+import okhttp3.HttpUrl;
 import jakarta.xml.bind.JAXBElement;
 
 public class EmlMapperTest {
@@ -55,7 +65,8 @@ public class EmlMapperTest {
             LocalDate.of(2000, 1, 1), LocalDate.of(2020, 12, 31)),
         List.of(new BaseDatasetDto.TaxonomicCoverage("kingdom", "Animalia", "Animals"))));
 
-    Dataset emlDataset = EmlMapper.datasetToEml(dataset).getDataset();
+    EmlMapper emlMapper = new EmlMapper(mock(DinaApiClient.class), "http://localhost:8082/api/v1");
+    Dataset emlDataset = emlMapper.datasetToEml(dataset).getDataset();
     assertNotNull(emlDataset);
 
     // Identifier
@@ -84,6 +95,7 @@ public class EmlMapperTest {
     assertNotNull(emlDataset.getLicensed());
     assertEquals("CC-BY", emlDataset.getLicensed().getLicenseName());
     assertEquals("https://creativecommons.org/licenses/by/4.0/", emlDataset.getLicensed().getUrl());
+
     assertNotNull(emlDataset.getIntellectualRights());
 
     Para rightsPara = emlDataset.getIntellectualRights().getPara();
@@ -133,7 +145,8 @@ public class EmlMapperTest {
 
   @Test
   public void datasetToEml_onEmptyDataset_returnsEmptyDataset() {
-    Dataset emlDataset = EmlMapper.datasetToEml(new BaseDatasetDto()).getDataset();
+    EmlMapper emlMapper = new EmlMapper(mock(DinaApiClient.class), "http://localhost:8082/api/v1");
+    Dataset emlDataset = emlMapper.datasetToEml(new BaseDatasetDto()).getDataset();
 
     assertNotNull(emlDataset);
     assertTrue(emlDataset.getAlternateIdentifier().isEmpty());
@@ -150,21 +163,68 @@ public class EmlMapperTest {
     UUID creator = UUID.randomUUID();
     UUID metadataProvider = UUID.randomUUID();
 
+    JsonApiDocument creatorDoc = JsonApiDocument.builder()
+        .data(JsonApiDocument.ResourceObject.builder()
+            .type("person")
+            .id(creator)
+            .attributes(Map.of(
+                "displayName", "Jane Doe",
+                "givenNames", "Jane",
+                "familyNames", "Doe",
+                "email", "jane@example.com",
+                "webpage", "https://jane.example.com"))
+            .build())
+        .build();
+
+    JsonApiDocument metadataProviderDoc = JsonApiDocument.builder()
+        .data(JsonApiDocument.ResourceObject.builder()
+            .type("organization")
+            .id(metadataProvider)
+            .attributes(Map.of("displayName", "Example Org"))
+            .build())
+        .build();
+
+    DinaApiClient client = mock(DinaApiClient.class);
+    when(client.fetchDocument(any(HttpUrl.class))).thenAnswer(invocation -> {
+      String url = invocation.getArgument(0, HttpUrl.class).toString();
+      if (url.endsWith("/person/" + creator)) {
+        return creatorDoc;
+      }
+      if (url.endsWith("/organization/" + metadataProvider)) {
+        return metadataProviderDoc;
+      }
+      return null;
+    });
+
+    EmlMapper emlMapper = new EmlMapper(client, "http://localhost:8082/api/v1");
+
     BaseDatasetDto dataset = new BaseDatasetDto();
     dataset.setAgentRoles(List.of(
         AgentRoles.builder().agent(creator).roles(List.of(BaseDatasetDto.AGENT_ROLE_CREATOR)).build(),
         AgentRoles.builder().agent(metadataProvider).roles(List.of(BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER)).build(),
         AgentRoles.builder().agent(UUID.randomUUID()).roles(List.of("helper", "manager")).build()));
 
-    Dataset emlDataset = EmlMapper.datasetToEml(dataset).getDataset();
+    Dataset emlDataset = emlMapper.datasetToEml(dataset).getDataset();
 
     assertEquals(1, emlDataset.getCreator().size());
     assertEquals(1, emlDataset.getMetadataProvider().size());
- //   assertEquals(1, emlDataset.getContact().size());
 
-    assertEquals(List.of(creator.toString()), emlDataset.getCreator().get(0).getId());
-    assertEquals(List.of(metadataProvider.toString()), emlDataset.getMetadataProvider().get(0).getId());
-   // assertEquals(List.of(superUser.toString()), emlDataset.getContact().get(0).getId());
+    // Creator resolved as a person
+    AgentType creatorAgent = emlDataset.getCreator().get(0);
+    assertEquals(List.of(creator.toString()), creatorAgent.getId());
+    assertEquals(List.of("jane@example.com"), creatorAgent.getElectronicMailAddress());
+    assertEquals(List.of("https://jane.example.com"), creatorAgent.getOnlineUrl());
+    IndividualName individualName = (IndividualName) creatorAgent
+        .getOrganizationNameOrIndividualNameOrPositionName().get(0);
+    assertEquals("Jane", individualName.getGivenName());
+    assertEquals("Doe", individualName.getSurName());
+
+    // Metadata provider resolved as an organization
+    AgentType metadataProviderAgent = emlDataset.getMetadataProvider().get(0);
+    assertEquals(List.of(metadataProvider.toString()), metadataProviderAgent.getId());
+    assertEquals("Example Org", ((JAXBElement<?>) metadataProviderAgent
+        .getOrganizationNameOrIndividualNameOrPositionName().get(0)).getValue());
+
     assertNull(emlDataset.getPublisher());
   }
 

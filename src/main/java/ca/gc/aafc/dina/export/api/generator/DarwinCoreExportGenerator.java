@@ -39,6 +39,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   private final DarwinCoreMapper darwinCoreMapper;
   private final DarwinCoreMetaXmlGenerator metaXmlGenerator;
   private final DarwinCoreEmlGenerator emlGenerator;
+  private final EmlMapper emlMapper;
 
   public DarwinCoreExportGenerator(
     DataExportStatusService dataExportStatusService,
@@ -51,7 +52,8 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     DarwinCoreContextBuilder contextBuilder,
     DarwinCoreMapper darwinCoreMapper,
     DarwinCoreMetaXmlGenerator metaXmlGenerator,
-    DarwinCoreEmlGenerator emlGenerator
+    DarwinCoreEmlGenerator emlGenerator,
+    EmlMapper emlMapper
   ) {
 
     super(
@@ -68,6 +70,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     this.darwinCoreMapper = darwinCoreMapper;
     this.metaXmlGenerator = metaXmlGenerator;
     this.emlGenerator = emlGenerator;
+    this.emlMapper = emlMapper;
   }
 
   @Override
@@ -92,7 +95,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     metaXmlGenerator.generateMetaXml(workDir.resolve(DarwinCoreMetaXmlGenerator.DEFAULT_META_FILENAME));
     if (dinaExport.getDataset() != null) {
       emlGenerator.generateEml(workDir.resolve(DarwinCoreEmlGenerator.DEFAULT_EML_FILENAME),
-        EmlMapper.datasetToEml(dinaExport.getDataset()));
+        emlMapper.datasetToEml(dinaExport.getDataset()));
     }
 
     super.postRecordWrite(dinaExport, ctx);
