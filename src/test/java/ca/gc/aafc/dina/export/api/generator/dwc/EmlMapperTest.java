@@ -12,6 +12,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import ca.aafc.eml.generated.eml.Ulink;
+import ca.aafc.eml.generated.eml.Para;
 import ca.aafc.eml.generated.eml.Coverage;
 import ca.aafc.eml.generated.eml.Dataset;
 import ca.aafc.eml.generated.eml.GeographicCoverage;
@@ -21,6 +23,7 @@ import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.entity.AgentRoles;
 import ca.gc.aafc.dina.i18n.MultilingualDescription;
 import ca.gc.aafc.dina.i18n.MultilingualTitle;
+import jakarta.xml.bind.JAXBElement;
 
 public class EmlMapperTest {
 
@@ -82,8 +85,21 @@ public class EmlMapperTest {
     assertEquals("CC-BY", emlDataset.getLicensed().getLicenseName());
     assertEquals("https://creativecommons.org/licenses/by/4.0/", emlDataset.getLicensed().getUrl());
     assertNotNull(emlDataset.getIntellectualRights());
-    assertEquals(List.of("Free to use with attribution."),
-        emlDataset.getIntellectualRights().getPara().getContent());
+
+    Para rightsPara = emlDataset.getIntellectualRights().getPara();
+    assertEquals(List.of("This work is licensed under a ", " ."),
+        rightsPara.getContent().stream()
+            .filter(String.class::isInstance)
+            .map(String.class::cast)
+            .toList());
+
+    Ulink ulink = (Ulink) rightsPara.getContent().stream()
+        .filter(Ulink.class::isInstance)
+        .findFirst()
+        .orElseThrow();
+    assertEquals("https://creativecommons.org/licenses/by/4.0/", ulink.getUrl());
+    assertEquals("CC-BY",
+        ((JAXBElement<String>) ulink.getContent().get(0)).getValue());
 
     // Coverage: geographic, temporal, taxonomic (in that order)
     Coverage coverage = emlDataset.getCoverage();

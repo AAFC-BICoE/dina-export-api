@@ -512,7 +512,11 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
 
     assertTrue(emlXml.contains("Test DWCA dataset"));
     assertTrue(emlXml.contains("CC-BY"));
-
+    assertTrue(emlXml.contains("This work is licensed under a"));
+    assertTrue(emlXml.contains("<ulink"));
+    assertTrue(emlXml.contains("citetitle"));
+    assertTrue(emlXml.contains("https://example.org/license"));
+    
     dataExportRepository.onDelete(uuid);
   }
 

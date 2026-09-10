@@ -14,10 +14,12 @@ import ca.aafc.eml.generated.eml.I18NString;
 import ca.aafc.eml.generated.eml.IntellectualRights;
 import ca.aafc.eml.generated.eml.KeywordSet;
 import ca.aafc.eml.generated.eml.Licensed;
+import ca.aafc.eml.generated.eml.ObjectFactory;
 import ca.aafc.eml.generated.eml.Para;
 import ca.aafc.eml.generated.eml.TaxonomicCoverage;
 import ca.aafc.eml.generated.eml.TemporalCoverage;
 import ca.aafc.eml.generated.eml.TextType;
+import ca.aafc.eml.generated.eml.Ulink;
 import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.entity.AgentRoles;
 import ca.gc.aafc.dina.i18n.MultilingualDescription;
@@ -32,6 +34,7 @@ public final class EmlMapper {
     // utility class
   }
 
+  private static final ObjectFactory OBJECT_FACTORY = new ObjectFactory();
 
   /**
    * Maps a DINA {@link BaseDatasetDto} resource into a schema derived EML
@@ -114,13 +117,18 @@ public final class EmlMapper {
     licensed.setUrl(usageRights.licenseUrl());
     emlDataset.setLicensed(licensed);
 
-    if (usageRights.usageTerms() != null && !usageRights.usageTerms().isBlank()) {
-      IntellectualRights intellectualRights = new IntellectualRights();
-      Para para = new Para();
-      para.getContent().add(usageRights.usageTerms());
-      intellectualRights.setPara(para);
-      emlDataset.setIntellectualRights(intellectualRights);
-    }
+    IntellectualRights intellectualRights = new IntellectualRights();
+    Para para = new Para();
+    para.getContent().add("This work is licensed under a ");
+
+    Ulink ulink = new Ulink();
+    ulink.setUrl(usageRights.licenseUrl());
+    ulink.getContent().add(OBJECT_FACTORY.createUlinkCitetitle(usageRights.licenseName()));
+    para.getContent().add(ulink);
+    para.getContent().add(" .");
+
+    intellectualRights.setPara(para);
+    emlDataset.setIntellectualRights(intellectualRights);
   }
 
   private static void mapAgents(BaseDatasetDto dataset, Dataset emlDataset) {
