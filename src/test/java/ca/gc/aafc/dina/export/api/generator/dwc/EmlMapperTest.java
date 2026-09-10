@@ -146,10 +146,12 @@ public class EmlMapperTest {
   @Test
   public void datasetToEml_onEmptyDataset_returnsEmptyDataset() {
     EmlMapper emlMapper = new EmlMapper(mock(DinaApiClient.class), "http://localhost:8082/api/v1");
-    Dataset emlDataset = emlMapper.datasetToEml(new BaseDatasetDto()).getDataset();
+    BaseDatasetDto dataset = new BaseDatasetDto();
+    dataset.setUuid(UUID.randomUUID());
+    Dataset emlDataset = emlMapper.datasetToEml(dataset).getDataset();
 
     assertNotNull(emlDataset);
-    assertTrue(emlDataset.getAlternateIdentifier().isEmpty());
+    assertEquals(List.of(dataset.getUuid().toString()), emlDataset.getAlternateIdentifier());
     assertTrue(emlDataset.getTitle().isEmpty());
     assertNull(emlDataset.getAbstract());
     assertTrue(emlDataset.getKeywordSet().isEmpty());
@@ -199,6 +201,7 @@ public class EmlMapperTest {
     EmlMapper emlMapper = new EmlMapper(client, "http://localhost:8082/api/v1");
 
     BaseDatasetDto dataset = new BaseDatasetDto();
+    dataset.setUuid(UUID.randomUUID());
     dataset.setAgentRoles(List.of(
         AgentRoles.builder().agent(creator).roles(List.of(BaseDatasetDto.AGENT_ROLE_CREATOR)).build(),
         AgentRoles.builder().agent(metadataProvider).roles(List.of(BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER)).build(),

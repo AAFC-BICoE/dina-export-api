@@ -27,7 +27,7 @@ public class DarwinCoreEmlGenerator {
       marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
       marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
       marshaller.setProperty(Marshaller.JAXB_SCHEMA_LOCATION,
-       "https://eml.ecoinformatics.org/eml-2.2.0 https://eml.ecoinformatics.org/eml-2.2.0/eml.xsd");
+        "https://eml.ecoinformatics.org/eml-2.2.0 https://eml.ecoinformatics.org/eml-2.2.0/eml.xsd");
       marshaller.marshal(emlDocument, emlPath.toFile());
 
     } catch (JAXBException e) {
