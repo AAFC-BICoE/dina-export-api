@@ -393,6 +393,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
       MultilingualTitle.MultilingualTitlePair.of("en", "Test DWCA dataset")));
 
     BaseDatasetDto dataset = new BaseDatasetDto();
+    dataset.setUuid(UUID.randomUUID());
     dataset.setMultilingualTitle(multilingualTitle);
     dataset.setUsageRights(new BaseDatasetDto.UsageRights(
       "CC-BY", "https://example.org/license", null));
