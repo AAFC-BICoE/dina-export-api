@@ -506,7 +506,7 @@ public class DataExportRepositoryIT extends BaseIntegrationTest {
     assertFalse(row.get("verbatimLocality") == null || row.get("verbatimLocality").isBlank());
     assertTrue(row.get("decimalLatitude").startsWith("52"));
     assertTrue(row.get("decimalLongitude").startsWith("5"));
-    assertEquals("PreservedSpecimen", row.get("basisOfRecord"));
+    assertEquals("MaterialSample", row.get("basisOfRecord"));
 
     assertTrue(metaXml.contains("occurrence.csv"));
     assertTrue(metaXml.contains("<field"));
