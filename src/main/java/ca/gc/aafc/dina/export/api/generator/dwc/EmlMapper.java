@@ -47,7 +47,7 @@ public final class EmlMapper {
   private static final String EML_SYSTEM = "https://www.dina-project.net";
 
   public EmlMapper(DinaApiClient dinaApiClient,
-                   @Value("${dina.export.agentApiUrl}") String agentApiUrl) {
+                   @Value("${dina.export.agent.apiUrl}") String agentApiUrl) {
     this.dinaApiClient = dinaApiClient;
     this.agentApiUrl = agentApiUrl;
   }
@@ -207,7 +207,7 @@ public final class EmlMapper {
       // EML individualName requires surName; fall back to displayName when familyNames is missing.
       String surName = familyName != null ? familyName : displayName;
       if (givenName != null || surName != null) {
-        IndividualName individualName = OBJECT_FACTORY.createIndividualName();
+        IndividualName individualName = new IndividualName();
         individualName.setGivenName(givenName);
         individualName.setSurName(surName);
         agentType.getOrganizationNameOrIndividualNameOrPositionName().add(individualName);
