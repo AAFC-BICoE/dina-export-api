@@ -59,8 +59,6 @@ public class DataExportConfig {
 
   private String objectStoreDownloadUrl;
 
-  private String objectStoreApiUrl;
-
   // default to DISABLED
   private String expiredExportCronExpression = Scheduled.CRON_DISABLED;
 

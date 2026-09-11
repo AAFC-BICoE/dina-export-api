@@ -115,7 +115,7 @@ public class ApiReferenceResolver {
    * Builds the URL to fetch a referenced document.
    *
    * The base URL comes from the apiReference's {@code vocabularyUrl}, e.g.
-   * "${dina.export.objectStoreApiUrl}/controlled-vocabulary-item". The {@code filter[key]} query
+   * "${dina.export.objectStore.apiUrl}/controlled-vocabulary-item". The {@code filter[key]} query
    * parameter is added with the managed attribute key, and the optional {@code dinaComponent}
    * filter value is added when configured.
    *
