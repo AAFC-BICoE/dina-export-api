@@ -244,14 +244,17 @@ public class EmlMapperTest {
   }
 
   @Test
-  public void datasetToEml_mapsAgentsToCreatorMetadataProviderAndContact() {
-    UUID creator = UUID.randomUUID();
-    UUID metadataProvider = UUID.randomUUID();
+  public void datasetToEml_mapsAgentsToCreatorMetadataProviderContactPublisherAndAssociatedParty() {
+    UUID creatorUUID = UUID.randomUUID();
+    UUID metadataProviderUUID = UUID.randomUUID();
+    UUID contactUUID = UUID.randomUUID();
+    UUID publisherUUID = UUID.randomUUID();
+    UUID associatedPartyUUID = UUID.randomUUID();
 
     JsonApiDocument creatorDoc = JsonApiDocument.builder()
         .data(JsonApiDocument.ResourceObject.builder()
             .type("person")
-            .id(creator)
+            .id(creatorUUID)
             .attributes(Map.of(
                 "displayName", "Jane Doe",
                 "givenNames", "Jane",
@@ -264,19 +267,58 @@ public class EmlMapperTest {
     JsonApiDocument metadataProviderDoc = JsonApiDocument.builder()
         .data(JsonApiDocument.ResourceObject.builder()
             .type("organization")
-            .id(metadataProvider)
+            .id(metadataProviderUUID)
             .attributes(Map.of("displayName", "Example Org"))
+            .build())
+        .build();
+
+    JsonApiDocument contactDoc = JsonApiDocument.builder()
+        .data(JsonApiDocument.ResourceObject.builder()
+            .type("person")
+            .id(contactUUID)
+            .attributes(Map.of(
+                "displayName", "Contact Person",
+                "givenNames", "Contact",
+                "familyNames", "Person"))
+            .build())
+        .build();
+
+    JsonApiDocument publisherDoc = JsonApiDocument.builder()
+        .data(JsonApiDocument.ResourceObject.builder()
+            .type("organization")
+            .id(publisherUUID)
+            .attributes(Map.of("displayName", "Publisher Org"))
+            .build())
+        .build();
+
+    JsonApiDocument associatedPartyDoc = JsonApiDocument.builder()
+        .data(JsonApiDocument.ResourceObject.builder()
+            .type("person")
+            .id(associatedPartyUUID)
+            .attributes(Map.of(
+                "displayName", "Associate Person",
+                "givenNames", "Associate",
+                "familyNames", "Person"))
             .build())
         .build();
 
     DinaApiClient client = mock(DinaApiClient.class);
     when(client.fetchDocument(any(HttpUrl.class))).thenAnswer(invocation -> {
       String url = invocation.getArgument(0, HttpUrl.class).toString();
-      if (url.endsWith("/person/" + creator)) {
+      if (url.endsWith("/person/" + creatorUUID)) {
         return creatorDoc;
       }
-      if (url.endsWith("/organization/" + metadataProvider)) {
+      if (url.endsWith("/organization/" + metadataProviderUUID)) {
         return metadataProviderDoc;
+      }
+      if (url.endsWith("/person/" + contactUUID)) {
+        return contactDoc;
+      }
+      if (url.endsWith("/organization/" + publisherUUID)) {
+        return publisherDoc;
+      }
+      if (url.endsWith("/person/" + associatedPartyUUID)) {
+        return associatedPartyDoc;
       }
       return null;
     });
@@ -286,8 +328,11 @@ public class EmlMapperTest {
     BaseDatasetDto dataset = new BaseDatasetDto();
     dataset.setUuid(UUID.randomUUID());
     dataset.setAgentRoles(List.of(
-        AgentRoles.builder().agent(creator).roles(List.of(BaseDatasetDto.AGENT_ROLE_CREATOR)).build(),
-        AgentRoles.builder().agent(metadataProvider).roles(List.of(BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER)).build(),
+        AgentRoles.builder().agent(creatorUUID).roles(List.of(BaseDatasetDto.AGENT_ROLE_CREATOR)).build(),
+        AgentRoles.builder().agent(metadataProviderUUID).roles(List.of(BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER)).build(),
+        AgentRoles.builder().agent(contactUUID).roles(List.of(BaseDatasetDto.AGENT_ROLE_CONTACT)).build(),
+        AgentRoles.builder().agent(publisherUUID).roles(List.of(BaseDatasetDto.AGENT_ROLE_PUBLISHER)).build(),
+        AgentRoles.builder().agent(associatedPartyUUID).roles(List.of(BaseDatasetDto.AGENT_ROLE_ASSOCIATED_PARTY)).build(),
         AgentRoles.builder().agent(UUID.randomUUID()).roles(List.of("helper", "manager")).build()));
 
     Dataset emlDataset = emlMapper.datasetToEml(dataset).getDataset();
@@ -297,7 +342,7 @@ public class EmlMapperTest {
 
     // Creator resolved as a person
     AgentType creatorAgent = emlDataset.getCreator().get(0);
-    assertEquals(List.of(creator.toString()), creatorAgent.getId());
+    assertEquals(List.of(creatorUUID.toString()), creatorAgent.getId());
     assertEquals(List.of("jane@example.com"), creatorAgent.getElectronicMailAddress());
     assertEquals(List.of("https://jane.example.com"), creatorAgent.getOnlineUrl());
     IndividualName individualName = (IndividualName) creatorAgent
@@ -307,11 +352,23 @@ public class EmlMapperTest {
 
     // Metadata provider resolved as an organization
     AgentType metadataProviderAgent = emlDataset.getMetadataProvider().get(0);
-    assertEquals(List.of(metadataProvider.toString()), metadataProviderAgent.getId());
+    assertEquals(List.of(metadataProviderUUID.toString()), metadataProviderAgent.getId());
     assertEquals("Example Org", ((JAXBElement<?>) metadataProviderAgent
         .getOrganizationNameOrIndividualNameOrPositionName().get(0)).getValue());
 
-    assertNull(emlDataset.getPublisher());
+    // Explicit contact is preferred over the creator fallback
+    assertEquals(1, emlDataset.getContact().size());
+    assertEquals(List.of(contactUUID.toString()), emlDataset.getContact().get(0).getId());
+
+    // Publisher resolved as an organization
+    assertNotNull(emlDataset.getPublisher());
+    assertEquals(List.of(publisherUUID.toString()), emlDataset.getPublisher().getId());
+
+    // Associated party resolved as a person with its role
+    assertEquals(1, emlDataset.getAssociatedParty().size());
+    AgentWithRoleType associatedPartyAgent = emlDataset.getAssociatedParty().get(0);
+    assertEquals(List.of(associatedPartyUUID.toString()), associatedPartyAgent.getId());
+    assertEquals(BaseDatasetDto.AGENT_ROLE_ASSOCIATED_PARTY, associatedPartyAgent.getRole());
   }
 
   private static String descriptionText(Description description) {

@@ -44,6 +44,11 @@ dwc:
       context: "determination"
       source: "scientificName"
 
+    - dwcTerm: "vernacularName"
+      termUri: "http://rs.tdwg.org/dwc/terms/vernacularName"
+      context: "organism"
+      source: "dwcvernacularName"
+
     # From materialSample
     - dwcTerm: "catalogNumber"
       termUri: "http://rs.tdwg.org/dwc/terms/catalogNumber"
@@ -86,11 +91,10 @@ dwc:
       context: "collectingEvent"
       source: "dwcStateProvince"
 
-    - dwcTerm: "county"
-      termUri: "http://rs.tdwg.org/dwc/terms/county"
+    - dwcTerm: "country"
+      termUri: "http://rs.tdwg.org/dwc/terms/country"
       context: "collectingEvent"
-      source: "geographicPlaceNameSourceDetail.higherGeographicPlaces"
-      filter: "@.placeType == 'county'"
+      source: "dwcCountry"
       path: "name"
 
     - dwcTerm: "countryCode"

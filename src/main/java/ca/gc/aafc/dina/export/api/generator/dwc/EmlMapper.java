@@ -84,7 +84,7 @@ public final class EmlMapper {
       emlDataset.getAlternateIdentifier().add(dataset.getUuid().toString());
     }
 
-    if(dataset.getPublicationDate() != null) {
+    if (dataset.getPublicationDate() != null) {
       emlDataset.setPubDate(dataset.getPublicationDate().toString());
     }
     
@@ -183,16 +183,27 @@ public final class EmlMapper {
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER))
         .map(this::toAgentType)
         .findFirst();
+    Optional<AgentType> contact = dataset.getAgentRoles().stream()
+        .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_CONTACT))
+        .map(this::toAgentType)
+        .findFirst();
+    Optional<AgentType> publisher = dataset.getAgentRoles().stream()
+        .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_PUBLISHER))
+        .map(this::toAgentType)
+        .findFirst();
+    Optional<AgentWithRoleType> associatedParty = dataset.getAgentRoles().stream()
+        .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_ASSOCIATED_PARTY))
+        .map(this::toAgentWithRoleType)
+        .findFirst();
 
-    creator.ifPresent(c -> {
-      emlDataset.getCreator().add(c);
-      emlDataset.getContact().add(c);
-    });
-    metadataProvider.ifPresent(mp -> emlDataset.getMetadataProvider().add(mp));
+    creator.ifPresent(emlDataset.getCreator()::add);
+    metadataProvider.ifPresent(emlDataset.getMetadataProvider()::add);
+    publisher.ifPresent(emlDataset::setPublisher);
+    associatedParty.ifPresent(emlDataset.getAssociatedParty()::add);
 
-    if (emlDataset.getContact().isEmpty()) {
-      metadataProvider.ifPresent(mp -> emlDataset.getContact().add(mp));
-    }
+    // EML requires a contact; prefer an explicit contact, then the creator, then the metadataProvider.
+    contact.or(() -> creator).or(() -> metadataProvider)
+        .ifPresent(emlDataset.getContact()::add);
   }
 
   private static boolean hasRole(AgentRoles agentRoles, String role) {
