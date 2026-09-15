@@ -44,6 +44,11 @@ dwc:
       context: "determination"
       source: "scientificName"
 
+    - dwcTerm: "vernacularName"
+      termUri: "http://rs.tdwg.org/dwc/terms/vernacularName"
+      context: "organism"
+      source: "dwcvernacularName"
+
     # From materialSample
     - dwcTerm: "catalogNumber"
       termUri: "http://rs.tdwg.org/dwc/terms/catalogNumber"
@@ -86,11 +91,10 @@ dwc:
       context: "collectingEvent"
       source: "dwcStateProvince"
 
-    - dwcTerm: "county"
-      termUri: "http://rs.tdwg.org/dwc/terms/county"
+    - dwcTerm: "country"
+      termUri: "http://rs.tdwg.org/dwc/terms/country"
       context: "collectingEvent"
-      source: "geographicPlaceNameSourceDetail.higherGeographicPlaces"
-      filter: "@.placeType == 'county'"
+      source: "dwcCountry"
       path: "name"
 
     - dwcTerm: "countryCode"
@@ -107,10 +111,10 @@ dwc:
         vocabularyValue: "uriTemplate"
         vocabularyKey: "ena_run_accession"
         valuePlaceholder: "$1"
-        vocabularyUrl: "${dina.export.objectStoreApiUrl}/controlled-vocabulary-item"
+        vocabularyUrl: "${dina.export.objectStore.apiUrl}/controlled-vocabulary-item"
         dinaComponent: "METADATA"
 
     # Static value
     - dwcTerm: "basisOfRecord"
       termUri: "http://rs.tdwg.org/dwc/terms/basisOfRecord"
-      staticValue: "PreservedSpecimen"
+      staticValue: "MaterialSample"

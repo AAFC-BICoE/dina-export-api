@@ -1,5 +1,6 @@
 package ca.gc.aafc.dina.export.api.dto;
 
+import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.dto.RelatedEntity;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
@@ -52,6 +53,7 @@ public class DataExportDto implements ca.gc.aafc.dina.dto.JsonApiResource {
   private LinkedHashMap<String, DataExportSchemaEntryDto> schema;
 
   private Map<String, DataExportFunction> functions;
+  private BaseDatasetDto dataset;
 
   @Override
   @JsonIgnore

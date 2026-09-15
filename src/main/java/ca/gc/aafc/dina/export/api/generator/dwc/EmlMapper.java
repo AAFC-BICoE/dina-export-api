@@ -2,36 +2,64 @@ package ca.gc.aafc.dina.export.api.generator.dwc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import ca.aafc.eml.generated.eml.AgentType;
+import ca.aafc.eml.generated.eml.AgentWithRoleType;
+import ca.aafc.eml.generated.eml.AwardType;
 import ca.aafc.eml.generated.eml.CalendarDate;
 import ca.aafc.eml.generated.eml.Coverage;
 import ca.aafc.eml.generated.eml.Dataset;
+import ca.aafc.eml.generated.eml.Description;
+import ca.aafc.eml.generated.eml.Description2;
 import ca.aafc.eml.generated.eml.Eml;
 import ca.aafc.eml.generated.eml.GeographicCoverage;
 import ca.aafc.eml.generated.eml.I18NString;
+import ca.aafc.eml.generated.eml.IndividualName;
 import ca.aafc.eml.generated.eml.IntellectualRights;
 import ca.aafc.eml.generated.eml.KeywordSet;
 import ca.aafc.eml.generated.eml.Licensed;
+import ca.aafc.eml.generated.eml.Methods;
+import ca.aafc.eml.generated.eml.ObjectFactory;
 import ca.aafc.eml.generated.eml.Para;
+import ca.aafc.eml.generated.eml.ProjectType;
 import ca.aafc.eml.generated.eml.TaxonomicCoverage;
 import ca.aafc.eml.generated.eml.TemporalCoverage;
 import ca.aafc.eml.generated.eml.TextType;
+import ca.aafc.eml.generated.eml.Ulink;
+import jakarta.xml.bind.JAXBElement;
 import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.entity.AgentRoles;
+import ca.gc.aafc.dina.export.api.service.DinaApiClient;
 import ca.gc.aafc.dina.i18n.MultilingualDescription;
 import ca.gc.aafc.dina.i18n.MultilingualTitle;
+import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
+import okhttp3.HttpUrl;
 
 /**
  * Responsible to map Dina {@link BaseDatasetDto} to Eml dataset
  */
+@Component
 public final class EmlMapper {
 
-  private EmlMapper() {
-    // utility class
-  }
+  private final DinaApiClient dinaApiClient;
+  private final String agentApiUrl;
 
+  private static final ObjectFactory OBJECT_FACTORY = new ObjectFactory();
+  private static final String EML_SYSTEM = "https://www.dina-project.net";
+
+  public EmlMapper(DinaApiClient dinaApiClient,
+                   @Value("${dina.export.agent.apiUrl}") String agentApiUrl) {
+    this.dinaApiClient = dinaApiClient;
+    this.agentApiUrl = agentApiUrl;
+  }
 
   /**
    * Maps a DINA {@link BaseDatasetDto} resource into a schema derived EML
@@ -40,20 +68,34 @@ public final class EmlMapper {
    * @param dataset the DINA dataset to map
    * @return an EML document wrapping the mapped dataset
    */
-  public static Eml datasetToEml(BaseDatasetDto dataset) {
+  public Eml datasetToEml(BaseDatasetDto dataset) {
     Eml eml = new Eml();
+
+    String packageId = dataset.getUuid().toString();
+    if (StringUtils.isNotBlank(dataset.getDatasetVersion())) {
+      packageId += "/" + StringUtils.prependIfMissing(dataset.getDatasetVersion(), "v");
+    }
+    eml.setPackageId(packageId);
+    eml.getSystem().add(EML_SYSTEM);
+
     Dataset emlDataset = new Dataset();
 
     if (dataset.getUuid() != null) {
       emlDataset.getAlternateIdentifier().add(dataset.getUuid().toString());
     }
 
+    if (dataset.getPublicationDate() != null) {
+      emlDataset.setPubDate(dataset.getPublicationDate().toString());
+    }
+    
     mapTitles(dataset, emlDataset);
     mapAbstract(dataset, emlDataset);
     mapKeywordSets(dataset, emlDataset);
     mapRights(dataset, emlDataset);
     mapAgents(dataset, emlDataset);
     emlDataset.setCoverage(buildCoverage(dataset.getCoverage()));
+    emlDataset.setMethods(buildMethods(dataset.getMethods()));
+    emlDataset.setProject(buildProject(dataset.getProject()));
 
     eml.setDataset(emlDataset);
     return eml;
@@ -114,46 +156,257 @@ public final class EmlMapper {
     licensed.setUrl(usageRights.licenseUrl());
     emlDataset.setLicensed(licensed);
 
-    if (usageRights.usageTerms() != null && !usageRights.usageTerms().isBlank()) {
-      IntellectualRights intellectualRights = new IntellectualRights();
-      Para para = new Para();
-      para.getContent().add(usageRights.usageTerms());
-      intellectualRights.setPara(para);
-      emlDataset.setIntellectualRights(intellectualRights);
-    }
+    IntellectualRights intellectualRights = new IntellectualRights();
+    Para para = new Para();
+    para.getContent().add("This work is licensed under a ");
+
+    Ulink ulink = new Ulink();
+    ulink.setUrl(usageRights.licenseUrl());
+    ulink.getContent().add(OBJECT_FACTORY.createUlinkCitetitle(usageRights.licenseName()));
+    para.getContent().add(ulink);
+    para.getContent().add(" .");
+
+    intellectualRights.setPara(para);
+    emlDataset.setIntellectualRights(intellectualRights);
   }
 
-  private static void mapAgents(BaseDatasetDto dataset, Dataset emlDataset) {
+  private void mapAgents(BaseDatasetDto dataset, Dataset emlDataset) {
     if (dataset.getAgentRoles() == null) {
       return;
     }
 
     Optional<AgentType> creator = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_CREATOR))
-        .map(EmlMapper::toAgentType)
+        .map(this::toAgentType)
         .findFirst();
     Optional<AgentType> metadataProvider = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER))
-        .map(EmlMapper::toAgentType)
+        .map(this::toAgentType)
+        .findFirst();
+    Optional<AgentType> contact = dataset.getAgentRoles().stream()
+        .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_CONTACT))
+        .map(this::toAgentType)
+        .findFirst();
+    Optional<AgentType> publisher = dataset.getAgentRoles().stream()
+        .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_PUBLISHER))
+        .map(this::toAgentType)
+        .findFirst();
+    Optional<AgentWithRoleType> associatedParty = dataset.getAgentRoles().stream()
+        .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_ASSOCIATED_PARTY))
+        .map(this::toAgentWithRoleType)
         .findFirst();
 
-    creator.ifPresent(c -> emlDataset.getCreator().add(c));
-    metadataProvider.ifPresent(mp -> emlDataset.getMetadataProvider().add(mp));
-    // emlDataset.getContact().addAll(responsibleParties);
+    creator.ifPresent(emlDataset.getCreator()::add);
+    metadataProvider.ifPresent(emlDataset.getMetadataProvider()::add);
+    publisher.ifPresent(emlDataset::setPublisher);
+    associatedParty.ifPresent(emlDataset.getAssociatedParty()::add);
+
+    // EML requires a contact; prefer an explicit contact, then the creator, then the metadataProvider.
+    contact.or(() -> creator).or(() -> metadataProvider)
+        .ifPresent(emlDataset.getContact()::add);
   }
 
   private static boolean hasRole(AgentRoles agentRoles, String role) {
     return agentRoles.getRoles() != null && agentRoles.getRoles().contains(role);
   }
 
-  private static AgentType toAgentType(AgentRoles agentRoles) {
+  private AgentType toAgentType(AgentRoles agentRoles) {
     AgentType agentType = new AgentType();
-    // Agent details (names, email, position) require resolving the referenced agent.
-    // Until that resolution exists, only the DINA agent UUID is retained.
-    if (agentRoles.getAgent() != null) {
-      agentType.getId().add(agentRoles.getAgent().toString());
-    }
+    populateAgentType(agentType, agentRoles);
     return agentType;
+  }
+
+  private void populateAgentType(AgentType agentType, AgentRoles agentRoles) {
+    UUID agentUuid = agentRoles.getAgent();
+    if (agentUuid != null) {
+      agentType.getId().add(agentUuid.toString());
+    }
+
+    JsonApiDocument agentDoc = resolveAgent(agentUuid);
+    if (agentDoc == null || agentDoc.getAttributes() == null) {
+      return;
+    }
+
+    Map<String, Object> attributes = agentDoc.getAttributes();
+    String displayName = text(attributes.get("displayName"));
+
+    if ("organization".equals(agentDoc.getType())) {
+      if (displayName != null) {
+        agentType.getOrganizationNameOrIndividualNameOrPositionName().add(
+          OBJECT_FACTORY.createAgentTypeOrganizationName(displayName));
+      }
+    } else {
+      String givenName = text(attributes.get("givenNames"));
+      String familyName = text(attributes.get("familyNames"));
+      // EML individualName requires surName; fall back to displayName when familyNames is missing.
+      String surName = familyName != null ? familyName : displayName;
+      if (givenName != null || surName != null) {
+        IndividualName individualName = new IndividualName();
+        individualName.setGivenName(givenName);
+        individualName.setSurName(surName);
+        agentType.getOrganizationNameOrIndividualNameOrPositionName().add(individualName);
+      }
+    }
+
+    String email = text(attributes.get("email"));
+    if (email != null) {
+      agentType.getElectronicMailAddress().add(email);
+    }
+
+    String webpage = text(attributes.get("webpage"));
+    if (webpage != null) {
+      agentType.getOnlineUrl().add(webpage);
+    }
+  }
+
+  private static String text(Object value) {
+    return value == null ? null : value.toString();
+  }
+
+  private JsonApiDocument resolveAgent(UUID agentUuid) {
+    if (agentUuid == null) {
+      return null;
+    }
+    JsonApiDocument person = fetchAgentDocument(agentApiUrl + "/person/" + agentUuid);
+    return person != null ? person : fetchAgentDocument(agentApiUrl + "/organization/" + agentUuid);
+  }
+
+  private JsonApiDocument fetchAgentDocument(String url) {
+    HttpUrl httpUrl = HttpUrl.parse(url);
+    return httpUrl == null ? null : dinaApiClient.fetchDocument(httpUrl);
+  }
+
+  private static Methods buildMethods(BaseDatasetDto.Methods methods) {
+    if (methods == null) {
+      return null;
+    }
+
+    Methods emlMethods = new Methods();
+    List<JAXBElement<?>> parts = emlMethods.getMethodStepAndSamplingAndQualityControl();
+
+    if (methods.methodSteps() != null) {
+      for (String methodStep : methods.methodSteps()) {
+        parts.add(OBJECT_FACTORY.createMethodsMethodStep(toDescription(methodStep)));
+      }
+    }
+
+    if (methods.sampling() != null) {
+      BaseDatasetDto.Sampling sampling = methods.sampling();
+      if (sampling.studyExtent() != null || sampling.samplingDescription() != null) {
+        Methods.Sampling emlSampling = OBJECT_FACTORY.createMethodsSampling();
+        if (sampling.studyExtent() != null) {
+          emlSampling.setStudyExtent(toDescription(sampling.studyExtent()));
+        }
+        if (sampling.samplingDescription() != null) {
+          Methods.Sampling.SamplingDescription samplingDescription =
+              OBJECT_FACTORY.createMethodsSamplingSamplingDescription();
+          samplingDescription.setPara(toPara(sampling.samplingDescription()));
+          emlSampling.setSamplingDescription(samplingDescription);
+        }
+        parts.add(OBJECT_FACTORY.createMethodsSampling(emlSampling));
+      }
+    }
+
+    if (methods.qualityControlDescriptions() != null) {
+      for (String qualityControl : methods.qualityControlDescriptions()) {
+        parts.add(OBJECT_FACTORY.createMethodsQualityControl(toDescription(qualityControl)));
+      }
+    }
+
+    return emlMethods;
+  }
+
+  private ProjectType buildProject(BaseDatasetDto.Project project) {
+    if (project == null) {
+      return null;
+    }
+
+    ProjectType emlProject = new ProjectType();
+
+    if (project.title() != null) {
+      I18NString title = new I18NString();
+      title.setValue(project.title());
+      emlProject.setTitle(title);
+    }
+
+    if (project.abstractText() != null) {
+      TextType abstractText = new TextType();
+      abstractText.getContent().add(project.abstractText());
+      emlProject.setAbstract(abstractText);
+    }
+
+    if (project.funding() != null) {
+      ProjectType.Funding funding = OBJECT_FACTORY.createProjectTypeFunding();
+      funding.setPara(toPara(project.funding()));
+      emlProject.setFunding(funding);
+    }
+
+    if (project.personnel() != null) {
+      for (AgentRoles agentRoles : project.personnel()) {
+        emlProject.getPersonnel().add(toAgentWithRoleType(agentRoles));
+      }
+    }
+
+    if (project.awards() != null) {
+      for (BaseDatasetDto.Award award : project.awards()) {
+        emlProject.getAward().add(toAwardType(award));
+      }
+    }
+
+    // TODO: Map studyAreaDescription if/when DataSetDto supports EML Descriptor.
+
+    // if (project.studyAreaDescription() != null) {
+    //   ProjectType.StudyAreaDescription studyAreaDescription =
+    //       OBJECT_FACTORY.createProjectTypeStudyAreaDescription();
+    //   Descriptor descriptor = OBJECT_FACTORY.createDescriptor();
+    //   descriptor.setDescriptorValue(project.studyAreaDescription());
+    //   studyAreaDescription.setDescriptor(descriptor);
+    //   emlProject.setStudyAreaDescription(studyAreaDescription);
+    // }
+
+    if (project.designDescription() != null) {
+      emlProject.setDesignDescription(toDescription(project.designDescription()));
+    }
+
+    return emlProject;
+  }
+
+  private AgentWithRoleType toAgentWithRoleType(AgentRoles agentRoles) {
+    AgentWithRoleType agentWithRoleType = OBJECT_FACTORY.createAgentWithRoleType();
+    populateAgentType(agentWithRoleType, agentRoles);
+    if (agentRoles.getRoles() != null && !agentRoles.getRoles().isEmpty()) {
+      agentWithRoleType.setRole(agentRoles.getRoles().getFirst());
+    }
+    return agentWithRoleType;
+  }
+
+  private static AwardType toAwardType(BaseDatasetDto.Award award) {
+    AwardType awardType = OBJECT_FACTORY.createAwardType();
+    awardType.setFunderName(award.funderName());
+    if (award.funderIdentifiers() != null) {
+      awardType.getFunderIdentifier().addAll(award.funderIdentifiers());
+    }
+    awardType.setAwardNumber(award.awardNumber());
+    awardType.setTitle(award.title());
+    awardType.setAwardUrl(award.awardUrl());
+    return awardType;
+  }
+
+  private static Description toDescription(String text) {
+    if (text == null) {
+      return null;
+    }
+    Description description = OBJECT_FACTORY.createDescription();
+    Description2 description2 = OBJECT_FACTORY.createDescription2();
+    description2.getContent().add(toPara(text));
+    description.setDescription(description2);
+    return description;
+  }
+
+  private static Para toPara(String text) {
+    Para para = OBJECT_FACTORY.createPara();
+    para.getContent().add(text);
+    return para;
   }
 
   private static Coverage buildCoverage(BaseDatasetDto.Coverage coverage) {

@@ -16,6 +16,6 @@ public class ApiReference {
   private String vocabularyValue;       // Field to extract from the referenced document (e.g. "uriTemplate")
   private String vocabularyKey;         // Optional: restrict resolution to this managed attribute key (e.g. "ena_run_accession")
   private String valuePlaceholder = "$1"; // Placeholder in vocabularyValue replaced with the managed attribute value
-  private String vocabularyUrl;         // Base URL of the referenced resource, e.g. "${dina.export.objectStoreApiUrl}/controlled-vocabulary-item"; filter[key] and dinaComponent query params are appended by the resolver
+  private String vocabularyUrl;         // Base URL of the referenced resource, e.g. "${dina.export.objectStore.apiUrl}/controlled-vocabulary-item"; filter[key] and dinaComponent query params are appended by the resolver
   private String dinaComponent;         // dinaComponent filter value used when querying the referenced resource
 }
