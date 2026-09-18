@@ -47,7 +47,7 @@ dwc:
     - dwcTerm: "vernacularName"
       termUri: "http://rs.tdwg.org/dwc/terms/vernacularName"
       context: "organism"
-      source: "dwcvernacularName"
+      source: "dwcVernacularName"
 
     # From materialSample
     - dwcTerm: "catalogNumber"
@@ -101,6 +101,11 @@ dwc:
       termUri: "http://rs.tdwg.org/dwc/terms/countryCode"
       context: "collectingEvent"
       source: "dwcCountryCode"
+      
+    - dwcTerm: "geodeticDatum"
+      termUri: "http://rs.tdwg.org/dwc/terms/geodeticDatum"
+      context: "geoReferenceAssertions"
+      source: "dwcGeodeticDatum"
 
     # From attachment metadata (to-many, values resolved via controlled-vocabulary-item and joined with " | ")
     - dwcTerm: "associatedSequences"
