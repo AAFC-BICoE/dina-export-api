@@ -306,20 +306,20 @@ public class EmlMapperTest {
 
     DinaApiClient client = mock(DinaApiClient.class);
     when(client.fetchDocument(any(HttpUrl.class))).thenAnswer(invocation -> {
-      String url = invocation.getArgument(0, HttpUrl.class).toString();
-      if (url.endsWith("/person/" + creatorUUID)) {
+      String path = invocation.getArgument(0, HttpUrl.class).encodedPath();
+      if (path.endsWith("/person/" + creatorUUID)) {
         return creatorDoc;
       }
-      if (url.endsWith("/organization/" + metadataProviderUUID)) {
+      if (path.endsWith("/organization/" + metadataProviderUUID)) {
         return metadataProviderDoc;
       }
-      if (url.endsWith("/person/" + contactUUID)) {
+      if (path.endsWith("/person/" + contactUUID)) {
         return contactDoc;
       }
-      if (url.endsWith("/organization/" + publisherUUID)) {
+      if (path.endsWith("/organization/" + publisherUUID)) {
         return publisherDoc;
       }
-      if (url.endsWith("/person/" + associatedPartyUUID)) {
+      if (path.endsWith("/person/" + associatedPartyUUID)) {
         return associatedPartyDoc;
       }
       return null;
