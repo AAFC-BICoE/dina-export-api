@@ -2,13 +2,10 @@ package ca.gc.aafc.dina.export.api.generator.dwc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
@@ -250,12 +247,10 @@ public final class EmlMapper {
         agentType.getOrganizationNameOrIndividualNameOrPositionName().add(individualName);
       }
 
-      // A person may belong to one or more organizations; EML represents that with an
-      // organizationName alongside the individualName.
-      for (JsonApiDocument organizationDoc : resolveOrganizationsForPerson(agentDoc)) {
-        if (organizationDoc.getAttributes() == null) {
-          continue;
-        }
+      // A person may belong to an organization; EML represents that with an organizationName
+      // alongside the individualName.
+      JsonApiDocument organizationDoc = resolveOrganizationForPerson(agentDoc);
+      if (organizationDoc != null && organizationDoc.getAttributes() != null) {
         String organizationName = organizationName(organizationDoc.getAttributes());
         if (organizationName != null) {
           agentType.getOrganizationNameOrIndividualNameOrPositionName().add(
@@ -276,19 +271,15 @@ public final class EmlMapper {
   }
 
   /**
-   * Resolves the organizations a person document is linked to through its {@code organizations}
-   * relationship. Returns an empty list when none is linked.
+   * Resolves the organization a person document is linked to through its {@code organizations}
+   * relationship, or null when none is linked or the organization cannot be resolved.
    */
-  private List<JsonApiDocument> resolveOrganizationsForPerson(JsonApiDocument personDoc) {
-    List<JsonApiDocument> organizations = new ArrayList<>();
-    for (UUID organizationUuid : organizationUuids(personDoc)) {
-      JsonApiDocument organizationDoc =
-        fetchAgentDocument(agentApiUrl + "/organization/" + organizationUuid);
-      if (organizationDoc != null) {
-        organizations.add(organizationDoc);
-      }
+  private JsonApiDocument resolveOrganizationForPerson(JsonApiDocument personDoc) {
+    UUID organizationUuid = firstOrganizationUuid(personDoc);
+    if (organizationUuid == null) {
+      return null;
     }
-    return organizations;
+    return fetchAgentDocument(agentApiUrl + "/organization/" + organizationUuid);
   }
 
   /**
@@ -324,43 +315,40 @@ public final class EmlMapper {
   }
 
   /**
-   * Returns the organization UUIDs referenced by a person's {@code organizations} relationship,
-   * preserving order and removing duplicates.
+   * Returns the first organization UUID referenced by a person's {@code organizations}
+   * relationship, or null when the person is not linked to an organization.
    */
-  private static List<UUID> organizationUuids(JsonApiDocument personDoc) {
+  private static UUID firstOrganizationUuid(JsonApiDocument personDoc) {
     Map<String, JsonApiDocument.RelationshipObject> relationships = personDoc.getRelationships();
     if (relationships == null) {
-      return List.of();
+      return null;
     }
 
     JsonApiDocument.RelationshipObject organizations = relationships.get("organizations");
     if (organizations == null || organizations.isNull()) {
-      return List.of();
+      return null;
     }
 
-    Set<UUID> uuids = new LinkedHashSet<>();
     Object data = organizations.getData();
+    Object first = data;
     if (data instanceof Collection<?> collection) {
-      for (Object item : collection) {
-        if (item instanceof Map<?, ?> resourceIdentifier) {
-          parseUuid(resourceIdentifier.get("id")).ifPresent(uuids::add);
+      if (collection.isEmpty()) {
+        return null;
+      }
+      first = collection.iterator().next();
+    }
+
+    if (first instanceof Map<?, ?> resourceIdentifier) {
+      Object id = resourceIdentifier.get("id");
+      if (id != null) {
+        try {
+          return UUID.fromString(id.toString());
+        } catch (IllegalArgumentException e) {
+          return null;
         }
       }
-    } else if (data instanceof Map<?, ?> resourceIdentifier) {
-      parseUuid(resourceIdentifier.get("id")).ifPresent(uuids::add);
     }
-    return new ArrayList<>(uuids);
-  }
-
-  private static Optional<UUID> parseUuid(Object value) {
-    if (value == null) {
-      return Optional.empty();
-    }
-    try {
-      return Optional.of(UUID.fromString(value.toString()));
-    } catch (IllegalArgumentException e) {
-      return Optional.empty();
-    }
+    return null;
   }
 
   private static String text(Object value) {
@@ -371,7 +359,7 @@ public final class EmlMapper {
     if (agentUuid == null) {
       return null;
     }
-    JsonApiDocument person = fetchAgentDocument(agentApiUrl + "/person/" + agentUuid + "?include=organizations");
+    JsonApiDocument person = fetchAgentDocument(agentApiUrl + "/person/" + agentUuid);
     return person != null ? person : fetchAgentDocument(agentApiUrl + "/organization/" + agentUuid);
   }
 

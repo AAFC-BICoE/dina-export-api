@@ -10,7 +10,9 @@ import ca.gc.aafc.dina.json.JsonHelper;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.extern.log4j.Log4j2;
 import okhttp3.HttpUrl;
 
@@ -22,8 +24,8 @@ import okhttp3.HttpUrl;
  * attribute keys to values. For each key, the matching document is fetched from the external
  * API (and cached) and the configured {@code vocabularyValue} field (e.g. uriTemplate) is
  * extracted. The {@code valuePlaceholder} in that field is replaced with the actual managed
- * attribute value. Resolved values are returned as a list; combining them (e.g. joining with
- * a separator) is left to the caller.
+ * attribute value. Resolved values are returned as a list with duplicates removed; combining
+ * them (e.g. joining with a separator) is left to the caller.
  *
  * <p>Kept as its own component so it can be reused by other exporters that resolve values
  * from external DINA APIs, without being tied to DarwinCore-specific mapping logic.
@@ -50,8 +52,8 @@ public class ApiReferenceResolver {
    * from the external API and the configured {@code vocabularyValue} field is extracted. The
    * {@code valuePlaceholder} in that field is replaced with the actual attribute value.
    *
-   * <p>The resolved values are returned as a list in source order. How they are combined
-   * (e.g. joined with a separator) is left to the caller.
+   * <p>The resolved values are returned as a list in source order, with duplicates removed.
+   * How they are combined (e.g. joined with a separator) is left to the caller.
    *
    * @param contextNode the to-many context node (array)
    * @param apiReference config describing how to resolve each value through the external API
@@ -71,7 +73,7 @@ public class ApiReferenceResolver {
       return List.of();
     }
 
-    List<String> resolvedValues = new ArrayList<>();
+    Set<String> resolvedValues = new LinkedHashSet<>();
     for (JsonNode element : contextNode) {
       JsonNode attributeValues = JsonHelper.findOneInJsonNode(element, "$." + sourcePath);
       if (attributeValues == null || !attributeValues.isObject()) {
@@ -108,7 +110,7 @@ public class ApiReferenceResolver {
           .replace(apiReference.getValuePlaceholder(), entry.getValue().asText()));
       });
     }
-    return resolvedValues;
+    return new ArrayList<>(resolvedValues);
   }
 
   /**

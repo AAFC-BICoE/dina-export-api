@@ -95,7 +95,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     metaXmlGenerator.generateMetaXml(workDir.resolve(DarwinCoreMetaXmlGenerator.DEFAULT_META_FILENAME));
     if (dinaExport.getDataset() != null) {
       emlGenerator.generateEml(workDir.resolve(DarwinCoreEmlGenerator.DEFAULT_EML_FILENAME),
-        emlMapper.datasetToEml(dinaExport.getDataset()));
+        emlMapper.datasetToEml(dinaExport.getDataset(), dinaExport.getName()));
     }
 
     super.postRecordWrite(dinaExport, ctx);
