@@ -104,14 +104,14 @@ public class EmlMapperTest {
     when(client.fetchDocument(any(HttpUrl.class))).thenReturn(personnelDoc);
 
     EmlMapper emlMapper = new EmlMapper(client, "http://localhost:8082/api/v1");
-    Eml eml = emlMapper.datasetToEml(dataset);
+    Eml eml = emlMapper.datasetToEml(dataset, "dwca.zip");
     assertEquals("123e4567-e89b-12d3-a456-426614174000/v1.2", eml.getPackageId());
 
     Dataset emlDataset = eml.getDataset();
     assertNotNull(emlDataset);
 
     // Identifier
-    assertEquals(List.of("123e4567-e89b-12d3-a456-426614174000"), emlDataset.getAlternateIdentifier());
+    assertEquals(List.of("dwca.zip"), emlDataset.getAlternateIdentifier());
     assertEquals("2025-05-01", emlDataset.getPubDate());
     
     // Titles
@@ -129,7 +129,7 @@ public class EmlMapperTest {
     // Keyword sets
     assertEquals(2, emlDataset.getKeywordSet().size());
     assertEquals(List.of("ants", "Formicidae"), emlDataset.getKeywordSet().get(0).getKeyword());
-    assertEquals("GBIF", emlDataset.getKeywordSet().get(0).getKeywordThesaurus());
+    assertEquals(null, emlDataset.getKeywordSet().get(0).getKeywordThesaurus());
     assertEquals(List.of("Canada"), emlDataset.getKeywordSet().get(1).getKeyword());
     assertNull(emlDataset.getKeywordSet().get(1).getKeywordThesaurus());
 
@@ -219,7 +219,7 @@ public class EmlMapperTest {
     assertEquals(1, project.getPersonnel().size());
     AgentWithRoleType projectPersonnel = project.getPersonnel().get(0);
     assertEquals("principalInvestigator", projectPersonnel.getRole());
-    assertEquals(List.of(principalInvestigator.toString()), projectPersonnel.getId());
+    assertTrue(projectPersonnel.getId().isEmpty());
     IndividualName personnelName = (IndividualName) projectPersonnel
         .getOrganizationNameOrIndividualNameOrPositionName().get(0);
     assertEquals("John", personnelName.getGivenName());
@@ -231,10 +231,10 @@ public class EmlMapperTest {
     EmlMapper emlMapper = new EmlMapper(mock(DinaApiClient.class), "http://localhost:8082/api/v1");
     BaseDatasetDto dataset = new BaseDatasetDto();
     dataset.setUuid(UUID.randomUUID());
-    Dataset emlDataset = emlMapper.datasetToEml(dataset).getDataset();
+    Dataset emlDataset = emlMapper.datasetToEml(dataset, "dwca.zip").getDataset();
 
     assertNotNull(emlDataset);
-    assertEquals(List.of(dataset.getUuid().toString()), emlDataset.getAlternateIdentifier());
+    assertEquals(List.of("dwca.zip"), emlDataset.getAlternateIdentifier());
     assertTrue(emlDataset.getTitle().isEmpty());
     assertNull(emlDataset.getAbstract());
     assertTrue(emlDataset.getKeywordSet().isEmpty());
@@ -268,7 +268,8 @@ public class EmlMapperTest {
         .data(JsonApiDocument.ResourceObject.builder()
             .type("organization")
             .id(metadataProviderUUID)
-            .attributes(Map.of("displayName", "Example Org"))
+            .attributes(Map.of("names", List.of(
+                Map.of("languageCode", "EN", "name", "Example Org"))))
             .build())
         .build();
 
@@ -287,7 +288,8 @@ public class EmlMapperTest {
         .data(JsonApiDocument.ResourceObject.builder()
             .type("organization")
             .id(publisherUUID)
-            .attributes(Map.of("displayName", "Publisher Org"))
+            .attributes(Map.of("names", List.of(
+                Map.of("languageCode", "EN", "name", "Publisher Org"))))
             .build())
         .build();
 
@@ -304,20 +306,20 @@ public class EmlMapperTest {
 
     DinaApiClient client = mock(DinaApiClient.class);
     when(client.fetchDocument(any(HttpUrl.class))).thenAnswer(invocation -> {
-      String url = invocation.getArgument(0, HttpUrl.class).toString();
-      if (url.endsWith("/person/" + creatorUUID)) {
+      String path = invocation.getArgument(0, HttpUrl.class).encodedPath();
+      if (path.endsWith("/person/" + creatorUUID)) {
         return creatorDoc;
       }
-      if (url.endsWith("/organization/" + metadataProviderUUID)) {
+      if (path.endsWith("/organization/" + metadataProviderUUID)) {
         return metadataProviderDoc;
       }
-      if (url.endsWith("/person/" + contactUUID)) {
+      if (path.endsWith("/person/" + contactUUID)) {
         return contactDoc;
       }
-      if (url.endsWith("/organization/" + publisherUUID)) {
+      if (path.endsWith("/organization/" + publisherUUID)) {
         return publisherDoc;
       }
-      if (url.endsWith("/person/" + associatedPartyUUID)) {
+      if (path.endsWith("/person/" + associatedPartyUUID)) {
         return associatedPartyDoc;
       }
       return null;
@@ -335,14 +337,15 @@ public class EmlMapperTest {
         AgentRoles.builder().agent(associatedPartyUUID).roles(List.of(BaseDatasetDto.AGENT_ROLE_ASSOCIATED_PARTY)).build(),
         AgentRoles.builder().agent(UUID.randomUUID()).roles(List.of("helper", "manager")).build()));
 
-    Dataset emlDataset = emlMapper.datasetToEml(dataset).getDataset();
+    Dataset emlDataset = emlMapper.datasetToEml(dataset, "dwca.zip").getDataset();
 
     assertEquals(1, emlDataset.getCreator().size());
-    assertEquals(1, emlDataset.getMetadataProvider().size());
+    // Organization-only agents are not mapped.
+    assertTrue(emlDataset.getMetadataProvider().isEmpty());
 
     // Creator resolved as a person
     AgentType creatorAgent = emlDataset.getCreator().get(0);
-    assertEquals(List.of(creatorUUID.toString()), creatorAgent.getId());
+    assertTrue(creatorAgent.getId().isEmpty());
     assertEquals(List.of("jane@example.com"), creatorAgent.getElectronicMailAddress());
     assertEquals(List.of("https://jane.example.com"), creatorAgent.getOnlineUrl());
     IndividualName individualName = (IndividualName) creatorAgent
@@ -350,24 +353,17 @@ public class EmlMapperTest {
     assertEquals("Jane", individualName.getGivenName());
     assertEquals("Doe", individualName.getSurName());
 
-    // Metadata provider resolved as an organization
-    AgentType metadataProviderAgent = emlDataset.getMetadataProvider().get(0);
-    assertEquals(List.of(metadataProviderUUID.toString()), metadataProviderAgent.getId());
-    assertEquals("Example Org", ((JAXBElement<?>) metadataProviderAgent
-        .getOrganizationNameOrIndividualNameOrPositionName().get(0)).getValue());
-
     // Explicit contact is preferred over the creator fallback
     assertEquals(1, emlDataset.getContact().size());
-    assertEquals(List.of(contactUUID.toString()), emlDataset.getContact().get(0).getId());
+    assertTrue(emlDataset.getContact().get(0).getId().isEmpty());
 
-    // Publisher resolved as an organization
-    assertNotNull(emlDataset.getPublisher());
-    assertEquals(List.of(publisherUUID.toString()), emlDataset.getPublisher().getId());
+    // Publisher resolved as an organization-only agent is not mapped.
+    assertNull(emlDataset.getPublisher());
 
     // Associated party resolved as a person with its role
     assertEquals(1, emlDataset.getAssociatedParty().size());
     AgentWithRoleType associatedPartyAgent = emlDataset.getAssociatedParty().get(0);
-    assertEquals(List.of(associatedPartyUUID.toString()), associatedPartyAgent.getId());
+    assertTrue(associatedPartyAgent.getId().isEmpty());
     assertEquals(BaseDatasetDto.AGENT_ROLE_ASSOCIATED_PARTY, associatedPartyAgent.getRole());
   }
 

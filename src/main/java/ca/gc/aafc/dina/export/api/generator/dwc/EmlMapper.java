@@ -2,9 +2,14 @@ package ca.gc.aafc.dina.export.api.generator.dwc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
@@ -66,9 +71,10 @@ public final class EmlMapper {
    * {@link Dataset}.
    *
    * @param dataset the DINA dataset to map
+   * @param exportFilename the export filename to use as the alternate identifier
    * @return an EML document wrapping the mapped dataset
    */
-  public Eml datasetToEml(BaseDatasetDto dataset) {
+  public Eml datasetToEml(BaseDatasetDto dataset, String exportFilename) {
     Eml eml = new Eml();
 
     String packageId = dataset.getUuid().toString();
@@ -80,8 +86,8 @@ public final class EmlMapper {
 
     Dataset emlDataset = new Dataset();
 
-    if (dataset.getUuid() != null) {
-      emlDataset.getAlternateIdentifier().add(dataset.getUuid().toString());
+    if (StringUtils.isNotBlank(exportFilename)) {
+      emlDataset.getAlternateIdentifier().add(exportFilename);
     }
 
     if (dataset.getPublicationDate() != null) {
@@ -140,7 +146,8 @@ public final class EmlMapper {
       if (keywordSet.keywords() != null) {
         emlKeywordSet.getKeyword().addAll(keywordSet.keywords());
       }
-      emlKeywordSet.setKeywordThesaurus(keywordSet.thesaurus());
+      // TODO: Uncomment if we have a useful case for this
+      //emlKeywordSet.setKeywordThesaurus(keywordSet.thesaurus());
       emlDataset.getKeywordSet().add(emlKeywordSet);
     }
   }
@@ -178,22 +185,27 @@ public final class EmlMapper {
     Optional<AgentType> creator = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_CREATOR))
         .map(this::toAgentType)
+        .filter(Objects::nonNull)
         .findFirst();
     Optional<AgentType> metadataProvider = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER))
         .map(this::toAgentType)
+        .filter(Objects::nonNull)
         .findFirst();
     Optional<AgentType> contact = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_CONTACT))
         .map(this::toAgentType)
+        .filter(Objects::nonNull)
         .findFirst();
     Optional<AgentType> publisher = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_PUBLISHER))
         .map(this::toAgentType)
+        .filter(Objects::nonNull)
         .findFirst();
     Optional<AgentWithRoleType> associatedParty = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_ASSOCIATED_PARTY))
         .map(this::toAgentWithRoleType)
+        .filter(Objects::nonNull)
         .findFirst();
 
     creator.ifPresent(emlDataset.getCreator()::add);
@@ -213,14 +225,11 @@ public final class EmlMapper {
   private AgentType toAgentType(AgentRoles agentRoles) {
     AgentType agentType = new AgentType();
     populateAgentType(agentType, agentRoles);
-    return agentType;
+    return agentType.getOrganizationNameOrIndividualNameOrPositionName().isEmpty() ? null : agentType;
   }
 
   private void populateAgentType(AgentType agentType, AgentRoles agentRoles) {
     UUID agentUuid = agentRoles.getAgent();
-    if (agentUuid != null) {
-      agentType.getId().add(agentUuid.toString());
-    }
 
     JsonApiDocument agentDoc = resolveAgent(agentUuid);
     if (agentDoc == null || agentDoc.getAttributes() == null) {
@@ -228,23 +237,34 @@ public final class EmlMapper {
     }
 
     Map<String, Object> attributes = agentDoc.getAttributes();
-    String displayName = text(attributes.get("displayName"));
 
+    // Only map persons. An organization should only appear as a person's
+    // affiliation, never as a standalone agent.
     if ("organization".equals(agentDoc.getType())) {
-      if (displayName != null) {
-        agentType.getOrganizationNameOrIndividualNameOrPositionName().add(
-          OBJECT_FACTORY.createAgentTypeOrganizationName(displayName));
+      return;
+    }
+
+    String displayName = text(attributes.get("displayName"));
+    String givenName = text(attributes.get("givenNames"));
+    String familyName = text(attributes.get("familyNames"));
+    // EML individualName requires surName; fall back to displayName when familyNames is missing.
+    String surName = familyName != null ? familyName : displayName;
+    if (givenName != null || surName != null) {
+      IndividualName individualName = new IndividualName();
+      individualName.setGivenName(givenName);
+      individualName.setSurName(surName);
+      agentType.getOrganizationNameOrIndividualNameOrPositionName().add(individualName);
+    }
+
+    // Always add the names of the organizations the person is linked to.
+    for (JsonApiDocument organizationDoc : resolveOrganizationsForPerson(agentDoc)) {
+      if (organizationDoc.getAttributes() == null) {
+        continue;
       }
-    } else {
-      String givenName = text(attributes.get("givenNames"));
-      String familyName = text(attributes.get("familyNames"));
-      // EML individualName requires surName; fall back to displayName when familyNames is missing.
-      String surName = familyName != null ? familyName : displayName;
-      if (givenName != null || surName != null) {
-        IndividualName individualName = new IndividualName();
-        individualName.setGivenName(givenName);
-        individualName.setSurName(surName);
-        agentType.getOrganizationNameOrIndividualNameOrPositionName().add(individualName);
+      String organizationName = organizationName(organizationDoc.getAttributes());
+      if (organizationName != null) {
+        agentType.getOrganizationNameOrIndividualNameOrPositionName().add(
+          OBJECT_FACTORY.createAgentTypeOrganizationName(organizationName));
       }
     }
 
@@ -259,6 +279,94 @@ public final class EmlMapper {
     }
   }
 
+  /**
+   * Resolves the organizations a person document is linked to through its {@code organizations}
+   * relationship. Returns an empty list when none is linked.
+   */
+  private List<JsonApiDocument> resolveOrganizationsForPerson(JsonApiDocument personDoc) {
+    List<JsonApiDocument> organizations = new ArrayList<>();
+    for (UUID organizationUuid : organizationUuids(personDoc)) {
+      JsonApiDocument organizationDoc =
+        fetchAgentDocument(agentApiUrl + "/organization/" + organizationUuid);
+      if (organizationDoc != null) {
+        organizations.add(organizationDoc);
+      }
+    }
+    return organizations;
+  }
+
+  /**
+   * Extracts the name of an organization from its attributes, preferring the English name and
+   * falling back to the first available name. Supports the legacy {@code displayName} attribute.
+   */
+  private static String organizationName(Map<String, Object> attributes) {
+    if (attributes == null) {
+      return null;
+    }
+
+    Object namesValue = attributes.get("names");
+    if (namesValue instanceof Collection<?> names && !names.isEmpty()) {
+      for (Object name : names) {
+        if (name instanceof Map<?, ?> nameMap
+            && "EN".equalsIgnoreCase(text(nameMap.get("languageCode")))) {
+          String englishName = text(nameMap.get("name"));
+          if (englishName != null) {
+            return englishName;
+          }
+        }
+      }
+      Object first = names.iterator().next();
+      if (first instanceof Map<?, ?> nameMap) {
+        String fallbackName = text(nameMap.get("name"));
+        if (fallbackName != null) {
+          return fallbackName;
+        }
+      }
+    }
+
+    return text(attributes.get("displayName"));
+  }
+
+  /**
+   * Returns the organization UUIDs referenced by a person's {@code organizations} relationship,
+   * preserving order and removing duplicates.
+   */
+  private static List<UUID> organizationUuids(JsonApiDocument personDoc) {
+    Map<String, JsonApiDocument.RelationshipObject> relationships = personDoc.getRelationships();
+    if (relationships == null) {
+      return List.of();
+    }
+
+    JsonApiDocument.RelationshipObject organizations = relationships.get("organizations");
+    if (organizations == null || organizations.isNull()) {
+      return List.of();
+    }
+
+    Set<UUID> uuids = new LinkedHashSet<>();
+    Object data = organizations.getData();
+    if (data instanceof Collection<?> collection) {
+      for (Object item : collection) {
+        if (item instanceof Map<?, ?> resourceIdentifier) {
+          parseUuid(resourceIdentifier.get("id")).ifPresent(uuids::add);
+        }
+      }
+    } else if (data instanceof Map<?, ?> resourceIdentifier) {
+      parseUuid(resourceIdentifier.get("id")).ifPresent(uuids::add);
+    }
+    return new ArrayList<>(uuids);
+  }
+
+  private static Optional<UUID> parseUuid(Object value) {
+    if (value == null) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(UUID.fromString(value.toString()));
+    } catch (IllegalArgumentException e) {
+      return Optional.empty();
+    }
+  }
+
   private static String text(Object value) {
     return value == null ? null : value.toString();
   }
@@ -267,7 +375,7 @@ public final class EmlMapper {
     if (agentUuid == null) {
       return null;
     }
-    JsonApiDocument person = fetchAgentDocument(agentApiUrl + "/person/" + agentUuid);
+    JsonApiDocument person = fetchAgentDocument(agentApiUrl + "/person/" + agentUuid + "?include=organizations");
     return person != null ? person : fetchAgentDocument(agentApiUrl + "/organization/" + agentUuid);
   }
 
@@ -343,7 +451,10 @@ public final class EmlMapper {
 
     if (project.personnel() != null) {
       for (AgentRoles agentRoles : project.personnel()) {
-        emlProject.getPersonnel().add(toAgentWithRoleType(agentRoles));
+        AgentWithRoleType personnel = toAgentWithRoleType(agentRoles);
+        if (personnel != null) {
+          emlProject.getPersonnel().add(personnel);
+        }
       }
     }
 
@@ -374,6 +485,9 @@ public final class EmlMapper {
   private AgentWithRoleType toAgentWithRoleType(AgentRoles agentRoles) {
     AgentWithRoleType agentWithRoleType = OBJECT_FACTORY.createAgentWithRoleType();
     populateAgentType(agentWithRoleType, agentRoles);
+    if (agentWithRoleType.getOrganizationNameOrIndividualNameOrPositionName().isEmpty()) {
+      return null;
+    }
     if (agentRoles.getRoles() != null && !agentRoles.getRoles().isEmpty()) {
       agentWithRoleType.setRole(agentRoles.getRoles().getFirst());
     }
