@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -145,7 +146,8 @@ public final class EmlMapper {
       if (keywordSet.keywords() != null) {
         emlKeywordSet.getKeyword().addAll(keywordSet.keywords());
       }
-      emlKeywordSet.setKeywordThesaurus(keywordSet.thesaurus());
+      // TODO: Uncomment if we have a useful case for this
+      //emlKeywordSet.setKeywordThesaurus(keywordSet.thesaurus());
       emlDataset.getKeywordSet().add(emlKeywordSet);
     }
   }
@@ -183,22 +185,27 @@ public final class EmlMapper {
     Optional<AgentType> creator = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_CREATOR))
         .map(this::toAgentType)
+        .filter(Objects::nonNull)
         .findFirst();
     Optional<AgentType> metadataProvider = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_METADATA_PROVIDER))
         .map(this::toAgentType)
+        .filter(Objects::nonNull)
         .findFirst();
     Optional<AgentType> contact = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_CONTACT))
         .map(this::toAgentType)
+        .filter(Objects::nonNull)
         .findFirst();
     Optional<AgentType> publisher = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_PUBLISHER))
         .map(this::toAgentType)
+        .filter(Objects::nonNull)
         .findFirst();
     Optional<AgentWithRoleType> associatedParty = dataset.getAgentRoles().stream()
         .filter(agentRole -> hasRole(agentRole, BaseDatasetDto.AGENT_ROLE_ASSOCIATED_PARTY))
         .map(this::toAgentWithRoleType)
+        .filter(Objects::nonNull)
         .findFirst();
 
     creator.ifPresent(emlDataset.getCreator()::add);
@@ -218,7 +225,7 @@ public final class EmlMapper {
   private AgentType toAgentType(AgentRoles agentRoles) {
     AgentType agentType = new AgentType();
     populateAgentType(agentType, agentRoles);
-    return agentType;
+    return agentType.getOrganizationNameOrIndividualNameOrPositionName().isEmpty() ? null : agentType;
   }
 
   private void populateAgentType(AgentType agentType, AgentRoles agentRoles) {
@@ -231,36 +238,33 @@ public final class EmlMapper {
 
     Map<String, Object> attributes = agentDoc.getAttributes();
 
+    // Only map persons. An organization should only appear as a person's
+    // affiliation, never as a standalone agent.
     if ("organization".equals(agentDoc.getType())) {
-      String organizationName = organizationName(attributes);
+      return;
+    }
+
+    String displayName = text(attributes.get("displayName"));
+    String givenName = text(attributes.get("givenNames"));
+    String familyName = text(attributes.get("familyNames"));
+    // EML individualName requires surName; fall back to displayName when familyNames is missing.
+    String surName = familyName != null ? familyName : displayName;
+    if (givenName != null || surName != null) {
+      IndividualName individualName = new IndividualName();
+      individualName.setGivenName(givenName);
+      individualName.setSurName(surName);
+      agentType.getOrganizationNameOrIndividualNameOrPositionName().add(individualName);
+    }
+
+    // Always add the names of the organizations the person is linked to.
+    for (JsonApiDocument organizationDoc : resolveOrganizationsForPerson(agentDoc)) {
+      if (organizationDoc.getAttributes() == null) {
+        continue;
+      }
+      String organizationName = organizationName(organizationDoc.getAttributes());
       if (organizationName != null) {
         agentType.getOrganizationNameOrIndividualNameOrPositionName().add(
           OBJECT_FACTORY.createAgentTypeOrganizationName(organizationName));
-      }
-    } else {
-      String displayName = text(attributes.get("displayName"));
-      String givenName = text(attributes.get("givenNames"));
-      String familyName = text(attributes.get("familyNames"));
-      // EML individualName requires surName; fall back to displayName when familyNames is missing.
-      String surName = familyName != null ? familyName : displayName;
-      if (givenName != null || surName != null) {
-        IndividualName individualName = new IndividualName();
-        individualName.setGivenName(givenName);
-        individualName.setSurName(surName);
-        agentType.getOrganizationNameOrIndividualNameOrPositionName().add(individualName);
-      }
-
-      // A person may belong to one or more organizations; EML represents that with an
-      // organizationName alongside the individualName.
-      for (JsonApiDocument organizationDoc : resolveOrganizationsForPerson(agentDoc)) {
-        if (organizationDoc.getAttributes() == null) {
-          continue;
-        }
-        String organizationName = organizationName(organizationDoc.getAttributes());
-        if (organizationName != null) {
-          agentType.getOrganizationNameOrIndividualNameOrPositionName().add(
-            OBJECT_FACTORY.createAgentTypeOrganizationName(organizationName));
-        }
       }
     }
 
@@ -447,7 +451,10 @@ public final class EmlMapper {
 
     if (project.personnel() != null) {
       for (AgentRoles agentRoles : project.personnel()) {
-        emlProject.getPersonnel().add(toAgentWithRoleType(agentRoles));
+        AgentWithRoleType personnel = toAgentWithRoleType(agentRoles);
+        if (personnel != null) {
+          emlProject.getPersonnel().add(personnel);
+        }
       }
     }
 
@@ -478,6 +485,9 @@ public final class EmlMapper {
   private AgentWithRoleType toAgentWithRoleType(AgentRoles agentRoles) {
     AgentWithRoleType agentWithRoleType = OBJECT_FACTORY.createAgentWithRoleType();
     populateAgentType(agentWithRoleType, agentRoles);
+    if (agentWithRoleType.getOrganizationNameOrIndividualNameOrPositionName().isEmpty()) {
+      return null;
+    }
     if (agentRoles.getRoles() != null && !agentRoles.getRoles().isEmpty()) {
       agentWithRoleType.setRole(agentRoles.getRoles().getFirst());
     }

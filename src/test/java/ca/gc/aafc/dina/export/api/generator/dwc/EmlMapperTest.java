@@ -129,7 +129,7 @@ public class EmlMapperTest {
     // Keyword sets
     assertEquals(2, emlDataset.getKeywordSet().size());
     assertEquals(List.of("ants", "Formicidae"), emlDataset.getKeywordSet().get(0).getKeyword());
-    assertEquals("GBIF", emlDataset.getKeywordSet().get(0).getKeywordThesaurus());
+    assertEquals(null, emlDataset.getKeywordSet().get(0).getKeywordThesaurus());
     assertEquals(List.of("Canada"), emlDataset.getKeywordSet().get(1).getKeyword());
     assertNull(emlDataset.getKeywordSet().get(1).getKeywordThesaurus());
 
@@ -340,7 +340,8 @@ public class EmlMapperTest {
     Dataset emlDataset = emlMapper.datasetToEml(dataset, "dwca.zip").getDataset();
 
     assertEquals(1, emlDataset.getCreator().size());
-    assertEquals(1, emlDataset.getMetadataProvider().size());
+    // Organization-only agents are not mapped.
+    assertTrue(emlDataset.getMetadataProvider().isEmpty());
 
     // Creator resolved as a person
     AgentType creatorAgent = emlDataset.getCreator().get(0);
@@ -352,19 +353,12 @@ public class EmlMapperTest {
     assertEquals("Jane", individualName.getGivenName());
     assertEquals("Doe", individualName.getSurName());
 
-    // Metadata provider resolved as an organization
-    AgentType metadataProviderAgent = emlDataset.getMetadataProvider().get(0);
-    assertTrue(metadataProviderAgent.getId().isEmpty());
-    assertEquals("Example Org", ((JAXBElement<?>) metadataProviderAgent
-        .getOrganizationNameOrIndividualNameOrPositionName().get(0)).getValue());
-
     // Explicit contact is preferred over the creator fallback
     assertEquals(1, emlDataset.getContact().size());
     assertTrue(emlDataset.getContact().get(0).getId().isEmpty());
 
-    // Publisher resolved as an organization
-    assertNotNull(emlDataset.getPublisher());
-    assertTrue(emlDataset.getPublisher().getId().isEmpty());
+    // Publisher resolved as an organization-only agent is not mapped.
+    assertNull(emlDataset.getPublisher());
 
     // Associated party resolved as a person with its role
     assertEquals(1, emlDataset.getAssociatedParty().size());
