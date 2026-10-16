@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.UserNotificationQueueProperties;
 import ca.gc.aafc.dina.export.api.entity.DataExport;
-import ca.gc.aafc.dina.export.api.file.FileDownloader;
+import ca.gc.aafc.dina.export.api.file.DinaFileDownloader;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.messaging.message.UserMessageNotification;
 import ca.gc.aafc.dina.messaging.producer.DinaMessageProducer;
@@ -25,12 +25,12 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class ObjectStoreExportGenerator extends DataExportGenerator {
 
-  private final FileDownloader fileDownloader;
+  private final DinaFileDownloader fileDownloader;
   private final DataExportConfig dataExportConfig;
   private final DinaMessageProducer messageProducer;
 
   public ObjectStoreExportGenerator(DataExportConfig dataExportConfig,
-                                    FileDownloader fileDownloader,
+                                    DinaFileDownloader fileDownloader,
                                     DataExportStatusService dataExportStatusService,
                                     DinaMessageProducer messageProducer) {
 

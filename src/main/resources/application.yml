@@ -54,6 +54,9 @@ http-client:
   client-id: objectstore
   username: cnc-cm
   password: cnc-cm
+  allowed-hosts:
+    - localhost
+    - dina.local
 
 dina:
   apiPrefix: /api/v1

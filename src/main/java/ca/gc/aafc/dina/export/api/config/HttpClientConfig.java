@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import ca.gc.aafc.dina.client.config.OpenIdConnectConfig;
@@ -13,5 +15,7 @@ import ca.gc.aafc.dina.client.config.OpenIdConnectConfig;
 @Setter
 @NoArgsConstructor
 public class HttpClientConfig extends OpenIdConnectConfig {
+
+  private Set<String> allowedHosts;
 
 }
