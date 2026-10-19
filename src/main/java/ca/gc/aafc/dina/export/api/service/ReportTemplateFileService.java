@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 import ca.gc.aafc.dina.export.api.config.ReportTemplateConfig;
-import ca.gc.aafc.dina.export.api.file.FileDownloader;
+import ca.gc.aafc.dina.export.api.file.DinaFileDownloader;
 
 /**
  * Responsible for the file on disk of the template represented by a ReportTemplate.
@@ -17,12 +17,12 @@ import ca.gc.aafc.dina.export.api.file.FileDownloader;
 public class ReportTemplateFileService {
 
   private final ReportTemplateConfig reportTemplateConfig;
-  private final FileDownloader fileDownloader;
+  private final DinaFileDownloader fileDownloader;
   private final DataExportConfig dataExportConfig;
 
   public ReportTemplateFileService(ReportTemplateConfig reportTemplateConfig,
                                    DataExportConfig dataExportConfig,
-                                   FileDownloader fileDownloader) {
+                                   DinaFileDownloader fileDownloader) {
     this.reportTemplateConfig = reportTemplateConfig;
     this.fileDownloader = fileDownloader;
     this.dataExportConfig = dataExportConfig;
