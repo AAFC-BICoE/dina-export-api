@@ -223,16 +223,13 @@ public class RelationshipFlattener {
    * full nested structure. Unlike {@link #mergeRelationshipsIntoAttributes}, to-many values
    * are kept as arrays so JSONPath predicates (e.g. {@code [?(@.isPrimary==true)]}) still work.</p>
    *
-   * @param objectMapper Jackson mapper used to create new nodes
-   * @param entity       JSON:API {@code /data} node, or a pre-flattened entity
-   * @param source       full Elasticsearch source document (contains {@code included})
-   * @param externalRelationshipResolver resolves relationships of included resources that are not in the document,
-   *                                     embedded as an array under the included resource (e.g. collectingEvent.collectors)
-   * @param externalRelationshipPaths    relationship paths to resolve externally (e.g. collectingEvent.collectors)
+   * Relationships of the included resources that are not in the document (e.g. collectingEvent.collectors)
+   * are resolved externally and embedded as an array under the included resource.
+   *
+   * @param entity JSON:API {@code /data} node, or a pre-flattened entity
+   * @param source full Elasticsearch source document (contains {@code included})
    */
-  public static ObjectNode toFlatEntity(ObjectMapper objectMapper, JsonNode entity, JsonNode source,
-                                        ExternalRelationshipResolver externalRelationshipResolver,
-                                        Set<String> externalRelationshipPaths) {
+  public ObjectNode toFlatEntity(JsonNode entity, JsonNode source) {
     JsonNode attrsNode = entity.get(JSONApiDocumentStructure.ATTRIBUTES);
     if (attrsNode == null || attrsNode.isNull()) {
       // Already flat (e.g. pre-denormalized in tests)
@@ -273,8 +270,7 @@ public class RelationshipFlattener {
         ArrayNode arr = objectMapper.createArrayNode();
         for (JsonNode ref : relData) {
           String refId = ref.path(JSONApiDocumentStructure.ID).asText();
-          ObjectNode embedded = embedIncluded(objectMapper, includedById.get(refId), refId, relName,
-            externalRelationshipResolver, externalRelationshipPaths);
+          ObjectNode embedded = embedIncluded(includedById.get(refId), refId, relName);
           if (embedded != null) {
             arr.add(embedded);
           }
@@ -282,8 +278,7 @@ public class RelationshipFlattener {
         denormalized.set(relName, arr);
       } else if (relData.isObject() && !relData.isNull()) {
         String refId = relData.path(JSONApiDocumentStructure.ID).asText();
-        ObjectNode embedded = embedIncluded(objectMapper, includedById.get(refId), refId, relName,
-          externalRelationshipResolver, externalRelationshipPaths);
+        ObjectNode embedded = embedIncluded(includedById.get(refId), refId, relName);
         if (embedded != null) {
           denormalized.set(relName, embedded);
         }
@@ -297,9 +292,7 @@ public class RelationshipFlattener {
    * Builds the node embedded under a relationship of the flat entity: a copy of the included
    * resource's attributes plus its id.
    */
-  private static ObjectNode embedIncluded(ObjectMapper objectMapper, JsonNode inc, String refId, String relName,
-                                          ExternalRelationshipResolver externalRelationshipResolver,
-                                          Set<String> externalRelationshipPaths) {
+  private ObjectNode embedIncluded(JsonNode inc, String refId, String relName) {
     if (inc == null) {
       return null;
     }

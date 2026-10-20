@@ -98,10 +98,8 @@ public class RelationshipFlattenerTest {
   public void toFlatEntity_onExternalRelationship_collectorsEmbedded() throws JsonProcessingException {
     JsonNode record = objectMapper.readTree(RECORD);
 
-    ObjectNode flat = RelationshipFlattener.toFlatEntity(objectMapper, record.get("data"), record,
-      new ExternalRelationshipResolver(mockAgentApi(), "http://localhost:8082/api/v1", "person,organization",
-        "http://localhost:8081/api/v1", "metadata"),
-      Set.of("collectingEvent.collectors"));
+    ObjectNode flat = newFlattener(mockAgentApi(), Set.of("collectingEvent.collectors"))
+      .toFlatEntity(record.get("data"), record);
 
     JsonNode collectors = flat.at("/collectingEvent/collectors");
     assertEquals(2, collectors.size());

@@ -16,7 +16,6 @@ import ca.gc.aafc.dina.export.api.generator.dwc.DarwinCoreEmlGenerator;
 import ca.gc.aafc.dina.export.api.generator.dwc.DarwinCoreMapper;
 import ca.gc.aafc.dina.export.api.generator.dwc.EmlMapper;
 import ca.gc.aafc.dina.export.api.generator.helper.DarwinCoreContextBuilder;
-import ca.gc.aafc.dina.export.api.generator.helper.RelationshipFlattener;
 import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 import ca.gc.aafc.dina.export.api.service.ExternalRelationshipResolver;
@@ -44,7 +43,6 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   private final DarwinCoreMetaXmlGenerator metaXmlGenerator;
   private final DarwinCoreEmlGenerator emlGenerator;
   private final EmlMapper emlMapper;
-  private final ExternalRelationshipResolver externalRelationshipResolver;
 
   public DarwinCoreExportGenerator(
     DataExportStatusService dataExportStatusService,
@@ -78,7 +76,6 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     this.metaXmlGenerator = metaXmlGenerator;
     this.emlGenerator = emlGenerator;
     this.emlMapper = emlMapper;
-    this.externalRelationshipResolver = externalRelationshipResolver;
   }
 
   @Override
@@ -153,8 +150,7 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     }
 
     // Flatten to attributes + embedded included relationships before context navigation
-    var denormalized = RelationshipFlattener.toFlatEntity(objectMapper, entity, relationshipSource,
-      externalRelationshipResolver, externalRelationshipPaths);
+    var denormalized = newRelationshipFlattener(externalRelationshipPaths).toFlatEntity(entity, relationshipSource);
 
     String entityId = extractText(denormalized, JSONApiDocumentStructure.ID, fallbackId);
     if (StringUtils.isBlank(entityId)) {

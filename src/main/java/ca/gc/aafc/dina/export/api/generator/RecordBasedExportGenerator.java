@@ -331,9 +331,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
     // 1. Merge Relationships if source exists
     if (relationshipSource != null) {
-      RelationshipFlattener relationshipFlattener = new RelationshipFlattener(objectMapper, jsonPathConfiguration,
-        externalRelationshipResolver, externalRelationshipPaths);
-      relationshipFlattener.mergeRelationshipsIntoAttributes(relationshipSource, attributes);
+      newRelationshipFlattener(externalRelationshipPaths).mergeRelationshipsIntoAttributes(relationshipSource, attributes);
     }
 
     // 2. Flatten nested objects (e.g. managedAttributes) to dot notation
@@ -361,6 +359,15 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
         ZipPackager.deleteDirectoryRecursively(workDir);
       }
     }
+  }
+
+  /** 
+   * Creates a flattener that resolves the given relationship paths externally and the rest from the 
+   * included section.
+   */
+  protected RelationshipFlattener newRelationshipFlattener(Set<String> externalRelationshipPaths) {
+    return new RelationshipFlattener(objectMapper, jsonPathConfiguration, externalRelationshipResolver,
+      externalRelationshipPaths);
   }
 
   /**
