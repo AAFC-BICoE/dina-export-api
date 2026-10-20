@@ -24,6 +24,7 @@ import ca.gc.aafc.dina.export.api.output.CompositeDataOutput;
 import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.output.TabularOutput;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
+import ca.gc.aafc.dina.export.api.service.ExternalRelationshipResolver;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
 import ca.gc.aafc.dina.json.JsonHelper;
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
@@ -44,10 +45,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import lombok.Builder;
@@ -69,6 +72,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   private final DataExportConfig dataExportConfig;
   private final Configuration jsonPathConfiguration;
   private final DinaMessageProducer messageProducer;
+  private final ExternalRelationshipResolver externalRelationshipResolver;
 
   public RecordBasedExportGenerator(
     DataExportStatusService dataExportStatusService,
@@ -76,7 +80,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     Configuration jsonPathConfiguration,
     ElasticSearchDataSource elasticSearchDataSource,
     ObjectMapper objectMapper,
-    DinaMessageProducer messageProducer) {
+    DinaMessageProducer messageProducer,
+    ExternalRelationshipResolver externalRelationshipResolver) {
 
     super(dataExportStatusService);
 
@@ -85,6 +90,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     this.dataExportConfig = dataExportConfig;
     this.jsonPathConfiguration = jsonPathConfiguration;
     this.messageProducer = messageProducer;
+    this.externalRelationshipResolver = externalRelationshipResolver;
   }
 
   @Override
@@ -237,6 +243,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     
     // Merge relationships when schema includes multiple entity types
     boolean needsRelationships = isMultiEntity || getEffectiveSchema(dinaExport).size() > 1;
+    Set<String> externalRelationshipPaths = getExternalRelationshipPaths(dinaExport);
 
     SearchResponse<JsonNode> response =
       elasticSearchDataSource.searchWithPIT(dinaExport.getSource(), query);
@@ -245,7 +252,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       boolean pageAvailable = !response.hits().hits().isEmpty();
       while (pageAvailable) {
         for (Hit<JsonNode> hit : response.hits().hits()) {
-          processHit(hit, functions, output, isMultiEntity, needsRelationships);
+          processHit(hit, functions, output, isMultiEntity, needsRelationships, externalRelationshipPaths);
         }
 
         int hitCount = response.hits().hits().size();
@@ -262,8 +269,9 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   }
 
   protected void processHit(Hit<JsonNode> hit, Map<String, DataExportFunction> functions,
-                           DataOutput<UUID, JsonNode> output, boolean isMultiEntity, 
-                           boolean needsRelationships) throws IOException {
+                           DataOutput<UUID, JsonNode> output, boolean isMultiEntity,
+                           boolean needsRelationships,
+                           Set<String> externalRelationshipPaths) throws IOException {
     JsonNode source = hit.source();
     if (source == null) {
       return;
@@ -275,7 +283,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     }
 
     // Main /data entity — merge relationships
-    processEntity(dataOpt.get(), hit.id(), source, functions, output);
+    processEntity(dataOpt.get(), hit.id(), source, functions, output, externalRelationshipPaths);
 
     // Multi-entity mode: also process each /included entity as its own separate row
     if (isMultiEntity) {
@@ -291,7 +299,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
   protected void processIncluded(JsonNode entity, Map<String, DataExportFunction> functions,
                                   DataOutput<UUID, JsonNode> output) throws IOException {
-    processEntity(entity, null, null, functions, output);
+    processEntity(entity, null, null, functions, output, Set.of());
   }
 
   /**
@@ -301,7 +309,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
   protected void processEntity(JsonNode entity, String fallbackId,
                             JsonNode relationshipSource,
                             Map<String, DataExportFunction> functions,
-                            DataOutput<UUID, JsonNode> output) throws IOException {
+                            DataOutput<UUID, JsonNode> output,
+                            Set<String> externalRelationshipPaths) throws IOException {
     if (entity == null) {
       return;
     }
@@ -322,7 +331,8 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
 
     // 1. Merge Relationships if source exists
     if (relationshipSource != null) {
-      RelationshipFlattener relationshipFlattener = new RelationshipFlattener(objectMapper, jsonPathConfiguration);
+      RelationshipFlattener relationshipFlattener = new RelationshipFlattener(objectMapper, jsonPathConfiguration,
+        externalRelationshipResolver, externalRelationshipPaths);
       relationshipFlattener.mergeRelationshipsIntoAttributes(relationshipSource, attributes);
     }
 
@@ -351,6 +361,24 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
         ZipPackager.deleteDirectoryRecursively(workDir);
       }
     }
+  }
+
+  /**
+   * Relationship paths of included resources to resolve externally, derived from the requested columns.
+   * e.g. column collectingEvent.collectors.displayName -> collectingEvent.collectors
+   * Only the paths of resolvable relationships (see {@link ExternalRelationshipResolver}) trigger a lookup.
+   */
+  protected Set<String> getExternalRelationshipPaths(DataExport dinaExport) {
+    Set<String> paths = new HashSet<>();
+    for (DataExportSchemaEntry entry : getEffectiveSchema(dinaExport).values()) {
+      for (String column : entry.columns()) {
+        String[] parts = StringUtils.split(column, '.');
+        if (parts != null && parts.length > 2) {
+          paths.add(parts[0] + "." + parts[1]);
+        }
+      }
+    }
+    return paths;
   }
 
   private void flattenNestedMaps(ObjectNode node) {

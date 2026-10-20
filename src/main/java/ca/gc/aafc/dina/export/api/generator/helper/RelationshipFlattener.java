@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
 
@@ -19,6 +20,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.TypeRef;
 
+import ca.gc.aafc.dina.export.api.service.ExternalRelationshipResolver;
 import ca.gc.aafc.dina.json.JsonHelper;
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
 import ca.gc.aafc.dina.jsonapi.JsonPathHelper;
@@ -40,10 +42,20 @@ public class RelationshipFlattener {
 
   private final ObjectMapper objectMapper;
   private final Configuration jsonPathConfiguration;
+  private final ExternalRelationshipResolver externalRelationshipResolver;
+  private final Set<String> externalRelationshipPaths;
 
-  public RelationshipFlattener(ObjectMapper objectMapper, Configuration jsonPathConfiguration) {
+  /**
+   * @param externalRelationshipResolver resolves relationships of included resources that are not in the document
+   * @param externalRelationshipPaths relationship paths to resolve externally (e.g. collectingEvent.collectors)
+   */
+  public RelationshipFlattener(ObjectMapper objectMapper, Configuration jsonPathConfiguration,
+                               ExternalRelationshipResolver externalRelationshipResolver,
+                               Set<String> externalRelationshipPaths) {
     this.objectMapper = objectMapper;
     this.jsonPathConfiguration = jsonPathConfiguration;
+    this.externalRelationshipResolver = externalRelationshipResolver;
+    this.externalRelationshipPaths = externalRelationshipPaths;
   }
 
   /**
@@ -98,9 +110,9 @@ public class RelationshipFlattener {
                                    Map<String, Object> result) {
     if (isToOneRelationship(relData)) {
       String id = relData.findValue(JSONApiDocumentStructure.ID).asText();
-      result.put(name, extractAttributesById(id, includedDocs));
+      result.put(name, extractAttributesById(name, id, includedDocs));
     } else if (JsonHelper.hasFieldAndIsArray(relData, JSONApiDocumentStructure.DATA)) {
-      result.put(name, resolveToManyRelationship(relData, includedDocs));
+      result.put(name, resolveToManyRelationship(name, relData, includedDocs));
     }
   }
 
@@ -111,24 +123,47 @@ public class RelationshipFlattener {
       && !relData.get(JSONApiDocumentStructure.DATA).isArray();
   }
 
-  private Object extractAttributesById(String id, List<Map<String, Object>> includedDocs) {
+  private Object extractAttributesById(String relationshipName, String id, List<Map<String, Object>> includedDocs) {
     DocumentContext dc = JsonPath.using(jsonPathConfiguration).parse(includedDocs);
     try {
       List<Map<String, Object>> matches = JsonPathHelper.extractById(dc, id, JSON_PATH_TYPE_REF);
       Map<String, Object> doc = CollectionUtils.isEmpty(matches) ? Map.of() : matches.getFirst();
-      return doc.get(JSONApiDocumentStructure.ATTRIBUTES);
+      return attributesWithExternalRelationships(relationshipName, doc);
     } catch (PathNotFoundException pnf) {
       return null;
     }
   }
 
-  private Map<String, Object> resolveToManyRelationship(JsonNode relData,
+  /**
+   * Gets the attributes of an included document and adds its resolved external relationships to them.
+   * e.g. collectingEvent attributes + collectors: {displayName: "A;B"}
+   */
+  @SuppressWarnings("unchecked")
+  private Object attributesWithExternalRelationships(String relationshipName, Map<String, Object> doc) {
+    Object attributes = doc.get(JSONApiDocumentStructure.ATTRIBUTES);
+    if (externalRelationshipResolver == null || !(attributes instanceof Map)) {
+      return attributes;
+    }
+
+    JsonNode relationships = objectMapper.valueToTree(doc.get(JSONApiDocumentStructure.RELATIONSHIPS));
+    Map<String, List<Map<String, Object>>> resolved =
+      externalRelationshipResolver.resolveRelationships(relationshipName, relationships, externalRelationshipPaths);
+    if (resolved.isEmpty()) {
+      return attributes;
+    }
+
+    Map<String, Object> merged = new HashMap<>((Map<String, Object>) attributes);
+    resolved.forEach((name, documents) -> merged.put(name, flatToMany(documents)));
+    return merged;
+  }
+
+  private Map<String, Object> resolveToManyRelationship(String relationshipName, JsonNode relData,
                                                          List<Map<String, Object>> includedDocs) {
     List<Map<String, Object>> relatedAttributes = new ArrayList<>();
 
     relData.get(JSONApiDocumentStructure.DATA).elements().forEachRemaining(element -> {
       String id = element.findValue(JSONApiDocumentStructure.ID).asText();
-      Object attributes = extractAttributesById(id, includedDocs);
+      Object attributes = extractAttributesById(relationshipName, id, includedDocs);
 
       if (attributes instanceof Map) {
         @SuppressWarnings("unchecked")
@@ -191,8 +226,13 @@ public class RelationshipFlattener {
    * @param objectMapper Jackson mapper used to create new nodes
    * @param entity       JSON:API {@code /data} node, or a pre-flattened entity
    * @param source       full Elasticsearch source document (contains {@code included})
+   * @param externalRelationshipResolver resolves relationships of included resources that are not in the document,
+   *                                     embedded as an array under the included resource (e.g. collectingEvent.collectors)
+   * @param externalRelationshipPaths    relationship paths to resolve externally (e.g. collectingEvent.collectors)
    */
-  public static ObjectNode toFlatEntity(ObjectMapper objectMapper, JsonNode entity, JsonNode source) {
+  public static ObjectNode toFlatEntity(ObjectMapper objectMapper, JsonNode entity, JsonNode source,
+                                        ExternalRelationshipResolver externalRelationshipResolver,
+                                        Set<String> externalRelationshipPaths) {
     JsonNode attrsNode = entity.get(JSONApiDocumentStructure.ATTRIBUTES);
     if (attrsNode == null || attrsNode.isNull()) {
       // Already flat (e.g. pre-denormalized in tests)
@@ -233,31 +273,48 @@ public class RelationshipFlattener {
         ArrayNode arr = objectMapper.createArrayNode();
         for (JsonNode ref : relData) {
           String refId = ref.path(JSONApiDocumentStructure.ID).asText();
-          JsonNode inc = includedById.get(refId);
-          if (inc != null) {
-            JsonNode incAttrs = inc.get(JSONApiDocumentStructure.ATTRIBUTES);
-            if (incAttrs != null && !incAttrs.isNull()) {
-              ObjectNode embedded = (ObjectNode) incAttrs.deepCopy();
-              embedded.put(JSONApiDocumentStructure.ID, refId);
-              arr.add(embedded);
-            }
+          ObjectNode embedded = embedIncluded(objectMapper, includedById.get(refId), refId, relName,
+            externalRelationshipResolver, externalRelationshipPaths);
+          if (embedded != null) {
+            arr.add(embedded);
           }
         }
         denormalized.set(relName, arr);
       } else if (relData.isObject() && !relData.isNull()) {
         String refId = relData.path(JSONApiDocumentStructure.ID).asText();
-        JsonNode inc = includedById.get(refId);
-        if (inc != null) {
-          JsonNode incAttrs = inc.get(JSONApiDocumentStructure.ATTRIBUTES);
-          if (incAttrs != null && !incAttrs.isNull()) {
-            ObjectNode embedded = (ObjectNode) incAttrs.deepCopy();
-            embedded.put(JSONApiDocumentStructure.ID, refId);
-            denormalized.set(relName, embedded);
-          }
+        ObjectNode embedded = embedIncluded(objectMapper, includedById.get(refId), refId, relName,
+          externalRelationshipResolver, externalRelationshipPaths);
+        if (embedded != null) {
+          denormalized.set(relName, embedded);
         }
       }
     });
 
     return denormalized;
+  }
+
+  /**
+   * Builds the node embedded under a relationship of the flat entity: a copy of the included
+   * resource's attributes plus its id.
+   */
+  private static ObjectNode embedIncluded(ObjectMapper objectMapper, JsonNode inc, String refId, String relName,
+                                          ExternalRelationshipResolver externalRelationshipResolver,
+                                          Set<String> externalRelationshipPaths) {
+    if (inc == null) {
+      return null;
+    }
+    JsonNode incAttrs = inc.get(JSONApiDocumentStructure.ATTRIBUTES);
+    if (incAttrs == null || incAttrs.isNull()) {
+      return null;
+    }
+
+    ObjectNode embedded = (ObjectNode) incAttrs.deepCopy();
+    embedded.put(JSONApiDocumentStructure.ID, refId);
+    if (externalRelationshipResolver != null) {
+      externalRelationshipResolver.resolveRelationships(relName, inc.get(JSONApiDocumentStructure.RELATIONSHIPS),
+          externalRelationshipPaths)
+        .forEach((name, documents) -> embedded.set(name, objectMapper.valueToTree(documents)));
+    }
+    return embedded;
   }
 }
