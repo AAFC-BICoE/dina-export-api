@@ -63,10 +63,13 @@ dina:
   auditing.enabled: true
   export:
     workingFolder: /tmp/dina-data-export
+    # resourceTypes are comma-separated JSON:API types served by the api, used to resolve external relationships
     objectStore:
       apiUrl: ${OBJECTSTORE_API_URL:http://localhost:8081}/api/v1
+      resourceTypes: ${OBJECTSTORE_API_RESOURCE_TYPES:metadata,derivative}
     agent:
       apiUrl: ${AGENT_API_URL:http://localhost:8082}/api/v1 
+      resourceTypes: ${AGENT_API_RESOURCE_TYPES:person,organization}
     objectStoreDownloadUrl: ${OBJECTSTORE_API_URL:http://localhost:8081}/api/v1/toa
 #    expiredExportMaxAge: 12d
 #    expiredExportCronExpression: "0 0 */1 * * *"

@@ -35,6 +35,7 @@ import ca.aafc.eml.generated.eml.Ulink;
 import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.entity.AgentRoles;
 import ca.gc.aafc.dina.export.api.service.DinaApiClient;
+import ca.gc.aafc.dina.export.api.service.ExternalRelationshipResolver;
 import ca.gc.aafc.dina.i18n.MultilingualDescription;
 import ca.gc.aafc.dina.i18n.MultilingualTitle;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
@@ -103,7 +104,8 @@ public class EmlMapperTest {
     DinaApiClient client = mock(DinaApiClient.class);
     when(client.fetchDocument(any(HttpUrl.class))).thenReturn(personnelDoc);
 
-    EmlMapper emlMapper = new EmlMapper(client, "http://localhost:8082/api/v1");
+    EmlMapper emlMapper = new EmlMapper(new ExternalRelationshipResolver(client, "http://localhost:8082/api/v1", "person,organization",
+        "http://localhost:8081/api/v1", "metadata"));
     Eml eml = emlMapper.datasetToEml(dataset, "dwca.zip");
     assertEquals("123e4567-e89b-12d3-a456-426614174000/v1.2", eml.getPackageId());
 
@@ -228,7 +230,9 @@ public class EmlMapperTest {
 
   @Test
   public void datasetToEml_onEmptyDataset_returnsEmptyDataset() {
-    EmlMapper emlMapper = new EmlMapper(mock(DinaApiClient.class), "http://localhost:8082/api/v1");
+    EmlMapper emlMapper = new EmlMapper(
+      new ExternalRelationshipResolver(mock(DinaApiClient.class), "http://localhost:8082/api/v1", "person,organization",
+        "http://localhost:8081/api/v1", "metadata"));
     BaseDatasetDto dataset = new BaseDatasetDto();
     dataset.setUuid(UUID.randomUUID());
     Dataset emlDataset = emlMapper.datasetToEml(dataset, "dwca.zip").getDataset();
@@ -325,7 +329,8 @@ public class EmlMapperTest {
       return null;
     });
 
-    EmlMapper emlMapper = new EmlMapper(client, "http://localhost:8082/api/v1");
+    EmlMapper emlMapper = new EmlMapper(new ExternalRelationshipResolver(client, "http://localhost:8082/api/v1", "person,organization",
+        "http://localhost:8081/api/v1", "metadata"));
 
     BaseDatasetDto dataset = new BaseDatasetDto();
     dataset.setUuid(UUID.randomUUID());

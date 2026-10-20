@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import ca.aafc.eml.generated.eml.AgentType;
@@ -42,11 +41,10 @@ import ca.aafc.eml.generated.eml.Ulink;
 import jakarta.xml.bind.JAXBElement;
 import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.entity.AgentRoles;
-import ca.gc.aafc.dina.export.api.service.DinaApiClient;
+import ca.gc.aafc.dina.export.api.service.ExternalRelationshipResolver;
 import ca.gc.aafc.dina.i18n.MultilingualDescription;
 import ca.gc.aafc.dina.i18n.MultilingualTitle;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
-import okhttp3.HttpUrl;
 
 /**
  * Responsible to map Dina {@link BaseDatasetDto} to Eml dataset
@@ -54,16 +52,13 @@ import okhttp3.HttpUrl;
 @Component
 public final class EmlMapper {
 
-  private final DinaApiClient dinaApiClient;
-  private final String agentApiUrl;
+  private final ExternalRelationshipResolver externalRelationshipResolver;
 
   private static final ObjectFactory OBJECT_FACTORY = new ObjectFactory();
   private static final String EML_SYSTEM = "https://www.dina-project.net";
 
-  public EmlMapper(DinaApiClient dinaApiClient,
-                   @Value("${dina.export.agent.apiUrl}") String agentApiUrl) {
-    this.dinaApiClient = dinaApiClient;
-    this.agentApiUrl = agentApiUrl;
+  public EmlMapper(ExternalRelationshipResolver externalRelationshipResolver) {
+    this.externalRelationshipResolver = externalRelationshipResolver;
   }
 
   /**
@@ -229,20 +224,15 @@ public final class EmlMapper {
   }
 
   private void populateAgentType(AgentType agentType, AgentRoles agentRoles) {
-    UUID agentUuid = agentRoles.getAgent();
-
-    JsonApiDocument agentDoc = resolveAgent(agentUuid);
+    // Only map persons. An organization should only appear as a person's
+    // affiliation, never as a standalone agent.
+    // organizations are included, otherwise the relationship is not returned.
+    JsonApiDocument agentDoc = externalRelationshipResolver.resolve("person", agentRoles.getAgent(), "organizations");
     if (agentDoc == null || agentDoc.getAttributes() == null) {
       return;
     }
 
     Map<String, Object> attributes = agentDoc.getAttributes();
-
-    // Only map persons. An organization should only appear as a person's
-    // affiliation, never as a standalone agent.
-    if ("organization".equals(agentDoc.getType())) {
-      return;
-    }
 
     String displayName = text(attributes.get("displayName"));
     String givenName = text(attributes.get("givenNames"));
@@ -287,7 +277,7 @@ public final class EmlMapper {
     List<JsonApiDocument> organizations = new ArrayList<>();
     for (UUID organizationUuid : organizationUuids(personDoc)) {
       JsonApiDocument organizationDoc =
-        fetchAgentDocument(agentApiUrl + "/organization/" + organizationUuid);
+        externalRelationshipResolver.resolve("organization", organizationUuid);
       if (organizationDoc != null) {
         organizations.add(organizationDoc);
       }
@@ -369,19 +359,6 @@ public final class EmlMapper {
 
   private static String text(Object value) {
     return value == null ? null : value.toString();
-  }
-
-  private JsonApiDocument resolveAgent(UUID agentUuid) {
-    if (agentUuid == null) {
-      return null;
-    }
-    JsonApiDocument person = fetchAgentDocument(agentApiUrl + "/person/" + agentUuid + "?include=organizations");
-    return person != null ? person : fetchAgentDocument(agentApiUrl + "/organization/" + agentUuid);
-  }
-
-  private JsonApiDocument fetchAgentDocument(String url) {
-    HttpUrl httpUrl = HttpUrl.parse(url);
-    return httpUrl == null ? null : dinaApiClient.fetchDocument(httpUrl);
   }
 
   private static Methods buildMethods(BaseDatasetDto.Methods methods) {
