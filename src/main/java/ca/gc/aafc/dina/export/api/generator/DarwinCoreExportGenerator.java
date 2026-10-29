@@ -16,18 +16,21 @@ import ca.gc.aafc.dina.export.api.generator.dwc.DarwinCoreEmlGenerator;
 import ca.gc.aafc.dina.export.api.generator.dwc.DarwinCoreMapper;
 import ca.gc.aafc.dina.export.api.generator.dwc.EmlMapper;
 import ca.gc.aafc.dina.export.api.generator.helper.DarwinCoreContextBuilder;
-import ca.gc.aafc.dina.export.api.generator.helper.RelationshipFlattener;
 import ca.gc.aafc.dina.export.api.output.DataOutput;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
+import ca.gc.aafc.dina.export.api.service.ExternalRelationshipResolver;
 import ca.gc.aafc.dina.export.api.source.ElasticSearchDataSource;
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
 import ca.gc.aafc.dina.messaging.producer.DinaMessageProducer;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -53,7 +56,8 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     DarwinCoreMapper darwinCoreMapper,
     DarwinCoreMetaXmlGenerator metaXmlGenerator,
     DarwinCoreEmlGenerator emlGenerator,
-    EmlMapper emlMapper
+    EmlMapper emlMapper,
+    ExternalRelationshipResolver externalRelationshipResolver
   ) {
 
     super(
@@ -62,7 +66,8 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
       jsonPathConfiguration,
       elasticSearchDataSource,
       objectMapper,
-      messageProducer);
+      messageProducer,
+      externalRelationshipResolver);
 
     this.objectMapper = objectMapper;
     this.darwinCoreConfig = darwinCoreConfig;
@@ -87,6 +92,25 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
     LinkedHashMap<String, DataExportSchemaEntry> schema = new LinkedHashMap<>();
     schema.put(darwinCoreConfig.getCore().getEntityType(), new DataExportSchemaEntry(headers, null));
     return schema;
+  }
+
+  /**
+   * Relationship paths of the configured resource contexts, from the root.
+   * e.g. a "collectors" context with path "collectors" under "collectingEvent" -> collectingEvent.collectors
+   */
+  @Override
+  protected Set<String> getExternalRelationshipPaths(DataExport dinaExport) {
+    Map<String, String> pathByContext = new HashMap<>();
+    Map<String, DarwinCoreExportConfig.ResourceContext> resourceContexts = darwinCoreConfig.getCore().getResourceContexts();
+    if (resourceContexts != null) {
+      resourceContexts.forEach((name, context) -> {
+        if (!context.isRoot()) {
+          String parentPath = pathByContext.get(context.getContext());
+          pathByContext.put(name, parentPath == null ? context.getPath() : parentPath + "." + context.getPath());
+        }
+      });
+    }
+    return new HashSet<>(pathByContext.values());
   }
 
   @Override
@@ -119,13 +143,14 @@ public class DarwinCoreExportGenerator extends RecordBasedExportGenerator {
   protected void processEntity(JsonNode entity, String fallbackId,
                                JsonNode relationshipSource,
                                Map<String, DataExportFunction> functions,
-                               DataOutput<UUID, JsonNode> output) throws IOException {
+                               DataOutput<UUID, JsonNode> output,
+                               Set<String> externalRelationshipPaths) throws IOException {
     if (entity == null) {
       return;
     }
 
     // Flatten to attributes + embedded included relationships before context navigation
-    var denormalized = RelationshipFlattener.toFlatEntity(objectMapper, entity, relationshipSource);
+    var denormalized = newRelationshipFlattener(externalRelationshipPaths).toFlatEntity(entity, relationshipSource);
 
     String entityId = extractText(denormalized, JSONApiDocumentStructure.ID, fallbackId);
     if (StringUtils.isBlank(entityId)) {
