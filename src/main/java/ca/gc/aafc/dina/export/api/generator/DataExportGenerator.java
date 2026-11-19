@@ -3,12 +3,14 @@ package ca.gc.aafc.dina.export.api.generator;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import jakarta.persistence.NoResultException;
 import lombok.extern.log4j.Log4j2;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import ca.gc.aafc.dina.export.api.entity.DataExport;
 import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
@@ -20,7 +22,7 @@ import ca.gc.aafc.dina.export.api.service.DataExportStatusService;
 @Log4j2
 public abstract class DataExportGenerator {
 
-  private static final int MAX_RETRY = 5;
+  private static final int MAX_ATTEMPTS = 5;
   private static final long RETRY_INTERVAL = 500;
 
   private final DataExportStatusService dataExportStatusService;
@@ -75,11 +77,12 @@ public abstract class DataExportGenerator {
    * @return
    */
   protected DataExport.ExportStatus waitForRecord(UUID uuid) {
-    RetryTemplate template = RetryTemplate.builder()
-      .maxAttempts(MAX_RETRY)
-      .fixedBackoff(RETRY_INTERVAL)
-      .retryOn(NoResultException.class)
+    RetryPolicy retryPolicy = RetryPolicy.builder()
+      .maxRetries(MAX_ATTEMPTS - 1)
+      .delay(Duration.ofMillis(RETRY_INTERVAL))
+      .includes(NoResultException.class)
       .build();
-    return template.execute(ctx -> dataExportStatusService.findStatus(uuid));
+    RetryTemplate template = new RetryTemplate(retryPolicy);
+    return template.invoke(() -> dataExportStatusService.findStatus(uuid));
   }
 }

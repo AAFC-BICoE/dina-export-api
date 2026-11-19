@@ -39,8 +39,6 @@
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>
     <tika.version>3.2.3</tika.version>
-    <spring-retry.version>2.0.13</spring-retry.version>
-
     <org.mapstruct.version>1.6.3</org.mapstruct.version>
 
     <!-- build plugin-->
@@ -104,12 +102,6 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-freemarker</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.springframework.retry</groupId>
-      <artifactId>spring-retry</artifactId>
-      <version>${spring-retry.version}</version>
-    </dependency>
-
     <!-- Database related-->
     <dependency>
       <groupId>org.springframework.boot</groupId>
