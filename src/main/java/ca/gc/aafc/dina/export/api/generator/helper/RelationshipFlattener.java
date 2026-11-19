@@ -10,10 +10,10 @@ import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -95,7 +95,7 @@ public class RelationshipFlattener {
       objectMapper.convertValue(includedOpt.get(), LIST_MAP_TYPEREF);
 
     Map<String, Object> result = new HashMap<>();
-    Iterator<String> names = relationships.fieldNames();
+    Iterator<String> names = relationships.propertyNames().iterator();
 
     while (names.hasNext()) {
       String name = names.next();
@@ -161,7 +161,7 @@ public class RelationshipFlattener {
                                                          List<Map<String, Object>> includedDocs) {
     List<Map<String, Object>> relatedAttributes = new ArrayList<>();
 
-    relData.get(JSONApiDocumentStructure.DATA).elements().forEachRemaining(element -> {
+    relData.get(JSONApiDocumentStructure.DATA).values().forEach(element -> {
       String id = element.findValue(JSONApiDocumentStructure.ID).asText();
       Object attributes = extractAttributesById(relationshipName, id, includedDocs);
 
@@ -263,7 +263,7 @@ public class RelationshipFlattener {
       return denormalized;
     }
 
-    relationships.fields().forEachRemaining(relEntry -> {
+    relationships.properties().forEach(relEntry -> {
       String relName = relEntry.getKey();
       JsonNode relData = relEntry.getValue().path(JSONApiDocumentStructure.DATA);
       if (relData.isArray()) {

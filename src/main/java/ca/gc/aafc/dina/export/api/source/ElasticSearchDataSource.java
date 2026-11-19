@@ -4,13 +4,12 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.json.JsonData;
 import co.elastic.clients.elasticsearch.core.ClosePointInTimeRequest;
 import co.elastic.clients.elasticsearch.core.ClosePointInTimeResponse;
 import co.elastic.clients.elasticsearch.core.OpenPointInTimeResponse;
@@ -25,7 +24,7 @@ import ca.gc.aafc.dina.export.api.config.DataExportConfig;
 
 /**
  * ElasticSearch-backed source of data.
- * Data is returned as {@link JsonNode} since the export is agnostic of the type of data.
+ * Search hits use {@link JsonData} to represent documents as JSON without requiring a fixed Java type.
  */
 @Component
 public class ElasticSearchDataSource {
@@ -46,12 +45,12 @@ public class ElasticSearchDataSource {
     return esPageSize;
   }
 
-  public SearchResponse<JsonNode> search(String indexName, String query) throws IOException {
+  public SearchResponse<JsonData> search(String indexName, String query) throws IOException {
     Reader strReader = new StringReader(query);
     SearchRequest sr = SearchRequest.of(b -> b
       .withJson(strReader).index(indexName));
 
-    return client.search(sr, JsonNode.class);
+    return client.search(sr, JsonData.class);
   }
 
   /**
@@ -64,7 +63,7 @@ public class ElasticSearchDataSource {
    * @param query
    * @return
    */
-  public SearchResponse<JsonNode> searchWithPIT(String indexName, String query) throws IOException {
+  public SearchResponse<JsonData> searchWithPIT(String indexName, String query) throws IOException {
 
     // create the PIT
     OpenPointInTimeResponse opitResponse =
@@ -77,7 +76,7 @@ public class ElasticSearchDataSource {
       sr = buildSearchRequestWithPIT(opitResponse.id(), query, true);
     }
 
-    return client.search(sr, JsonNode.class);
+    return client.search(sr, JsonData.class);
   }
 
   /**
@@ -87,14 +86,14 @@ public class ElasticSearchDataSource {
    * @param sortFieldValues returned from the initial {@link #searchWithPIT(String, String)} call
    * @return
    */
-  public SearchResponse<JsonNode> searchAfter(String query, String pitId, List<FieldValue> sortFieldValues) throws IOException {
+  public SearchResponse<JsonData> searchAfter(String query, String pitId, List<FieldValue> sortFieldValues) throws IOException {
 
     SearchRequest sr = buildSearchRequestWithPIT(pitId, query, false, sortFieldValues);
     //We need a sort so if the query doesn't include one, use the default one
     if (CollectionUtils.isEmpty(sr.sort())) {
       sr = buildSearchRequestWithPIT(pitId, query, true, sortFieldValues);
     }
-    return client.search(sr, JsonNode.class);
+    return client.search(sr, JsonData.class);
   }
 
   /**

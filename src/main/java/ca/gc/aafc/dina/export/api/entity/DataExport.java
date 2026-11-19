@@ -1,6 +1,5 @@
 package ca.gc.aafc.dina.export.api.entity;
 
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,9 +22,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.NaturalId;
-import org.hibernate.annotations.Type;
+import org.hibernate.generator.EventType;
+import org.hibernate.type.SqlTypes;
 
 import ca.gc.aafc.dina.dto.BaseDatasetDto;
 import ca.gc.aafc.dina.entity.DinaEntity;
@@ -55,7 +55,7 @@ public class DataExport implements DinaEntity {
   private UUID uuid;
 
   @Column(name = "created_on", insertable = false, updatable = false)
-  @Generated(value = GenerationTime.INSERT)
+  @Generated(event = EventType.INSERT)
   private OffsetDateTime createdOn;
 
   @NotBlank
@@ -81,7 +81,7 @@ public class DataExport implements DinaEntity {
   /**
    * Options specific to the type
    */
-  @Type(JsonType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")
   private Map<String, String> exportOptions;
 
@@ -92,7 +92,7 @@ public class DataExport implements DinaEntity {
   @Size(max = 100)
   private String source;
 
-  @Type(JsonType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")
   private Map<String, Object> query;
 
@@ -114,16 +114,16 @@ public class DataExport implements DinaEntity {
    * </pre>
    * Uses LinkedHashMap to preserve entity order - first entity is primary.
    */
-  @Type(JsonType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")
   private LinkedHashMap<String, DataExportSchemaEntry> schema;
 
   // functions by column
-  @Type(JsonType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")
   private Map<String, DataExportFunction> functions;
 
-  @Type(JsonType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")
   private BaseDatasetDto dataset;
 

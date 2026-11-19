@@ -13,11 +13,11 @@ import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.SequenceWriter;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import tools.jackson.core.StreamWriteFeature;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.SequenceWriter;
+import tools.jackson.dataformat.csv.CsvMapper;
+import tools.jackson.dataformat.csv.CsvSchema;
 
 /**
  * Responsible to write a tabular output (csv, tsv).
@@ -71,8 +71,7 @@ public final class TabularOutput<I, T> implements DataOutput<I, T> {
                                                                Writer writer) throws IOException {
 
     CsvSchema csvSchema = buildCsvSchema(tabularOutputArgs.getHeaders(), true, tabularOutputArgs);
-    CsvMapper csvMapper = new CsvMapper();
-    csvMapper.configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true);
+    CsvMapper csvMapper = CsvMapper.builder().enable(StreamWriteFeature.IGNORE_UNKNOWN).build();
     return new TabularOutput<>(csvMapper.writerFor(typeRef)
       .with(csvSchema).writeValues(writer), tabularOutputArgs.isEnableIdTracking());
   }
@@ -116,8 +115,7 @@ public final class TabularOutput<I, T> implements DataOutput<I, T> {
 
     //Use the real headers but configure the builder to not write them (since we have the aliases)
     CsvSchema csvSchema = buildCsvSchema(tabularOutputArgs.getHeaders(), false, tabularOutputArgs);
-    csvMapper = new CsvMapper();
-    csvMapper.configure(JsonGenerator.Feature.IGNORE_UNKNOWN, true);
+    csvMapper = CsvMapper.builder().enable(StreamWriteFeature.IGNORE_UNKNOWN).build();
     return new TabularOutput<>(csvMapper.writerFor(typeRef)
       .with(csvSchema).writeValues(writer), tabularOutputArgs.isEnableIdTracking());
   }

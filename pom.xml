@@ -14,7 +14,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.16</version>
+    <version>4.0.9</version>
   </parent>
 
   <properties>
@@ -33,11 +33,12 @@
     <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
     <checkstyle.version>10.17.0</checkstyle.version>
 
-    <dina-base-api.version>0.183</dina-base-api.version>
+    <dina-base-api.version>1.0</dina-base-api.version>
+    <elasticsearch-client.version>8.18.8</elasticsearch-client.version>
+    <json-path.version>3.0.0</json-path.version>
     <zxing.version>3.5.1</zxing.version>
     <openhtml.version>1.0.10</openhtml.version>
     <tika.version>3.2.3</tika.version>
-
     <org.mapstruct.version>1.6.3</org.mapstruct.version>
 
     <!-- build plugin-->
@@ -45,11 +46,10 @@
     <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
 
     <!-- versions override-->
-    <tomcat.version>10.1.59</tomcat.version>
     <freemarker.version>2.3.35</freemarker.version>
 
     <!-- test-related properties-->
-    <mockserver.version>5.15.0</mockserver.version>
+    <mockserver.version>9.3.0</mockserver.version>
   </properties>
 
   <dependencies>
@@ -78,10 +78,15 @@
       <artifactId>dina-json</artifactId>
       <version>${dina-base-api.version}</version>
     </dependency>
+    <dependency>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
+      <version>${elasticsearch-client.version}</version>
+    </dependency>
     <!-- Spring -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
       <exclusions>
         <exclusion>
           <groupId>org.springframework.boot</groupId>
@@ -97,15 +102,10 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-freemarker</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.springframework.retry</groupId>
-      <artifactId>spring-retry</artifactId>
-    </dependency>
-
     <!-- Database related-->
     <dependency>
-      <groupId>org.liquibase</groupId>
-      <artifactId>liquibase-core</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-liquibase</artifactId>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
@@ -138,7 +138,7 @@
 
     <!-- CSV-->
     <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <groupId>tools.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-csv</artifactId>
     </dependency>
 
@@ -157,6 +157,7 @@
     <dependency>
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
+      <version>${json-path.version}</version>
     </dependency>
 
     <!-- util -->

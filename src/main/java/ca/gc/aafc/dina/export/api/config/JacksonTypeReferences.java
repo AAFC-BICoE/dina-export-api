@@ -3,10 +3,10 @@ package ca.gc.aafc.dina.export.api.config;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.type.TypeReference;
 
 /**
- * Reusable Jackson {@link com.fasterxml.jackson.core.type.TypeReference}
+ * Reusable Jackson {@link tools.jackson.core.type.TypeReference}
  */
 public final class JacksonTypeReferences {
 

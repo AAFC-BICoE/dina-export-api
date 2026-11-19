@@ -14,9 +14,9 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import ca.gc.aafc.dina.export.api.config.ApiReference;
 import ca.gc.aafc.dina.export.api.config.DarwinCoreExportConfig;
@@ -30,7 +30,7 @@ public class DarwinCoreMapperTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
-  public void extractValue() throws JsonProcessingException {
+  public void extractValue() throws JacksonException {
 
     DarwinCoreMapper mapper = new DarwinCoreMapper(mock(ApiReferenceResolver.class));
 
@@ -74,7 +74,7 @@ public class DarwinCoreMapperTest {
   }
 
   @Test
-  public void extractValue_joinsToManyValues() throws JsonProcessingException {
+  public void extractValue_joinsToManyValues() throws JacksonException {
 
     DarwinCoreMapper mapper = new DarwinCoreMapper(mock(ApiReferenceResolver.class));
 
@@ -96,7 +96,7 @@ public class DarwinCoreMapperTest {
   }
 
   @Test
-  public void extractValue_resolvesVocabularyUriTemplate() throws JsonProcessingException {
+  public void extractValue_resolvesVocabularyUriTemplate() throws JacksonException {
 
     DinaApiClient client = mock(DinaApiClient.class);
     when(client.fetchDocument(any(HttpUrl.class))).thenReturn(vocabularyItemDocument());
@@ -128,7 +128,7 @@ public class DarwinCoreMapperTest {
   }
 
   @Test
-  public void extractValue_resolvesVocabularyUriTemplate_onlyConfiguredKey() throws JsonProcessingException {
+  public void extractValue_resolvesVocabularyUriTemplate_onlyConfiguredKey() throws JacksonException {
 
     DinaApiClient client = mock(DinaApiClient.class);
     when(client.fetchDocument(any(HttpUrl.class))).thenReturn(vocabularyItemDocument());
@@ -161,7 +161,7 @@ public class DarwinCoreMapperTest {
   }
 
   @Test
-  public void extractValue_resolvesVocabulary_noUrlTemplate_skipsResolution() throws JsonProcessingException {
+  public void extractValue_resolvesVocabulary_noUrlTemplate_skipsResolution() throws JacksonException {
     DinaApiClient client = mock(DinaApiClient.class);
 
     DarwinCoreMapper mapper = new DarwinCoreMapper(new ApiReferenceResolver(client));

@@ -24,7 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 
 import ca.gc.aafc.dina.client.token.AccessToken;
 import ca.gc.aafc.dina.export.api.BaseIntegrationTest;
@@ -105,7 +105,7 @@ public class ObjectStoreExportGeneratorIT extends BaseIntegrationTest {
       .respond(mockResponse);
   }
 
-  public static void mockKeycloak(ClientAndServer mockServer) throws JsonProcessingException {
+  public static void mockKeycloak(ClientAndServer mockServer) throws JacksonException {
 
     AccessToken mockAccessToken = new AccessToken();
     mockAccessToken.setAccessToken("abc");

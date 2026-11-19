@@ -26,9 +26,9 @@ import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchContainerInitializ
 import ca.gc.aafc.dina.testsupport.elasticsearch.ElasticSearchTestUtils;
 import ca.gc.aafc.dina.testsupport.jsonapi.JsonAPITestHelper;
 
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import tools.jackson.databind.MappingIterator;
+import tools.jackson.dataformat.csv.CsvMapper;
+import tools.jackson.dataformat.csv.CsvSchema;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
