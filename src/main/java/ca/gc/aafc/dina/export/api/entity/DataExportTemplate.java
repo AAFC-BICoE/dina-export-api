@@ -1,6 +1,5 @@
 package ca.gc.aafc.dina.export.api.entity;
 
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -24,9 +23,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.NaturalId;
-import org.hibernate.annotations.Type;
+import org.hibernate.generator.EventType;
+import org.hibernate.type.SqlTypes;
 
 import ca.gc.aafc.dina.entity.DinaEntity;
 import ca.gc.aafc.dina.export.api.config.DataExportFunction;
@@ -87,7 +87,7 @@ public class DataExportTemplate implements DinaEntity {
   /**
    * Options specific to the type
    */
-  @Type(JsonType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")
   private Map<String, String> exportOptions;
 
@@ -96,17 +96,17 @@ public class DataExportTemplate implements DinaEntity {
    * Unified field that handles multi-entity exports with columns and optional aliases per entity.
    * See {@link DataExport#schema} for format details.
    */
-  @Type(JsonType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")
   private LinkedHashMap<String, DataExportSchemaEntry> schema;
 
   // functions by column
-  @Type(JsonType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "jsonb")
   private Map<String, DataExportFunction> functions;
 
   @Column(name = "created_on", insertable = false, updatable = false)
-  @Generated(value = GenerationTime.INSERT)
+  @Generated(event = EventType.INSERT)
   private OffsetDateTime createdOn;
 
   /**

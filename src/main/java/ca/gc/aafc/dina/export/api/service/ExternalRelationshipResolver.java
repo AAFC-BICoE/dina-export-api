@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 import ca.gc.aafc.dina.jsonapi.JSONApiDocumentStructure;
 import ca.gc.aafc.dina.jsonapi.JsonApiDocument;
@@ -97,7 +97,7 @@ public class ExternalRelationshipResolver {
       return resolved;
     }
 
-    relationships.fields().forEachRemaining(relationship -> {
+    relationships.properties().forEach(relationship -> {
       String name = relationship.getKey();
 
       // Only resolve relationships the caller asked to be included

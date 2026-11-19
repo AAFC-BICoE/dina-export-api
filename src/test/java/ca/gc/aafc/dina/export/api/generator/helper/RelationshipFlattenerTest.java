@@ -14,10 +14,10 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import ca.gc.aafc.dina.export.api.config.JsonPathConfiguration;
 import ca.gc.aafc.dina.export.api.service.DinaApiClient;
@@ -65,7 +65,7 @@ public class RelationshipFlattenerTest {
 
   @Test
   public void mergeRelationshipsIntoAttributes_onExternalRelationship_collectorsResolved()
-      throws JsonProcessingException {
+      throws JacksonException {
     DinaApiClient client = mockAgentApi();
     ObjectNode attributes = objectMapper.createObjectNode();
 
@@ -84,7 +84,7 @@ public class RelationshipFlattenerTest {
   }
 
   @Test
-  public void mergeRelationshipsIntoAttributes_onNotRequested_notResolved() throws JsonProcessingException {
+  public void mergeRelationshipsIntoAttributes_onNotRequested_notResolved() throws JacksonException {
     DinaApiClient client = mockAgentApi();
     ObjectNode attributes = objectMapper.createObjectNode();
 
@@ -95,7 +95,7 @@ public class RelationshipFlattenerTest {
   }
 
   @Test
-  public void toFlatEntity_onExternalRelationship_collectorsEmbedded() throws JsonProcessingException {
+  public void toFlatEntity_onExternalRelationship_collectorsEmbedded() throws JacksonException {
     JsonNode record = objectMapper.readTree(RECORD);
 
     ObjectNode flat = newFlattener(mockAgentApi(), Set.of("collectingEvent.collectors"))

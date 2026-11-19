@@ -5,10 +5,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import com.jayway.jsonpath.Configuration;
 
 import ca.gc.aafc.dina.export.api.config.DataExportConfig;
@@ -35,6 +35,7 @@ import static ca.gc.aafc.dina.export.api.config.JacksonTypeReferences.MAP_TYPERE
 
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.json.JsonData;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
@@ -245,19 +246,19 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     boolean needsRelationships = isMultiEntity || getEffectiveSchema(dinaExport).size() > 1;
     Set<String> externalRelationshipPaths = getExternalRelationshipPaths(dinaExport);
 
-    SearchResponse<JsonNode> response =
+    SearchResponse<JsonData> response =
       elasticSearchDataSource.searchWithPIT(dinaExport.getSource(), query);
 
     try {
       boolean pageAvailable = !response.hits().hits().isEmpty();
       while (pageAvailable) {
-        for (Hit<JsonNode> hit : response.hits().hits()) {
+        for (Hit<JsonData> hit : response.hits().hits()) {
           processHit(hit, functions, output, isMultiEntity, needsRelationships, externalRelationshipPaths);
         }
 
         int hitCount = response.hits().hits().size();
         if (elasticSearchDataSource.getPageSize() == hitCount) {
-          Hit<JsonNode> lastHit = response.hits().hits().get(hitCount - 1);
+          Hit<JsonData> lastHit = response.hits().hits().get(hitCount - 1);
           response = elasticSearchDataSource.searchAfter(query, response.pitId(), lastHit.sort());
         } else {
           pageAvailable = false;
@@ -268,14 +269,15 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
     }
   }
 
-  protected void processHit(Hit<JsonNode> hit, Map<String, DataExportFunction> functions,
+  protected void processHit(Hit<JsonData> hit, Map<String, DataExportFunction> functions,
                            DataOutput<UUID, JsonNode> output, boolean isMultiEntity,
                            boolean needsRelationships,
                            Set<String> externalRelationshipPaths) throws IOException {
-    JsonNode source = hit.source();
-    if (source == null) {
+    JsonData sourceData = hit.source();
+    if (sourceData == null) {
       return;
     }
+    JsonNode source = objectMapper.readTree(sourceData.toJson().toString());
 
     Optional<JsonNode> dataOpt = JsonHelper.atJsonPtr(source, JSONApiDocumentStructure.DATA_PTR);
     if (dataOpt.isEmpty()) {
@@ -326,7 +328,7 @@ public class RecordBasedExportGenerator extends DataExportGenerator {
       return;
     }
 
-    ObjectNode attributes = attrsNode.deepCopy();
+    ObjectNode attributes = (ObjectNode) attrsNode.deepCopy();
     attributes.put(JSONApiDocumentStructure.ID, entityId);
 
     // 1. Merge Relationships if source exists

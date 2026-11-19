@@ -15,8 +15,8 @@ import org.mapstruct.Named;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import ca.gc.aafc.dina.export.api.dto.DataExportDto;
 import ca.gc.aafc.dina.export.api.dto.DataExportSchemaEntryDto;
@@ -98,7 +98,7 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
   static String mapToJsonString(Map<String, Object> query) {
     try {
       return query == null ? null : OBJ_MAPPER.writeValueAsString(query);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new RuntimeException(e);
     }
   }
@@ -110,7 +110,7 @@ public interface DataExportMapper extends DinaMapperV2<DataExportDto, DataExport
     }
     try {
       return OBJ_MAPPER.readValue(query, MAP_TYPEREF);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new RuntimeException(e);
     }
   }
